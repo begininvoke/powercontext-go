@@ -1,0 +1,84 @@
+{{define "document-head"}}<!doctype html>
+<html lang="en" data-server-session="missing">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <script>
+    try {
+      document.documentElement.dataset.serverSession = sessionStorage.getItem("powercontext.server.token")
+        ? "active"
+        : "missing";
+    } catch (error) {
+      document.documentElement.dataset.serverSession = "missing";
+    }
+    try {
+      const savedTheme = localStorage.getItem("powercontext.dashboard.theme");
+      const initialTheme = savedTheme === "light" || savedTheme === "dark"
+        ? savedTheme
+        : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = initialTheme;
+      const savedLocale = localStorage.getItem("powercontext.dashboard.locale");
+      document.documentElement.lang = savedLocale === "zh" || savedLocale === "en"
+        ? savedLocale
+        : (navigator.language.toLowerCase().startsWith("zh") ? "zh" : "en");
+    } catch (error) {
+      // Theme persistence is optional when browser storage is unavailable.
+    }
+  </script>
+  <link rel="stylesheet" href="/static/site.css?v=handoff-baseline">
+</head>
+<body>{{end}}
+
+{{define "header"}}<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/" aria-label="PowerContext Dashboard">
+      <img class="brand-mark" src="/static/oceanbase-logo.svg" alt="">
+      <span class="brand-owner">OceanBase</span>
+      <span class="brand-divider" aria-hidden="true">|</span>
+      <span class="brand-product">PowerContext</span>
+    </a>
+    <nav class="primary-nav" aria-label="Primary navigation">
+      <a href="/"{{if eq .ActivePage "dashboard"}} aria-current="page"{{end}} data-i18n="dashboardTitle">Dashboard</a>
+      {{if .HandoffReportEnabled}}<a href="/handoff-reports"{{if eq .ActivePage "handoff_report"}} aria-current="page"{{end}} data-i18n="handoffReportTitle">Handoff Report</a>{{end}}
+    </nav>
+    <div class="header-tools">
+      <button class="theme-toggle" id="theme-toggle" type="button"></button>
+      <button class="language-toggle" id="language-toggle" type="button">&#20013;&#25991;</button>
+      <button class="secondary-button" id="sign-out" type="button" data-i18n="signOut" hidden>Sign out</button>
+    </div>
+  </div>
+</header>{{end}}
+
+{{define "footer"}}<footer class="site-footer">
+  <div class="site-footer-inner">
+    <a class="footer-brand" href="/" aria-label="PowerContext Dashboard">
+      <img class="brand-mark" src="/static/oceanbase-logo.svg" alt="">
+      <span>OceanBase</span>
+      <span class="brand-divider" aria-hidden="true">|</span>
+      <span class="brand-product">PowerContext</span>
+    </a>
+    <div class="footer-maintainer" data-i18n="maintainedBy">Maintained by OceanBase.</div>
+  </div>
+</footer>{{end}}
+
+{{define "login"}}<section class="auth-shell" id="auth-shell">
+  <form class="auth-panel" id="auth-form">
+    <h1 data-i18n="authTitle">Connect to PowerContext</h1>
+    <p data-i18n="authIntro">Enter the bearer token configured for this PowerContext Server. The token stays in this browser tab.</p>
+    <label class="field-label" for="token" data-i18n="tokenLabel">Server token</label>
+    <div class="token-row">
+      <input id="token" name="token" type="password" autocomplete="current-password" required>
+      <button class="primary-button" type="submit" data-i18n="continue">Continue</button>
+    </div>
+    <div class="auth-error" id="auth-error" role="alert" aria-live="polite"></div>
+  </form>
+</section>{{end}}
+
+{{define "status"}}<section class="status-shell" id="page-status" hidden>
+  <div class="status-panel" role="status" aria-live="polite">
+    <h1 data-i18n="{{.StatusTitleKey}}">{{.StatusTitle}}</h1>
+    <p id="page-status-message"></p>
+    <button class="primary-button" id="page-status-retry" type="button" data-i18n="retry" hidden>Retry</button>
+  </div>
+</section>{{end}}

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "vec1": {
+    "version": "0.7",
+    "source_url": "https://sqlite.org/vec1/raw/vec1.c?ci=version-0.7",
+    "sha256": "8571bb4f77f9547d11ad11e2f72e0de7d3b2ab44e7930151998bce9377ed4b86"
+  },
+  "tokenizers": {
+    "version": "1.26.0",
+    "assets": {
+      "darwin-amd64": {
+        "name": "libtokenizers.darwin-x86_64.tar.gz",
+        "sha256": "9dfd4f1b58e194a23f138a6be0e1c1042bee6424342466724ac4f383d2d07a0f"
+      },
+      "darwin-arm64": {
+        "name": "libtokenizers.darwin-arm64.tar.gz",
+        "sha256": "2015c7b9fe29724b98485e05876c0492d6058e02dce2c314470bfbd27bd8a551"
+      },
+      "linux-amd64": {
+        "name": "libtokenizers.linux-x86_64.tar.gz",
+        "sha256": "0713ac926d8473440572f59369a1bf2d3aa3fa5c6446eab45191f6e5f04ffeb0"
+      },
+      "linux-arm64": {
+        "name": "libtokenizers.linux-arm64.tar.gz",
+        "sha256": "e8a19c39bbad5b86044d98519b131806cad6b4a3e1408c11ad555b630051e49b"
+      }
+    }
+  },
+  "onnxruntime": {
+    "version": "1.24.4",
+    "commit": "2d924974ef147392ced8409d36bd6d2e7fcc8a74",
+    "assets": {
+      "darwin-amd64": {
+        "build_from_source": true
+      },
+      "darwin-arm64": {
+        "name": "onnxruntime-osx-arm64-1.24.4.tgz",
+        "sha256": "93787795f47e1eee369182e43ed51b9e5da0878ab0346aecf4258979b8bba989"
+      },
+      "linux-amd64": {
+        "name": "onnxruntime-linux-x64-1.24.4.tgz",
+        "sha256": "3a211fbea252c1e66290658f1b735b772056149f28321e71c308942cdb54b747"
+      },
+      "linux-arm64": {
+        "name": "onnxruntime-linux-aarch64-1.24.4.tgz",
+        "sha256": "866109a9248d057671a039b9d725be4bd86888e3754140e6701ec621be9d4d7e"
+      }
+    }
+  },
+  "syft": {
+    "version": "1.51.0"
+  }
+}

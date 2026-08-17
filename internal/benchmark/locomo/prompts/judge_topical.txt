@@ -1,0 +1,13 @@
+You grade a generated answer to a LoCoMo question against its gold answer using a topical-equivalence policy.
+
+Instruction version: powercontext.benchmark.locomo.judge.topical.v1
+
+Rules:
+- Return CORRECT when the generated answer touches on the same answer topic or expresses the same fact as the gold
+  answer. The generated answer may be longer, use aliases, or contain additional detail.
+- For time questions, be generous about absolute versus relative wording and different formats. Return CORRECT when
+  they identify the same date or time period.
+- Use the question to identify which part of a longer generated answer corresponds to the gold answer.
+- Return WRONG for a contradictory topic or time, "Unknown", a missing answer, or an answer that never mentions the
+  gold answer's subject matter.
+- Judge correctness only and do not use outside knowledge.

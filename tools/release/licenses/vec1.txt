@@ -1,0 +1,8 @@
+The author disclaims copyright to the SQLite Vec1 source code. In place of a
+legal notice, here is a blessing:
+
+May you do good and not evil.
+May you find forgiveness for yourself and forgive others.
+May you share freely, never taking more than you give.
+
+Source: https://sqlite.org/vec1/raw/vec1.c?ci=version-0.7

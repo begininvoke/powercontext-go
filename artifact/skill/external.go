@@ -1,0 +1,528 @@
+package skill
+
+import (
+	"bufio"
+	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"regexp"
+	"slices"
+	"strings"
+	"unicode/utf8"
+)
+
+const (
+	MaxExternalFiles         = 256
+	MaxExternalPackageBytes  = 4 * 1024 * 1024
+	MaxExternalManifestBytes = 128 * 1024
+	MaxExternalHostIDLength  = 128
+	MaxExternalLocatorLength = 2_000
+)
+
+var (
+	lowerHexFingerprint = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	rootIDPattern       = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+)
+
+type InstallationScope string
+
+const (
+	UserScope    InstallationScope = "user"
+	ProjectScope InstallationScope = "project"
+	PluginScope  InstallationScope = "plugin"
+)
+
+type ResolutionStatus string
+
+const (
+	Available   ResolutionStatus = "available"
+	Unavailable ResolutionStatus = "unavailable"
+)
+
+type ExternalNotFoundError struct{ ExternalSkillID string }
+
+func (e *ExternalNotFoundError) Error() string { return "external Skill registration was not found" }
+
+type ExternalRegistryUnavailableError struct{}
+
+func (*ExternalRegistryUnavailableError) Error() string {
+	return "external Skill Registry is not configured"
+}
+
+type ExternalSnapshotUnavailableError struct{ ExternalSkillID string }
+
+func (e *ExternalSnapshotUnavailableError) Error() string {
+	return "external Skill snapshot is unavailable"
+}
+
+type Registration struct {
+	externalSkillID   string
+	provider          string
+	agentKind         string
+	hostID            string
+	installationScope InstallationScope
+	locator           string
+	fingerprint       string
+	name              string
+	description       string
+}
+
+func NewRegistration(
+	externalSkillID, provider, agentKind, hostID string,
+	installationScope InstallationScope,
+	locator, fingerprint, name, description string,
+) (Registration, error) {
+	for _, value := range []struct {
+		label   string
+		text    string
+		maximum int
+	}{
+		{"external_skill_id", externalSkillID, artifactIDLimit},
+		{"provider", provider, 128}, {"agent_kind", agentKind, 128},
+		{"host_id", hostID, MaxExternalHostIDLength},
+		{"locator", locator, MaxExternalLocatorLength},
+		{"name", name, MaxNameLength}, {"description", description, MaxDescriptionLength},
+	} {
+		if err := externalText(value.label, value.text, value.maximum); err != nil {
+			return Registration{}, err
+		}
+	}
+	if installationScope != UserScope && installationScope != ProjectScope && installationScope != PluginScope {
+		return Registration{}, fmt.Errorf("invalid external Skill installation scope %q", installationScope)
+	}
+	if !lowerHexFingerprint.MatchString(fingerprint) {
+		return Registration{}, fmt.Errorf("external Skill fingerprint must be 64 lowercase hexadecimal characters")
+	}
+	return Registration{
+		externalSkillID: externalSkillID, provider: provider, agentKind: agentKind, hostID: hostID,
+		installationScope: installationScope, locator: locator, fingerprint: fingerprint,
+		name: name, description: description,
+	}, nil
+}
+
+const artifactIDLimit = 128
+
+func (r Registration) ExternalSkillID() string              { return r.externalSkillID }
+func (r Registration) Provider() string                     { return r.provider }
+func (r Registration) AgentKind() string                    { return r.agentKind }
+func (r Registration) HostID() string                       { return r.hostID }
+func (r Registration) InstallationScope() InstallationScope { return r.installationScope }
+func (r Registration) Locator() string                      { return r.locator }
+func (r Registration) Fingerprint() string                  { return r.fingerprint }
+func (r Registration) Name() string                         { return r.name }
+func (r Registration) Description() string                  { return r.description }
+
+type Resolution struct {
+	Registration Registration
+	Status       ResolutionStatus
+	Entrypoint   string
+}
+
+type ProviderScan struct {
+	registrations []Registration
+	skipped       int
+}
+
+func NewProviderScan(registrations []Registration, skipped int) (ProviderScan, error) {
+	if skipped < 0 {
+		return ProviderScan{}, fmt.Errorf("external Skill skipped count must not be negative")
+	}
+	return ProviderScan{registrations: slices.Clone(registrations), skipped: skipped}, nil
+}
+
+func (s ProviderScan) Registrations() []Registration { return slices.Clone(s.registrations) }
+func (s ProviderScan) Skipped() int                  { return s.skipped }
+
+type Snapshot struct {
+	registration Registration
+	manifest     string
+}
+
+func NewSnapshot(registration Registration, manifest string) (Snapshot, error) {
+	if manifest == "" || len([]byte(manifest)) > MaxExternalManifestBytes {
+		return Snapshot{}, fmt.Errorf("external Skill manifest must contain 1..%d UTF-8 bytes", MaxExternalManifestBytes)
+	}
+	return Snapshot{registration: registration, manifest: manifest}, nil
+}
+
+func (s Snapshot) Registration() Registration { return s.registration }
+func (s Snapshot) Manifest() string           { return s.manifest }
+
+type ExternalProvider interface {
+	Name() string
+	AgentKind() string
+	HostID() string
+	Scan(context.Context) (ProviderScan, error)
+	Resolve(context.Context, Registration) (Resolution, error)
+}
+
+type CodexRoot struct {
+	rootID            string
+	installationScope InstallationScope
+	path              string
+}
+
+func NewCodexRoot(rootID string, scope InstallationScope, path string) (CodexRoot, error) {
+	if len(rootID) < 1 || len(rootID) > 64 || !rootIDPattern.MatchString(rootID) {
+		return CodexRoot{}, fmt.Errorf("Codex Skill root ID is invalid")
+	}
+	if scope != UserScope && scope != ProjectScope && scope != PluginScope {
+		return CodexRoot{}, fmt.Errorf("invalid external Skill installation scope %q", scope)
+	}
+	resolved, err := resolveLoose(path)
+	if err != nil {
+		return CodexRoot{}, err
+	}
+	return CodexRoot{rootID: rootID, installationScope: scope, path: resolved}, nil
+}
+
+func (r CodexRoot) ID() string                           { return r.rootID }
+func (r CodexRoot) InstallationScope() InstallationScope { return r.installationScope }
+func (r CodexRoot) Path() string                         { return r.path }
+
+type CodexProvider struct {
+	hostID string
+	roots  []CodexRoot
+}
+
+func NewCodexProvider(hostID string, roots []CodexRoot) (*CodexProvider, error) {
+	if err := externalText("host_id", hostID, MaxExternalHostIDLength); err != nil {
+		return nil, err
+	}
+	seen := make(map[string]struct{}, len(roots))
+	for _, root := range roots {
+		if _, exists := seen[root.rootID]; exists {
+			return nil, fmt.Errorf("Codex Skill root IDs must be unique")
+		}
+		seen[root.rootID] = struct{}{}
+	}
+	return &CodexProvider{hostID: hostID, roots: slices.Clone(roots)}, nil
+}
+
+func (*CodexProvider) Name() string      { return "codex" }
+func (*CodexProvider) AgentKind() string { return "codex" }
+func (p *CodexProvider) HostID() string  { return p.hostID }
+
+func (p *CodexProvider) Scan(ctx context.Context) (ProviderScan, error) {
+	var registrations []Registration
+	skipped := 0
+	for _, root := range p.roots {
+		if err := ctx.Err(); err != nil {
+			return ProviderScan{}, err
+		}
+		entries, err := os.ReadDir(root.path)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
+		if err != nil {
+			return ProviderScan{}, err
+		}
+		for _, entry := range entries {
+			if err := ctx.Err(); err != nil {
+				return ProviderScan{}, err
+			}
+			info, err := entry.Info()
+			if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+				continue
+			}
+			registration, err := p.registration(root, filepath.Join(root.path, entry.Name()))
+			if err != nil {
+				skipped++
+				continue
+			}
+			registrations = append(registrations, registration)
+		}
+	}
+	return NewProviderScan(registrations, skipped)
+}
+
+func (p *CodexProvider) Resolve(ctx context.Context, registration Registration) (Resolution, error) {
+	if err := ctx.Err(); err != nil {
+		return Resolution{}, err
+	}
+	if registration.provider != p.Name() || registration.agentKind != p.AgentKind() || registration.hostID != p.hostID {
+		return unavailable(registration), nil
+	}
+	root, ok := p.rootFor(registration)
+	if !ok {
+		return unavailable(registration), nil
+	}
+	resolved, err := filepath.EvalSymlinks(registration.locator)
+	if err != nil {
+		return unavailable(registration), nil
+	}
+	resolved, err = filepath.Abs(resolved)
+	if err != nil || filepath.Dir(resolved) != root.path {
+		return unavailable(registration), nil
+	}
+	info, err := os.Lstat(resolved)
+	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
+		return unavailable(registration), nil
+	}
+	current, err := p.registration(root, resolved)
+	if err != nil || current.externalSkillID != registration.externalSkillID || current.fingerprint != registration.fingerprint {
+		return unavailable(registration), nil
+	}
+	return Resolution{Registration: registration, Status: Available, Entrypoint: filepath.Join(resolved, "SKILL.md")}, nil
+}
+
+func (p *CodexProvider) rootFor(registration Registration) (CodexRoot, bool) {
+	prefix := "codex:" + string(registration.installationScope) + ":"
+	if !strings.HasPrefix(registration.externalSkillID, prefix) {
+		return CodexRoot{}, false
+	}
+	remainder := strings.TrimPrefix(registration.externalSkillID, prefix)
+	rootID := strings.SplitN(remainder, "/", 2)[0]
+	for _, root := range p.roots {
+		if root.rootID == rootID && root.installationScope == registration.installationScope {
+			return root, true
+		}
+	}
+	return CodexRoot{}, false
+}
+
+func (p *CodexProvider) registration(root CodexRoot, packagePath string) (Registration, error) {
+	if filepath.Dir(packagePath) != root.path {
+		return Registration{}, fmt.Errorf("Codex Skill package must be an immediate child of its configured root")
+	}
+	name, description, err := skillMetadata(filepath.Join(packagePath, "SKILL.md"))
+	if err != nil {
+		return Registration{}, err
+	}
+	fingerprint, err := packageFingerprint(packagePath)
+	if err != nil {
+		return Registration{}, err
+	}
+	externalID := fmt.Sprintf("codex:%s:%s/%s", root.installationScope, root.rootID, filepath.Base(packagePath))
+	return NewRegistration(
+		externalID, p.Name(), p.AgentKind(), p.hostID, root.installationScope,
+		packagePath, fingerprint, name, description,
+	)
+}
+
+func CaptureSnapshot(ctx context.Context, provider ExternalProvider, registration Registration) (Snapshot, error) {
+	resolution, err := provider.Resolve(ctx, registration)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	if resolution.Status != Available || resolution.Entrypoint == "" {
+		return Snapshot{}, &ExternalSnapshotUnavailableError{ExternalSkillID: registration.externalSkillID}
+	}
+	manifest, err := readManifest(resolution.Entrypoint)
+	if err != nil {
+		return Snapshot{}, &ExternalSnapshotUnavailableError{ExternalSkillID: registration.externalSkillID}
+	}
+	confirmed, err := provider.Resolve(ctx, registration)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	if confirmed.Status != Available || confirmed.Entrypoint != resolution.Entrypoint {
+		return Snapshot{}, &ExternalSnapshotUnavailableError{ExternalSkillID: registration.externalSkillID}
+	}
+	return NewSnapshot(registration, manifest)
+}
+
+func unavailable(registration Registration) Resolution {
+	return Resolution{Registration: registration, Status: Unavailable}
+}
+
+func skillMetadata(manifest string) (string, string, error) {
+	info, err := os.Lstat(manifest)
+	if err != nil || info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
+		return "", "", fmt.Errorf("Codex Skill manifest must be a regular non-symlink file")
+	}
+	contents, err := readBounded(manifest, MaxExternalManifestBytes)
+	if err != nil {
+		return "", "", err
+	}
+	if !utf8.Valid(contents) {
+		return "", "", fmt.Errorf("Codex Skill manifest must be UTF-8")
+	}
+	scanner := bufio.NewScanner(strings.NewReader(string(contents)))
+	if !scanner.Scan() || strings.TrimSpace(scanner.Text()) != "---" {
+		return "", "", fmt.Errorf("Codex Skill manifest is missing frontmatter")
+	}
+	metadata := make(map[string]string)
+	terminated := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.TrimSpace(line) == "---" {
+			terminated = true
+			break
+		}
+		field, raw, found := strings.Cut(line, ":")
+		if found && (field == "name" || field == "description") {
+			value, err := frontmatterScalar(strings.TrimSpace(raw))
+			if err != nil {
+				return "", "", err
+			}
+			metadata[field] = value
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", "", err
+	}
+	if !terminated {
+		return "", "", fmt.Errorf("Codex Skill frontmatter is not terminated")
+	}
+	name, hasName := metadata["name"]
+	description, hasDescription := metadata["description"]
+	if !hasName || !hasDescription {
+		return "", "", fmt.Errorf("Codex Skill frontmatter requires name and description")
+	}
+	return name, description, nil
+}
+
+func frontmatterScalar(value string) (string, error) {
+	if value == "" {
+		return "", fmt.Errorf("Codex Skill frontmatter values must not be empty")
+	}
+	if value[0] == '"' {
+		var parsed string
+		if err := json.Unmarshal([]byte(value), &parsed); err != nil {
+			return "", fmt.Errorf("Codex Skill frontmatter contains an invalid scalar")
+		}
+		return parsed, nil
+	}
+	if value[0] == '\'' {
+		if len(value) < 2 || value[len(value)-1] != '\'' {
+			return "", fmt.Errorf("Codex Skill frontmatter contains an invalid scalar")
+		}
+		return value[1 : len(value)-1], nil
+	}
+	return value, nil
+}
+
+type packageFile struct {
+	path     string
+	relative string
+}
+
+func packageFingerprint(packagePath string) (string, error) {
+	var files []packageFile
+	err := filepath.WalkDir(packagePath, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if path == packagePath {
+			return nil
+		}
+		if entry.Type()&os.ModeSymlink != 0 {
+			return fmt.Errorf("Codex Skill packages containing symlinks are not supported")
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+		relative, err := filepath.Rel(packagePath, path)
+		if err != nil {
+			return err
+		}
+		files = append(files, packageFile{path: path, relative: filepath.ToSlash(relative)})
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	slices.SortFunc(files, func(left, right packageFile) int { return strings.Compare(left.relative, right.relative) })
+	if len(files) < 1 || len(files) > MaxExternalFiles {
+		return "", fmt.Errorf("Codex Skill package has an unsupported file count")
+	}
+	digest := sha256.New()
+	total := 0
+	var size [8]byte
+	for _, file := range files {
+		content, err := readBounded(file.path, MaxExternalPackageBytes-total)
+		if err != nil {
+			return "", err
+		}
+		total += len(content)
+		if total > MaxExternalPackageBytes {
+			return "", fmt.Errorf("Codex Skill package exceeds the supported size")
+		}
+		relative := []byte(file.relative)
+		binary.BigEndian.PutUint32(size[:4], uint32(len(relative)))
+		_, _ = digest.Write(size[:4])
+		_, _ = digest.Write(relative)
+		binary.BigEndian.PutUint64(size[:], uint64(len(content)))
+		_, _ = digest.Write(size[:])
+		_, _ = digest.Write(content)
+	}
+	return hex.EncodeToString(digest.Sum(nil)), nil
+}
+
+func readManifest(path string) (string, error) {
+	infoBefore, err := os.Lstat(path)
+	if err != nil || infoBefore.Mode()&os.ModeSymlink != 0 || !infoBefore.Mode().IsRegular() {
+		return "", fmt.Errorf("external Skill manifest is not a regular file")
+	}
+	content, err := readBounded(path, MaxExternalManifestBytes)
+	if err != nil {
+		return "", err
+	}
+	infoAfter, err := os.Lstat(path)
+	if err != nil || !os.SameFile(infoBefore, infoAfter) || infoAfter.Mode()&os.ModeSymlink != 0 {
+		return "", fmt.Errorf("external Skill manifest changed while reading")
+	}
+	if !utf8.Valid(content) {
+		return "", fmt.Errorf("external Skill manifest must be UTF-8")
+	}
+	return string(content), nil
+}
+
+func readBounded(path string, maximum int) ([]byte, error) {
+	if maximum < 0 {
+		return nil, fmt.Errorf("file bound exhausted")
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	content, err := io.ReadAll(io.LimitReader(file, int64(maximum)+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(content) > maximum {
+		return nil, fmt.Errorf("external Skill file exceeds the supported size")
+	}
+	return content, nil
+}
+
+func externalText(label, value string, maximum int) error {
+	if strings.TrimSpace(value) == "" || value != strings.TrimSpace(value) {
+		return fmt.Errorf("external Skill %s must be non-empty and trimmed", label)
+	}
+	if utf8.RuneCountInString(value) > maximum {
+		return fmt.Errorf("external Skill %s must not exceed %d characters", label, maximum)
+	}
+	return nil
+}
+
+func resolveLoose(path string) (string, error) {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	resolved, err := filepath.EvalSymlinks(absolute)
+	if err == nil {
+		return filepath.Clean(resolved), nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+	return filepath.Clean(absolute), nil
+}

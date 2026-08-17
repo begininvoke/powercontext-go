@@ -1,0 +1,129 @@
+package sqlstore_test
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/thunguo/powercontext-go/internal/sqlstore"
+)
+
+func TestOpenSQLiteInitializesSchemaAndEveryConnection(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	config := sqlstore.DefaultSQLiteConfig(filepath.Join(t.TempDir(), "powercontext.db"))
+	config.MaxOpenConns = 2
+	config.MaxIdleConns = 2
+	database, err := sqlstore.OpenSQLite(ctx, config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := database.Close(context.Background()); err != nil {
+			t.Error(err)
+		}
+	})
+
+	for _, name := range []string{
+		"pc_sources",
+		"pc_source_journal_heads",
+		"pc_artifacts",
+		"pc_artifact_heads",
+		"pc_artifact_lineage_sources",
+		"pc_artifact_lineage_artifacts",
+		"pc_artifact_candidate_versions",
+		"pc_artifact_candidate_heads",
+		"pc_source_cursors",
+		"pc_external_skill_registrations",
+		"pc_memory_entry_versions",
+		"pc_memory_entry_heads",
+		"pc_model_usage_daily",
+		"pc_recall_token_daily",
+	} {
+		var found string
+		err := database.SQLDB().QueryRowContext(ctx,
+			"SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?", name,
+		).Scan(&found)
+		if err != nil {
+			t.Fatalf("schema %s: %v", name, err)
+		}
+	}
+
+	first, err := database.SQLDB().Conn(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer first.Close()
+	second, err := database.SQLDB().Conn(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer second.Close()
+	for index, connection := range []*sql.Conn{first, second} {
+		var foreignKeys, busyTimeout int
+		if err := connection.QueryRowContext(ctx, "PRAGMA foreign_keys").Scan(&foreignKeys); err != nil {
+			t.Fatal(err)
+		}
+		if err := connection.QueryRowContext(ctx, "PRAGMA busy_timeout").Scan(&busyTimeout); err != nil {
+			t.Fatal(err)
+		}
+		if foreignKeys != 1 || busyTimeout != 5000 {
+			t.Fatalf("connection %d pragmas = foreign_keys:%d busy_timeout:%d", index, foreignKeys, busyTimeout)
+		}
+	}
+}
+
+func TestDatabaseCloseRejectsNewTransactions(t *testing.T) {
+	t.Parallel()
+	config := sqlstore.DefaultSQLiteConfig(":memory:")
+	database, err := sqlstore.OpenSQLite(context.Background(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := database.Close(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	err = database.Transaction(context.Background(), func(sqlstore.DBTX) error { return nil })
+	var closed *sqlstore.DatabaseClosedError
+	if !errors.As(err, &closed) {
+		t.Fatalf("expected DatabaseClosedError, got %v", err)
+	}
+}
+
+func TestDatabaseCanceledCloseRestoresAdmission(t *testing.T) {
+	t.Parallel()
+	config := sqlstore.DefaultSQLiteConfig(":memory:")
+	database, err := sqlstore.OpenSQLite(context.Background(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	done := make(chan error, 1)
+	go func() {
+		done <- database.Transaction(context.Background(), func(sqlstore.DBTX) error {
+			close(entered)
+			<-release
+			return nil
+		})
+	}()
+	<-entered
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+	if err := database.Close(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("expected deadline, got %v", err)
+	}
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if err := database.Ping(context.Background()); err != nil {
+		t.Fatalf("admission was not restored: %v", err)
+	}
+	if err := database.Close(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}

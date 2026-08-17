@@ -1,0 +1,86 @@
+{{define "page"}}{{template "document-head" .}}
+{{template "header" .}}
+<main class="page">
+{{template "login" .}}
+{{template "status" .}}
+<section class="server-content" id="dashboard">
+  <div class="hero">
+    <div>
+      <p class="page-kind" data-i18n="dashboardTitle">Dashboard</p>
+      <h1 id="dashboard-name"></h1>
+    </div>
+    <div>
+      <div class="scope-picker">
+        <label for="scope-select" data-i18n="selectScope">Select scope</label>
+        <select id="scope-select"></select>
+      </div>
+      <div class="hero-meta">
+        <span class="period-note" data-i18n="period30">30 days</span>
+        <span aria-hidden="true"> · </span><span id="as-of"></span>
+      </div>
+    </div>
+  </div>
+
+  <section class="overview" aria-label="Scope overview">
+    <div class="key-metric">
+      <div class="metric-label" data-i18n="estimatedReduction">Estimated token reduction</div>
+      <div class="metric-value" id="token-reduction">0</div>
+      <div class="metric-note" id="recall-hits"></div>
+    </div>
+    <dl class="inventory">
+      <div><dt data-i18n="sources">Sources</dt><dd id="sources">0</dd></div>
+      <div><dt data-i18n="memoryEntries">Memory entries</dt><dd id="memory-entries">0</dd></div>
+      <div><dt data-i18n="artifacts">Artifacts</dt><dd id="artifacts">0</dd></div>
+      <div><dt data-i18n="pendingReview">Pending review</dt><dd id="pending-reviews">0</dd></div>
+    </dl>
+  </section>
+
+  <section class="data-section" aria-labelledby="families-title">
+    <div class="section-heading"><div>
+      <h2 id="families-title" data-i18n="artifactFamilies">Artifact families</h2>
+      <p data-i18n="artifactSubtitle">Current Artifacts and Candidates awaiting review</p>
+    </div></div>
+    <table class="family-table">
+      <thead><tr>
+        <th scope="col" data-i18n="family">Family</th>
+        <th scope="col" data-i18n="currentArtifacts">Current Artifacts</th>
+        <th scope="col" data-i18n="pendingCandidates">Pending Candidates</th>
+      </tr></thead>
+      <tbody id="family-rows"></tbody>
+    </table>
+  </section>
+
+  <section class="data-section" aria-labelledby="activity-title">
+    <div class="section-heading"><div>
+      <h2 id="activity-title" data-i18n="dailyActivity">Daily recall</h2>
+      <p id="activity-summary"></p>
+    </div></div>
+    <div class="heatmap-scroll"><div class="heatmap" id="heatmap" role="img" aria-label="30 days of scoped recall hits and estimated token reduction"></div></div>
+    <div class="legend heatmap-legend" aria-hidden="true">
+      <span><i class="legend-cell"></i><span data-i18n="noRecall">No hit</span></span>
+      <span><i class="legend-cell level-1"></i><span data-i18n="hitNoReduction">Hit · ≤0</span></span>
+      <span><i class="legend-cell level-2"></i><span data-i18n="reductionLow">1–255</span></span>
+      <span><i class="legend-cell level-3"></i><span data-i18n="reductionMedium">256–1,023</span></span>
+      <span><i class="legend-cell level-4"></i><span data-i18n="reductionHigh">1,024+</span></span>
+    </div>
+    <div class="chart-tooltip" id="activity-tooltip" role="tooltip" hidden></div>
+  </section>
+
+  <section class="data-section" aria-labelledby="trend-title">
+    <div class="section-heading">
+      <div><h2 id="trend-title" data-i18n="recallTrend">Recall savings trend</h2><p data-i18n="trendSubtitle">Estimated token reduction over the last 30 days</p></div>
+      <div class="series-legend" aria-hidden="true"><span data-i18n="estimatedReductionSeries">Estimated reduction</span></div>
+    </div>
+    <div class="trend-wrap">
+      <svg class="trend-chart" id="trend-chart" viewBox="0 0 720 220" preserveAspectRatio="none" role="img" aria-labelledby="trend-title trend-description"></svg>
+      <span class="screen-reader-only" id="trend-description"></span>
+      <div class="trend-labels"><span id="trend-start"></span><span id="trend-middle"></span><span id="trend-end"></span></div>
+      <div class="chart-tooltip" id="trend-tooltip" role="tooltip" hidden></div>
+    </div>
+  </section>
+</section>
+</main>
+{{template "footer" .}}
+<script type="module" src="/static/dashboard.js?v=state-races"></script>
+</body>
+</html>{{end}}

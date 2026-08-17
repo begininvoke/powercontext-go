@@ -1,0 +1,14 @@
+.git
+.github
+.idea
+.vscode
+.venv
+bin
+coverage
+dist
+node_modules
+*.coverprofile
+*.db
+*.db-shm
+*.db-wal
+*.log
