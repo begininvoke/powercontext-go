@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 type StoredSourceCursor struct {
@@ -34,8 +34,8 @@ func (SourceCursorRepository) Load(
 	}
 	var rowScope, rowBinding string
 	var payload, generation any
-	err := db.QueryRowContext(ctx, `SELECT scope_id, binding_name, cursor, generation
-        FROM pc_source_cursors WHERE scope_id = ? AND binding_name = ?`, scopeID, bindingName).Scan(
+	err := db.QueryRowContext(ctx, quoteCursorIdentifier(`SELECT scope_id, binding_name, cursor, generation
+        FROM pc_source_cursors WHERE scope_id = ? AND binding_name = ?`), scopeID, bindingName).Scan(
 		&rowScope, &rowBinding, &payload, &generation,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -100,8 +100,8 @@ func (repository SourceCursorRepository) Save(
 			}
 		}
 		generation = 1
-		if _, err := db.ExecContext(ctx, `INSERT INTO pc_source_cursors
-            (scope_id, binding_name, cursor, generation) VALUES (?, ?, ?, ?)`,
+		if _, err := db.ExecContext(ctx, quoteCursorIdentifier(`INSERT INTO pc_source_cursors
+            (scope_id, binding_name, cursor, generation) VALUES (?, ?, ?, ?)`),
 			scopeID, bindingName, payload, generation); err != nil {
 			existing, found, readErr := repository.Load(ctx, db, scopeID, bindingName)
 			if readErr != nil || !found {
@@ -112,8 +112,8 @@ func (repository SourceCursorRepository) Save(
 		}
 	} else {
 		generation = *expectedGeneration + 1
-		result, err := db.ExecContext(ctx, `UPDATE pc_source_cursors SET cursor = ?, generation = ?
-            WHERE scope_id = ? AND binding_name = ? AND generation = ?`,
+		result, err := db.ExecContext(ctx, quoteCursorIdentifier(`UPDATE pc_source_cursors SET cursor = ?, generation = ?
+            WHERE scope_id = ? AND binding_name = ? AND generation = ?`),
 			payload, generation, scopeID, bindingName, *expectedGeneration)
 		if err != nil {
 			return StoredSourceCursor{}, err

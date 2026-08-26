@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	requesttrace "github.com/thunguo/powercontext-go/internal/observability/tracing"
+	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
 	"go.opentelemetry.io/otel/trace"
 )
 

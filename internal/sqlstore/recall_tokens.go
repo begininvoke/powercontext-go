@@ -7,13 +7,13 @@ import (
 	"math"
 	"slices"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	"github.com/thunguo/powercontext-go/contextpack"
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/contextpack"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 // RecallTokenProjectionError identifies a persisted Source type that has no

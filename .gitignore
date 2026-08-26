@@ -18,6 +18,7 @@ __pycache__/
 *.db-wal
 !test/conformance/testdata/**/*.db
 *.log
+/benchmark/locomo/results/
 
 # Local configuration and credentials
 .env
@@ -28,3 +29,4 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+.gitnexus

@@ -9,10 +9,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/memory/prompts"
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/memory/prompts"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 type ExtractionProfile string

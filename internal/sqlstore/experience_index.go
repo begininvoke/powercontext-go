@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
 )
 
 type ExperienceIndex interface {
@@ -77,17 +77,9 @@ func rebuildExperienceProjectionsAndSQLiteFTS(ctx context.Context, db DBTX) erro
 // rebuildable Experience projection was added. It is safe to call repeatedly.
 func EnsureArtifactHeadSearchableText(ctx context.Context, db DBTX, dialect Dialect) error {
 	var count int64
-	var query, migration string
-	switch dialect {
-	case SQLiteDialect:
-		query = `SELECT COUNT(*) FROM pragma_table_info('pc_artifact_heads') WHERE name = 'searchable_text'`
-		migration = `ALTER TABLE pc_artifact_heads ADD COLUMN searchable_text TEXT NULL`
-	case MySQLDialect:
-		query = `SELECT COUNT(*) FROM information_schema.columns
-            WHERE table_schema = DATABASE() AND table_name = 'pc_artifact_heads' AND column_name = 'searchable_text'`
-		migration = `ALTER TABLE pc_artifact_heads ADD COLUMN searchable_text MEDIUMTEXT NULL`
-	default:
-		return &InvalidRepositoryArgumentError{Field: "dialect", Detail: "unsupported database dialect"}
+	query, migration, err := artifactHeadSearchableTextStatements(dialect)
+	if err != nil {
+		return err
 	}
 	if err := db.QueryRowContext(ctx, query).Scan(&count); err != nil {
 		return err
@@ -97,6 +89,21 @@ func EnsureArtifactHeadSearchableText(ctx context.Context, db DBTX, dialect Dial
 		return err
 	}
 	return nil
+}
+
+func artifactHeadSearchableTextStatements(dialect Dialect) (query, migration string, err error) {
+	switch dialect {
+	case SQLiteDialect:
+		query = `SELECT COUNT(*) FROM pragma_table_info('pc_artifact_heads') WHERE name = 'searchable_text'`
+		migration = `ALTER TABLE pc_artifact_heads ADD COLUMN searchable_text TEXT NULL`
+	case MySQLDialect:
+		query = `SELECT COUNT(*) FROM information_schema.columns
+            WHERE table_schema = DATABASE() AND table_name = 'pc_artifact_heads' AND column_name = 'searchable_text'`
+		migration = `ALTER TABLE pc_artifact_heads ADD COLUMN searchable_text MEDIUMTEXT NULL`
+	default:
+		return "", "", &InvalidRepositoryArgumentError{Field: "dialect", Detail: "unsupported database dialect"}
+	}
+	return query, migration, nil
 }
 
 // RebuildExperienceProjections refreshes the relational searchable_text field

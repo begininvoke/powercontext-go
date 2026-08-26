@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 type ExternalSkillRegistryFactory func(string) (*skill.RegistryService, error)

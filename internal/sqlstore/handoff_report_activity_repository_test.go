@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/handoffreport"
 )
 
 func TestActivityRepositoryIsIdempotentAndRejectsPayloadConflicts(t *testing.T) {

@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 const (

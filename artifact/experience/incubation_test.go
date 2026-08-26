@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 type incubationGeneratorFunc func(context.Context, IncubationInput) (inference.GenerationResult[IncubationOutput], error)

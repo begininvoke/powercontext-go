@@ -80,6 +80,34 @@ func TestScopedWritesForDifferentScopesCanOverlap(t *testing.T) {
 	group.Wait()
 }
 
+func TestScopedReadsForSameScopeCanOverlap(t *testing.T) {
+	t.Parallel()
+	runtime := New()
+	entered := make(chan struct{}, 2)
+	release := make(chan struct{})
+	errors := make(chan error, 2)
+	for range 2 {
+		go func() {
+			errors <- runtime.ScopedRead(context.Background(), "scope-a", func(context.Context, string) error {
+				entered <- struct{}{}
+				<-release
+				return nil
+			})
+		}()
+	}
+
+	// Both callbacks must enter before either is released. A keyed read lock or
+	// accidental reuse of the write gate would deadlock this assertion.
+	<-entered
+	<-entered
+	close(release)
+	for range 2 {
+		if err := <-errors; err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestCloseRejectsNewWorkAndWaitsForAdmittedOperation(t *testing.T) {
 	t.Parallel()
 	runtime := New()

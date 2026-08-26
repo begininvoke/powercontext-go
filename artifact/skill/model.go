@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 const (
@@ -33,7 +34,7 @@ func NewContent(name, description, instructions string, validation []string) (Co
 	if err := trimmedBounded("Skill description", description, MaxDescriptionLength); err != nil {
 		return Content{}, err
 	}
-	if strings.TrimSpace(instructions) == "" || utf8.RuneCountInString(instructions) > MaxInstructionsLength {
+	if trimPythonWhitespace(instructions) == "" || utf8.RuneCountInString(instructions) > MaxInstructionsLength {
 		return Content{}, fmt.Errorf("Skill instructions must be non-blank and not exceed %d characters", MaxInstructionsLength)
 	}
 	if len(validation) < 1 || len(validation) > MaxValidationItems {
@@ -60,11 +61,18 @@ func NewDraft(content Content, sources []source.Ref, artifacts []artifact.Ref) (
 }
 
 func trimmedBounded(label, value string, maximum int) error {
-	if strings.TrimSpace(value) == "" || value != strings.TrimSpace(value) {
+	trimmed := trimPythonWhitespace(value)
+	if trimmed == "" || value != trimmed {
 		return fmt.Errorf("%s must be non-empty and trimmed", label)
 	}
 	if utf8.RuneCountInString(value) > maximum {
 		return fmt.Errorf("%s must not exceed %d characters", label, maximum)
 	}
 	return nil
+}
+
+func trimPythonWhitespace(value string) string {
+	return strings.TrimFunc(value, func(character rune) bool {
+		return unicode.IsSpace(character) || character >= '\u001c' && character <= '\u001f'
+	})
 }

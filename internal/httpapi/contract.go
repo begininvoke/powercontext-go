@@ -3,7 +3,7 @@ package httpapi
 import (
 	"fmt"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
 )
 
 // ValidatePowerContextContract supplements ogen's OpenAPI 3.0 validation with

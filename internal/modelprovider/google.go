@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 	"google.golang.org/genai"
 )
 

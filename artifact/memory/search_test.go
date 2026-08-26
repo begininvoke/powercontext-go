@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact"
 )
 
 func channelHit(t *testing.T, memoryID, entryID, text string, distance *float64) ChannelHit {

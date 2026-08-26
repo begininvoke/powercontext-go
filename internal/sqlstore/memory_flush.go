@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/trigger"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/trigger"
 )
 
 // MemoryFlushStore implements the two short relational stages around Memory

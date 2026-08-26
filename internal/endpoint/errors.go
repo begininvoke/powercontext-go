@@ -4,15 +4,15 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	"github.com/thunguo/powercontext-go/handoffreport"
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/runtime"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 // ErrorMapping is the transport-neutral stable error contract emitted by an

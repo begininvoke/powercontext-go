@@ -3,7 +3,7 @@ package memory
 import (
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact"
 )
 
 func TestMemoryModelsExpressExactRevisionAndEntryIdentity(t *testing.T) {

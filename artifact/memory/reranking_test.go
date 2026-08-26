@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 type rerankGeneratorFunc func(context.Context, RerankInput) (inference.GenerationResult[RerankOutput], error)

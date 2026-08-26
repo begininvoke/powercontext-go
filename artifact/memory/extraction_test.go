@@ -5,9 +5,38 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact/memory/prompts"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/source"
 )
+
+func TestRuntimeDefaultsToCodingExtractionProfile(t *testing.T) {
+	instructions, err := ExtractionInstructions(CodingProfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	version, err := ExtractionInstructionsVersion(CodingProfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if instructions != prompts.Coding() || version != prompts.CodingVersion {
+		t.Fatalf("coding profile = %q/%q", version, instructions)
+	}
+}
+
+func TestConversationProfileSelectsVersionedPolicy(t *testing.T) {
+	instructions, err := ExtractionInstructions(ConversationProfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	version, err := ExtractionInstructionsVersion(ConversationProfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if instructions != prompts.Conversation() || version != prompts.ConversationVersion || instructions == prompts.Coding() {
+		t.Fatalf("conversation profile = %q/%q", version, instructions)
+	}
+}
 
 type extractionGeneratorFunc func(context.Context, ExtractionInput) (inference.GenerationResult[ExtractionOutput], error)
 

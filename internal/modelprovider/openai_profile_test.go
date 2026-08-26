@@ -3,7 +3,7 @@ package modelprovider
 import (
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 func TestOpenAIBehaviorMatchesFrozenProviderProfiles(t *testing.T) {

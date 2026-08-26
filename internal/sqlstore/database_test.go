@@ -4,12 +4,26 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
 )
+
+func TestSQLiteProfileCreatesMissingDatabaseDirectory(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nested", "powercontext.db")
+	database, err := sqlstore.OpenSQLite(context.Background(), sqlstore.DefaultSQLiteConfig(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = database.Close(context.Background()) })
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		t.Fatalf("database file = %#v, %v", info, err)
+	}
+}
 
 func TestOpenSQLiteInitializesSchemaAndEveryConnection(t *testing.T) {
 	t.Parallel()

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
 )
 
 // HandoffEvidenceResolver resolves exact immutable citations inside one Scope.

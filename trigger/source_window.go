@@ -3,7 +3,7 @@ package trigger
 import (
 	"fmt"
 
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 const SourceWindowName = "memory-source-window"

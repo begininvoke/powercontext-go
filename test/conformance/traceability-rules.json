@@ -1,32 +1,58 @@
 {
   "schema_version": 2,
-  "case_specific_evidence_minimum": 259,
+  "case_specific_evidence_minimum": 413,
   "files": {
     "e2e/bub/tests/test_bub_capture.py": {
       "mode": "retained-host",
       "supporting_evidence": [
         "py:integrations/bub/tests/test_plugin.py#test_capture_content_redacts_sensitive_fields_before_transport"
-      ]
+      ],
+      "cases": {
+        "test_tool_capture_redacts_credentials_before_crossing_the_client_boundary": [
+          "py:integrations/bub/tests/test_plugin.py#test_capture_content_redacts_sensitive_fields_before_transport"
+        ]
+      }
     },
     "e2e/bub/tests/test_evidence_redaction.py": {
       "mode": "retained-host",
       "supporting_evidence": [
         "py:integrations/bub/tests/test_plugin.py#test_capture_content_redacts_sensitive_fields_before_transport",
         "go:internal/observability/logging/logger_test.go#TestJSONLoggerEmitsOnlyOperationalFields"
-      ]
+      ],
+      "cases": {
+        "test_resolved_instruction_evidence_matches_harbor_acp_summaries": [
+          "py:integrations/bub/tests/test_plugin.py#test_capture_content_redacts_sensitive_fields_before_transport",
+          "go:internal/observability/logging/logger_test.go#TestJSONLoggerEmitsOnlyOperationalFields"
+        ],
+        "test_final_evidence_redacts_configured_secrets_and_preserves_the_public_schema": [
+          "py:integrations/bub/tests/test_plugin.py#test_capture_content_redacts_sensitive_fields_before_transport",
+          "go:internal/observability/logging/logger_test.go#TestJSONLoggerEmitsOnlyOperationalFields"
+        ]
+      }
     },
     "e2e/bub/tests/test_long_horizon_acceptance.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice",
         "go:contextpack/builder_test.go#TestBuilderPreservesOrderAndFiltersDuplicateOrInvalidHits"
-      ]
+      ],
+      "cases": {
+        "test_memory_acceptance_does_not_require_the_harbor_task_to_pass": [
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice",
+          "go:contextpack/builder_test.go#TestBuilderPreservesOrderAndFiltersDuplicateOrInvalidHits"
+        ]
+      }
     },
     "e2e/bub/tests/test_workload_catalog.py": {
       "mode": "retained-host",
       "supporting_evidence": [
         "py:integrations/bub/tests/test_client.py#test_prepared_context_accepts_exact_ready_and_empty_contracts"
-      ]
+      ],
+      "cases": {
+        "test_workloads_can_be_selected_by_multiple_ids_or_category": [
+          "py:integrations/bub/tests/test_client.py#test_prepared_context_accepts_exact_ready_and_empty_contracts"
+        ]
+      }
     },
     "tests/builtin/artifacts/experience/test_incubation.py": {
       "mode": "go-port",
@@ -34,14 +60,39 @@
         "go:artifact/experience/incubation_test.go#TestLLMCandidatePipelineMapsBoundedTaskOutcomes",
         "go:artifact/experience/incubation_test.go#TestLLMCandidatePipelineSkipsIneligibleWindow",
         "go:artifact/experience/incubation_test.go#TestLLMCandidatePipelineRejectsEvidenceOutsideWindow"
-      ]
+      ],
+      "cases": {
+        "test_pipeline_maps_only_bounded_task_outcomes_to_exact_source_refs": [
+          "go:artifact/experience/incubation_test.go#TestLLMCandidatePipelineMapsBoundedTaskOutcomes"
+        ],
+        "test_pipeline_skips_generation_when_the_window_has_no_task_outcomes": [
+          "go:artifact/experience/incubation_test.go#TestLLMCandidatePipelineSkipsIneligibleWindow"
+        ],
+        "test_pipeline_rejects_evidence_outside_the_current_window": [
+          "go:artifact/experience/incubation_test.go#TestLLMCandidatePipelineRejectsEvidenceOutsideWindow"
+        ]
+      }
     },
     "tests/builtin/artifacts/experience/test_models.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:artifact/experience/generation_test.go#TestLLMGeneratorReturnsTypedProposalAndNoOp",
         "go:test/conformance/domain_contract_test.go#TestGoDomainConstantsMatchFrozenPythonOracle"
-      ]
+      ],
+      "cases": {
+        "test_experience_content_preserves_a_complete_reusable_judgment": [
+          "go:artifact/experience/model_test.go#TestExperienceContentPreservesCompleteReusableJudgment"
+        ],
+        "test_experience_content_requires_every_judgment_part": [
+          "go:artifact/experience/model_test.go#TestExperienceContentRequiresEveryJudgmentPart"
+        ],
+        "test_experience_content_rejects_blank_judgment_parts": [
+          "go:artifact/experience/model_test.go#TestExperienceContentRejectsBlankJudgmentParts"
+        ],
+        "test_experience_content_bounds_each_judgment_part": [
+          "go:artifact/experience/model_test.go#TestExperienceContentBoundsEveryJudgmentPart"
+        ]
+      }
     },
     "tests/builtin/artifacts/handoff/test_generation.py": {
       "mode": "go-port",
@@ -185,7 +236,15 @@
       "supporting_evidence": [
         "go:artifact/memory/extraction_test.go#TestLLMCandidatePipelineMapsOnlyBoundedEvidence",
         "go:artifact/memory/extraction_test.go#TestLLMCandidatePipelineRejectsOutsideEvidence"
-      ]
+      ],
+      "cases": {
+        "test_llm_pipeline_maps_only_bounded_evidence_to_untrusted_candidates": [
+          "go:artifact/memory/extraction_test.go#TestLLMCandidatePipelineMapsOnlyBoundedEvidence"
+        ],
+        "test_llm_pipeline_rejects_evidence_outside_the_bounded_request": [
+          "go:artifact/memory/extraction_test.go#TestLLMCandidatePipelineRejectsOutsideEvidence"
+        ]
+      }
     },
     "tests/builtin/artifacts/memory/test_fusion.py": {
       "mode": "go-port",
@@ -238,14 +297,32 @@
       "mode": "go-port",
       "supporting_evidence": [
         "go:artifact/memory/prompts/prompts_test.go#TestFrozenPromptHashes"
-      ]
+      ],
+      "cases": {
+        "test_runtime_defaults_to_the_existing_coding_profile": [
+          "go:artifact/memory/extraction_test.go#TestRuntimeDefaultsToCodingExtractionProfile",
+          "go:server/config_test.go#TestDefaultConfigUsesPersistentUserStorage"
+        ],
+        "test_conversation_profile_selects_its_versioned_policy": [
+          "go:artifact/memory/extraction_test.go#TestConversationProfileSelectsVersionedPolicy",
+          "go:server/config_test.go#TestLoadConfigMatchesFrozenServerEnvironment"
+        ]
+      }
     },
     "tests/builtin/artifacts/memory/test_reranking.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:artifact/memory/reranking_test.go#TestLLMRerankerNormalizesSparseRanks",
         "go:artifact/memory/reranking_test.go#TestLLMRerankerFallsBackToCoarseOrder"
-      ]
+      ],
+      "cases": {
+        "test_llm_reranker_preserves_identity_and_normalizes_selected_ranks": [
+          "go:artifact/memory/reranking_test.go#TestLLMRerankerNormalizesSparseRanks"
+        ],
+        "test_llm_reranker_falls_back_to_coarse_order_when_no_rank_is_valid": [
+          "go:artifact/memory/reranking_test.go#TestLLMRerankerFallsBackToCoarseOrder"
+        ]
+      }
     },
     "tests/builtin/artifacts/memory/test_service.py": {
       "mode": "cross-layer",
@@ -273,20 +350,53 @@
         "go:artifact/skill/external_test.go#TestResolutionIsBoundToConfiguredHostAndRoot",
         "go:artifact/skill/external_test.go#TestScanSkipsInvalidOrSymlinkedPackages",
         "go:artifact/skill/external_test.go#TestCodexProviderRequiresUniqueStableRootIDs"
-      ]
+      ],
+      "cases": {
+        "test_codex_provider_discovers_and_exactly_resolves_a_local_package": [
+          "go:artifact/skill/external_test.go#TestCodexProviderDiscoversAndExactlyResolvesLocalPackage"
+        ],
+        "test_exact_resolution_rejects_content_drift_until_rescan": [
+          "go:artifact/skill/external_test.go#TestExactResolutionRejectsContentDriftUntilRescan"
+        ],
+        "test_resolution_is_bound_to_the_configured_host_and_root": [
+          "go:artifact/skill/external_test.go#TestResolutionIsBoundToConfiguredHostAndRoot"
+        ],
+        "test_scan_skips_invalid_or_symlinked_packages": [
+          "go:artifact/skill/external_test.go#TestScanSkipsInvalidOrSymlinkedPackages"
+        ],
+        "test_codex_provider_requires_unique_stable_root_ids": [
+          "go:artifact/skill/external_test.go#TestCodexProviderRequiresUniqueStableRootIDs"
+        ]
+      }
     },
     "tests/builtin/artifacts/skill/test_models.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:artifact/skill/external_test.go#TestSkillContentRequiresCompletePortableInstructions"
-      ]
+      ],
+      "cases": {
+        "test_skill_content_requires_complete_portable_instructions": [
+          "go:artifact/skill/external_test.go#TestSkillContentRequiresCompletePortableInstructions"
+        ],
+        "test_skill_content_rejects_incomplete_or_ambiguous_text": [
+          "go:artifact/skill/external_test.go#TestSkillContentRequiresCompletePortableInstructions"
+        ]
+      }
     },
     "tests/builtin/artifacts/skill/test_registry.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:artifact/skill/external_test.go#TestRegistryRefreshesProjectionAndChecksLiveAvailability",
         "go:internal/sqlstore/product_surfaces_test.go#TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
-      ]
+      ],
+      "cases": {
+        "test_registry_refreshes_projection_and_checks_live_availability": [
+          "go:artifact/skill/external_test.go#TestRegistryRefreshesProjectionAndChecksLiveAvailability"
+        ],
+        "test_registry_is_scope_isolated": [
+          "go:internal/sqlstore/product_surfaces_test.go#TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
+        ]
+      }
     },
     "tests/builtin/inference/test_pydantic_ai.py": {
       "mode": "go-port",
@@ -349,7 +459,12 @@
       "mode": "go-port",
       "supporting_evidence": [
         "go:contextpack/builder_test.go#TestBuilderTruncatesUnicodeDeterministicallyWithinFinalBudget"
-      ]
+      ],
+      "cases": {
+        "test_character_estimator_is_deterministic_for_ascii_and_non_ascii_text": [
+          "go:inference/tokens_test.go#TestCharacterEstimatorIsDeterministicForASCIIAndNonASCIIText"
+        ]
+      }
     },
     "tests/builtin/persistence/test_artifacts.py": {
       "mode": "go-port",
@@ -357,26 +472,68 @@
         "go:internal/sqlstore/artifacts_test.go#TestArtifactRepositoryPreservesPayloadRevisionAndOrderedLineage",
         "go:internal/sqlstore/artifacts_test.go#TestArtifactRepositoryConcurrentCASHasOneWinner",
         "go:internal/sqlstore/artifacts_test.go#TestMemoryAndHandoffPayloadsMatchPythonFieldOrder"
-      ]
+      ],
+      "cases": {
+        "test_two_artifact_families_share_revisions_and_ordered_direct_lineage": [
+          "go:internal/sqlstore/artifacts_test.go#TestArtifactRepositoryPreservesPayloadRevisionAndOrderedLineage",
+          "go:internal/sqlstore/artifacts_test.go#TestMemoryAndHandoffPayloadsMatchPythonFieldOrder"
+        ],
+        "test_stale_artifact_revision_fails_optimistic_head_cas": [
+          "go:internal/sqlstore/artifacts_test.go#TestArtifactRepositoryPreservesPayloadRevisionAndOrderedLineage",
+          "go:internal/sqlstore/artifacts_test.go#TestArtifactRepositoryConcurrentCASHasOneWinner"
+        ],
+        "test_artifact_lineage_and_head_foreign_keys_are_enforced": [
+          "go:internal/sqlstore/artifacts_test.go#TestArtifactLineageAndHeadForeignKeysAreEnforced"
+        ]
+      }
     },
     "tests/builtin/persistence/test_cursors.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:internal/sqlstore/review_test.go#TestSourceCursorRepositoryCASAndPythonPayload"
-      ]
+      ],
+      "cases": {
+        "test_source_cursor_uses_generation_compare_and_swap": [
+          "go:internal/sqlstore/review_test.go#TestSourceCursorRepositoryCASAndPythonPayload"
+        ]
+      }
     },
     "tests/builtin/persistence/test_experience_index.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:runtime/context_application_test.go#TestContextApplicationRecallsExperienceWithinOneScopedOperation",
         "go:internal/sqlstore/experience_incubation_test.go#TestExperienceCandidatesAndCursorCASAreOneTransaction"
-      ]
+      ],
+      "cases": {
+        "test_artifact_head_search_projection_schema_is_mysql_compilable": [
+          "go:internal/sqlstore/database_oceanbase_test.go#TestMySQLSchemaUsesPythonPayloadVariants",
+          "go:internal/sqlstore/database_oceanbase_test.go#TestEveryMySQLUTF8MB4KeyStaysBelowInnoDBLimit"
+        ],
+        "test_sqlite_startup_upgrades_legacy_artifact_heads_without_searchable_text": [
+          "go:internal/sqlstore/experience_index_migration_test.go#TestSQLiteExperienceIndexUpgradesLegacyArtifactHeadsIdempotently"
+        ],
+        "test_oceanbase_startup_upgrades_legacy_artifact_heads_with_mediumtext": [
+          "go:internal/sqlstore/experience_index_migration_test.go#TestOceanBaseExperienceIndexUsesMediumTextMigration"
+        ],
+        "test_sqlite_experience_fts_tracks_only_approved_current_heads_and_rebuilds": [
+          "go:internal/sqlstore/experience_index_test.go#TestSQLiteExperienceFTSTracksCurrentHeadsAndRebuilds",
+          "go:internal/sqlstore/review_test.go#TestReviewApproveCommitsCandidateArtifactAndLineage"
+        ]
+      }
     },
     "tests/builtin/persistence/test_external_skills.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:internal/sqlstore/product_surfaces_test.go#TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
-      ]
+      ],
+      "cases": {
+        "test_external_skill_projection_is_replaced_per_provider_host": [
+          "go:internal/sqlstore/product_surfaces_test.go#TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
+        ],
+        "test_external_skill_projection_is_scope_isolated": [
+          "go:internal/sqlstore/product_surfaces_test.go#TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
+        ]
+      }
     },
     "tests/builtin/persistence/test_memory.py": {
       "mode": "go-port",
@@ -384,13 +541,37 @@
         "go:internal/sqlstore/memory_test.go#TestMemoryRepositoryCommitsAuthorityAndProjectionAtomically",
         "go:internal/sqlstore/memory_test.go#TestMemoryRepositoryRollsBackArtifactWhenIndexReplaceFails",
         "go:internal/sqlstore/memory_test.go#TestMemoryRepositoryRejectsProjectionManifestMismatchBeforeWriting"
-      ]
+      ],
+      "cases": {
+        "test_memory_schema_is_mysql_compilable_and_respects_key_and_payload_limits": [
+          "go:internal/sqlstore/database_oceanbase_test.go#TestMySQLSchemaUsesPythonPayloadVariants",
+          "go:internal/sqlstore/database_oceanbase_test.go#TestEveryMySQLUTF8MB4KeyStaysBelowInnoDBLimit"
+        ],
+        "test_sqlite_memory_backend_commits_authoritative_history_and_fts": [
+          "go:internal/sqlstore/memory_test.go#TestMemoryRepositoryCommitsAuthorityAndProjectionAtomically",
+          "go:internal/sqlstore/sqlite_memory_fts_test.go#TestSQLiteMemoryFTSIndexRebuildAndSearch"
+        ],
+        "test_sqlite_memory_backend_rebuilds_head_and_fts_projections": [
+          "go:internal/sqlstore/sqlite_memory_fts_test.go#TestSQLiteMemoryFTSIndexRebuildAndSearch"
+        ],
+        "test_scope_bound_contexts_do_not_share_rows": [
+          "go:internal/sqlstore/memory_test.go#TestMemoryRepositoriesAreScopeIsolated"
+        ]
+      }
     },
     "tests/builtin/persistence/test_mysql_schema.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:internal/sqlstore/database_oceanbase_test.go#TestMySQLSchemaUsesPythonPayloadVariants"
-      ]
+      ],
+      "cases": {
+        "test_mysql_ddl_uses_mediumblob_for_every_canonical_payload": [
+          "go:internal/sqlstore/database_oceanbase_test.go#TestMySQLSchemaUsesPythonPayloadVariants"
+        ],
+        "test_every_mysql_utf8mb4_key_stays_below_the_innodb_limit": [
+          "go:internal/sqlstore/database_oceanbase_test.go#TestEveryMySQLUTF8MB4KeyStaysBelowInnoDBLimit"
+        ]
+      }
     },
     "tests/builtin/persistence/test_oceanbase_profile.py": {
       "mode": "go-port",
@@ -398,14 +579,48 @@
         "go:internal/sqlstore/database_oceanbase_test.go#TestOceanBaseDriverConfigPreservesFrozenURLContract",
         "go:internal/sqlstore/database_oceanbase_test.go#TestOceanBaseDriverConfigRejectsIncompleteOrWrongURLsWithoutLeakingSecrets",
         "go:internal/sqlstore/database_oceanbase_test.go#TestMySQLSchemaUsesPythonPayloadVariants"
-      ]
+      ],
+      "cases": {
+        "test_config_rejects_non_official_or_incomplete_urls": [
+          "go:internal/sqlstore/database_oceanbase_test.go#TestOceanBaseDriverConfigRejectsIncompleteOrWrongURLsWithoutLeakingSecrets"
+        ],
+        "test_config_and_validation_errors_never_render_the_password": [
+          "go:internal/sqlstore/database_oceanbase_test.go#TestOceanBaseDriverConfigRejectsIncompleteOrWrongURLsWithoutLeakingSecrets",
+          "go:server/config_test.go#TestProcessConfigValidatesOceanBaseURLWithoutLeakingPassword"
+        ],
+        "test_official_dialect_builds_an_async_engine_without_opening_a_connection": [
+          "go:internal/sqlstore/database_oceanbase_test.go#TestOceanBaseDriverConfigPreservesFrozenURLContract"
+        ],
+        "test_profile_requires_an_oceanbase_mysql_tenant": [
+          "go:internal/sqlstore/database_oceanbase_test.go#TestOceanBaseProfileRequiresMySQLTenant"
+        ],
+        "test_live_oceanbase_profile_smoke": [
+          "go:test/e2e/oceanbase_live_test.go#TestLiveOceanBaseProfileSmoke"
+        ]
+      }
     },
     "tests/builtin/persistence/test_provider.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:server/application_test.go#TestOpenApplicationProvidesRunnableSQLiteVerticalSlice",
         "go:server/config_test.go#TestProcessConfigValidatesOceanBaseURLWithoutLeakingPassword"
-      ]
+      ],
+      "cases": {
+        "test_provider_translates_repository_source_identity_conflicts": [
+          "go:internal/sqlstore/sources_test.go#TestSourceRepositoryPythonPayloadAndIdempotence",
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ],
+        "test_source_window_artifact_and_cursor_are_one_transaction": [
+          "go:internal/sqlstore/memory_flush_test.go#TestMemoryFlushArtifactAndCursorCASAreOneTransaction"
+        ],
+        "test_concurrent_capture_and_flush_preserve_monotonic_idempotent_behavior": [
+          "go:internal/sqlstore/sources_test.go#TestSourceRepositorySerializesConcurrentJournalPositions",
+          "go:internal/sqlstore/memory_flush_test.go#TestMemoryFlushArtifactAndCursorCASAreOneTransaction"
+        ],
+        "test_candidate_inference_does_not_hold_the_database_transaction": [
+          "go:internal/sqlstore/memory_flush_test.go#TestMemoryFlushPlanningDoesNotHoldDatabaseTransaction"
+        ]
+      }
     },
     "tests/builtin/persistence/test_sources.py": {
       "mode": "go-port",
@@ -413,7 +628,21 @@
         "go:internal/sqlstore/sources_test.go#TestSourceRepositoryPythonPayloadAndIdempotence",
         "go:internal/sqlstore/sources_test.go#TestSourceRepositorySerializesConcurrentJournalPositions",
         "go:internal/sqlstore/sources_test.go#TestSourceRepositoryRejectsIndexedIdentityMismatch"
-      ]
+      ],
+      "cases": {
+        "test_two_source_adapters_share_one_repository_and_journal": [
+          "go:internal/sqlstore/sources_test.go#TestTwoSourceAdaptersShareRepositoryAndJournal"
+        ],
+        "test_reusing_a_stable_source_identity_with_different_payload_is_a_conflict": [
+          "go:internal/sqlstore/sources_test.go#TestSourceRepositoryPythonPayloadAndIdempotence"
+        ],
+        "test_repository_rejects_a_scope_outside_the_relational_identity_baseline": [
+          "go:internal/sqlstore/sources_test.go#TestSourceRepositoryRejectsScopeOutsideRelationalIdentityBaseline"
+        ],
+        "test_source_journal_allocator_serializes_concurrent_scope_writes_without_idempotency_gaps": [
+          "go:internal/sqlstore/sources_test.go#TestSourceRepositorySerializesConcurrentJournalPositions"
+        ]
+      }
     },
     "tests/builtin/persistence/test_sqlite_profile.py": {
       "mode": "go-port",
@@ -421,7 +650,19 @@
         "go:internal/sqlstore/database_test.go#TestOpenSQLiteInitializesSchemaAndEveryConnection",
         "go:internal/sqlstore/database_test.go#TestDatabaseCloseRejectsNewTransactions",
         "go:internal/sqlstore/database_test.go#TestDatabaseCanceledCloseRestoresAdmission"
-      ]
+      ],
+      "cases": {
+        "test_sqlite_config_requires_the_async_dialect": [
+          "go:server/config_test.go#TestSQLiteDSNRequiresFrozenDialectAndAbsolutePath"
+        ],
+        "test_sqlite_profile_creates_a_missing_database_directory": [
+          "go:internal/sqlstore/database_test.go#TestSQLiteProfileCreatesMissingDatabaseDirectory"
+        ],
+        "test_sqlite_pragmas_enforce_lineage_source_foreign_keys": [
+          "go:internal/sqlstore/database_test.go#TestOpenSQLiteInitializesSchemaAndEveryConnection",
+          "go:internal/sqlstore/artifacts_test.go#TestArtifactLineageAndHeadForeignKeysAreEnforced"
+        ]
+      }
     },
     "tests/builtin/review/test_generation.py": {
       "mode": "cross-layer",
@@ -512,14 +753,47 @@
         "go:runtime/experience_incubation_test.go#TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence",
         "go:runtime/experience_incubation_test.go#TestExperienceIncubationRejectsPipelineEvidenceOutsideWindow",
         "go:runtime/experience_incubation_test.go#TestScheduledExperienceProcessorIsolatesScopeFailure"
-      ]
+      ],
+      "cases": {
+        "test_incubation_uses_an_independent_cursor_and_keeps_candidates_gated": [
+          "go:runtime/experience_incubation_test.go#TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence",
+          "go:internal/sqlstore/experience_incubation_test.go#TestExperienceCandidatesAndCursorCASAreOneTransaction"
+        ],
+        "test_incubation_retries_the_same_window_after_generation_failure": [
+          "go:runtime/experience_incubation_test.go#TestExperienceIncubationRetriesSameWindowAfterGenerationFailure"
+        ],
+        "test_incubation_uses_the_fixed_source_window_budget": [
+          "go:runtime/experience_incubation_test.go#TestScheduledExperienceIncubationUsesFixedSourceWindowBudget"
+        ],
+        "test_scheduled_incubation_requires_a_configured_pipeline": [
+          "go:server/config_test.go#TestScheduledExperienceIncubationRequiresGenerationModel"
+        ]
+      }
     },
     "tests/builtin/runtime/test_external_skills.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:artifact/skill/external_test.go#TestRegistryRefreshesProjectionAndChecksLiveAvailability",
         "go:server/application_test.go#TestProcessConfigEnforcesTrustAndInferenceBoundaries"
-      ]
+      ],
+      "cases": {
+        "test_runtime_exposes_configured_external_skill_registry_without_a_model": [
+          "go:runtime/external_skill_application_test.go#TestRuntimeExposesConfiguredExternalSkillRegistryWithoutModel"
+        ],
+        "test_runtime_reports_unconfigured_external_skill_registry": [
+          "go:runtime/external_skill_application_test.go#TestRuntimeReportsUnconfiguredExternalSkillRegistry"
+        ],
+        "test_explicit_external_skill_import_captures_exact_snapshot_and_enters_review": [
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ],
+        "test_external_skill_import_requires_generation_model_before_snapshot": [
+          "go:runtime/external_skill_application_test.go#TestExternalSkillImportRequiresGenerationBeforeSnapshot"
+        ],
+        "test_external_skill_import_rejects_package_drift_before_generation": [
+          "go:artifact/skill/external_test.go#TestExactResolutionRejectsContentDriftUntilRescan",
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ]
+      }
     },
     "tests/builtin/runtime/test_prepared_context.py": {
       "mode": "go-port",
@@ -642,7 +916,18 @@
         "go:internal/cli/artifact_commands_test.go#TestExactManagedSkillProjectsToNewCodexSkillDirectory",
         "go:internal/cli/artifact_commands_test.go#TestCodexProjectionNeverOverwritesExistingDirectory",
         "go:internal/cli/artifact_commands_test.go#TestCodexProjectionRejectsInvalidManagedContent"
-      ]
+      ],
+      "cases": {
+        "test_exact_managed_skill_projects_to_a_new_codex_skill_directory": [
+          "go:internal/cli/artifact_commands_test.go#TestExactManagedSkillProjectsToNewCodexSkillDirectory"
+        ],
+        "test_projection_never_overwrites_an_existing_directory": [
+          "go:internal/cli/artifact_commands_test.go#TestCodexProjectionNeverOverwritesExistingDirectory"
+        ],
+        "test_projection_rejects_managed_content_that_is_not_a_valid_codex_skill": [
+          "go:internal/cli/artifact_commands_test.go#TestCodexProjectionRejectsInvalidManagedContent"
+        ]
+      }
     },
     "tests/e2e/real_experience_skill/test_journey.py": {
       "mode": "cross-layer",
@@ -650,20 +935,41 @@
         "go:runtime/experience_incubation_test.go#TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence",
         "go:artifact/skill/generation_test.go#TestLLMGeneratorReturnsCompleteSkill",
         "go:internal/sqlstore/review_test.go#TestReviewApproveCommitsCandidateArtifactAndLineage"
-      ]
+      ],
+      "cases": {
+        "test_real_codex_experience_skill_journey": [
+          "go:runtime/experience_incubation_test.go#TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence",
+          "go:server/application_test.go#TestGoClientGeneratesReviewedExperienceAndSkillCandidates",
+          "go:internal/sqlstore/review_test.go#TestReviewApproveCommitsCandidateArtifactAndLineage"
+        ]
+      }
     },
     "tests/e2e/real_experience_skill/test_recall_evaluation.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:runtime/context_application_test.go#TestContextApplicationRecallsExperienceWithinOneScopedOperation"
-      ]
+      ],
+      "cases": {
+        "test_approved_experience_improves_next_coding_task_success": [
+          "go:runtime/context_application_test.go#TestContextApplicationRecallsExperienceWithinOneScopedOperation"
+        ]
+      }
     },
     "tests/e2e/test_builtin_runtime.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:server/application_test.go#TestOpenApplicationProvidesRunnableSQLiteVerticalSlice",
         "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
-      ]
+      ],
+      "cases": {
+        "test_builtin_runtime_uses_the_selected_sqlite_database": [
+          "go:server/application_test.go#TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
+        ],
+        "test_same_scope_read_only_searches_do_not_serialize_reranking": [
+          "go:runtime/lifecycle_test.go#TestScopedReadsForSameScopeCanOverlap",
+          "go:artifact/memory/service_contract_test.go#TestMemorySearchAppliesInjectedRerankerAfterCoarseFusion"
+        ]
+      }
     },
     "tests/e2e/test_candidate_review.py": {
       "mode": "cross-layer",
@@ -687,20 +993,41 @@
       "supporting_evidence": [
         "py:integrations/codex/tests/test_recall.py#test_context_request_uses_the_prepare_endpoint_once",
         "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
-      ]
+      ],
+      "cases": {
+        "test_codex_hook_http_sdk_and_mcp_share_one_composed_context": [
+          "py:integrations/codex/tests/test_recall.py#test_context_request_uses_the_prepare_endpoint_once",
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ]
+      }
     },
     "tests/e2e/test_dsh_http_chain.py": {
       "mode": "retained-host",
       "supporting_evidence": [
         "ts:integrations/dsh/plugins/powercontext/tests/e2e/call-through.spec.ts#remembers, searches, prepares, and captures over HTTP"
-      ]
+      ],
+      "cases": {
+        "test_dsh_http_paths_work_without_a_model": [
+          "ts:integrations/dsh/plugins/powercontext/tests/e2e/call-through.spec.ts#remembers, searches, prepares, and captures over HTTP"
+        ]
+      }
     },
     "tests/e2e/test_external_skill_registry.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:artifact/skill/external_test.go#TestRegistryRefreshesProjectionAndChecksLiveAvailability",
         "go:internal/sqlstore/product_surfaces_test.go#TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
-      ]
+      ],
+      "cases": {
+        "test_http_sdk_external_skill_registry_preserves_host_local_authority": [
+          "go:runtime/external_skill_application_test.go#TestRuntimeExposesConfiguredExternalSkillRegistryWithoutModel",
+          "go:artifact/skill/external_test.go#TestRegistryRefreshesProjectionAndChecksLiveAvailability"
+        ],
+        "test_http_sdk_explicitly_imports_exact_external_snapshot_into_review": [
+          "go:runtime/external_skill_application_test.go#TestExternalSkillImportRequiresGenerationBeforeSnapshot",
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ]
+      }
     },
     "tests/e2e/test_handoff_runtime.py": {
       "mode": "cross-layer",
@@ -708,7 +1035,28 @@
         "go:artifact/handoff/generation_test.go#TestLLMGenerationPipelineMapsBoundedEvidence",
         "go:internal/sqlstore/product_surfaces_test.go#TestHandoffBackendUsesArtifactCASAndDomainNotFound",
         "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
-      ]
+      ],
+      "cases": {
+        "test_runtime_owns_handoff_trigger_activation_and_deduplication": [
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ],
+        "test_handoff_trigger_state_survives_runtime_restart": [
+          "go:server/application_test.go#TestOpenApplicationPersistsBusinessInferenceAndRecallAcrossRestartWithoutMeteringReadiness",
+          "go:internal/scheduler/scheduler_test.go#TestSchedulerPersistsStableJobAndReconcilesDisabledJob"
+        ],
+        "test_handoff_runtime_supports_temporary_transfer_and_durable_milestones": [
+          "go:artifact/handoff/service_test.go#TestHandoffServiceDraftCanBeCorrectedBeforeTemporaryHandoffFinalized",
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ],
+        "test_handoff_runtime_rejects_stale_and_cross_scope_use": [
+          "go:artifact/handoff/service_test.go#TestHandoffServiceStalePreparedCannotReplaceNewerMilestone",
+          "go:artifact/handoff/service_test.go#TestHandoffServiceRejectsCrossScopePreparedHandoff"
+        ],
+        "test_handoff_runtime_recovers_only_explicitly_committed_milestones": [
+          "go:artifact/handoff/service_test.go#TestHandoffServiceContinueLatestReportsEmptyWithoutMilestone",
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ]
+      }
     },
     "tests/e2e/test_mcp_transport.py": {
       "mode": "cross-layer",
@@ -716,14 +1064,37 @@
         "go:internal/mcpapi/server_test.go#TestServerExposesFrozenToolSet",
         "go:internal/mcpapi/server_test.go#TestToolCallUsesEndpointDefaultsAndStructuredContent",
         "go:server/http_test.go#TestOptionalMCPRouteUsesConfiguredPath"
-      ]
+      ],
+      "cases": {
+        "test_mcp_projects_curated_tools_at_the_configured_server_path": [
+          "go:internal/mcpapi/server_test.go#TestServerExposesFrozenToolSet",
+          "go:server/http_test.go#TestOptionalMCPRouteUsesConfiguredPath"
+        ],
+        "test_mcp_endpoint_is_absent_when_disabled_by_server_settings": [
+          "go:server/http_test.go#TestOptionalMCPRouteUsesConfiguredPath"
+        ],
+        "test_mcp_handoff_tools_share_one_source_to_artifact_lifecycle": [
+          "go:internal/mcpapi/server_test.go#TestToolCallUsesEndpointDefaultsAndStructuredContent",
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ]
+      }
     },
     "tests/e2e/test_observability.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:server/http_test.go#TestHTTPAndMCPMetricsUseBoundedOperationLabels",
         "go:server/tracing_test.go#TestHTTPAndApplicationSpansPreserveW3CParentWithoutSensitiveAttributes"
-      ]
+      ],
+      "cases": {
+        "test_observability_signals_correlate_without_counting_the_mcp_bridge": [
+          "go:server/logging_test.go#TestMCPLogsLogicalCallWithoutStreamableHTTPDuplicate",
+          "go:server/http_test.go#TestHTTPAndMCPMetricsUseBoundedOperationLabels"
+        ],
+        "test_inference_spans_join_the_operation_trace_only_when_instrumented": [
+          "go:inference/tracing_test.go#TestEmbeddingSpanNestsUnderActiveOperationWithoutRecordingTextOrVectors",
+          "go:inference/tracing_test.go#TestInferenceTracingFollowsProviderSamplingSetting"
+        ]
+      }
     },
     "tests/e2e/test_reviewed_generation.py": {
       "mode": "cross-layer",
@@ -748,28 +1119,76 @@
         "go:server/http_test.go#TestSystemHTTPVerticalSlice",
         "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice",
         "go:server/http_test.go#TestHTTPAuthenticationAndUnboundReadiness"
-      ]
+      ],
+      "cases": {
+        "test_server_databases_share_source_to_memory_search_behavior": [
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice",
+          "go:test/e2e/oceanbase_live_test.go#TestLiveOceanBaseProfileSmoke"
+        ],
+        "test_inference_failure_degrades_readiness_without_blocking_database_operations": [
+          "go:server/application_readiness_test.go#TestApplicationReadinessClassifiesConfiguredInferenceWithoutLeakingFailures",
+          "go:server/http_test.go#TestHTTPReadinessMapsNotReadyAndDegradedStatuses"
+        ],
+        "test_sdk_handoff_lifecycle_reaches_generation_and_persistence": [
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ],
+        "test_server_databases_share_vector_and_hybrid_search_behavior": [
+          "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1ProfileContract",
+          "go:test/e2e/oceanbase_live_test.go#TestLiveOceanBaseProfileSmoke"
+        ],
+        "test_sdk_memory_lifecycle_reaches_one_composed_runtime": [
+          "go:server/application_test.go#TestOpenApplicationProvidesRunnableSQLiteVerticalSlice",
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ],
+        "test_runtime_conflicts_keep_http_and_sdk_error_context": [
+          "go:client/client_test.go#TestClientPreservesDeclaredServerErrorContext",
+          "go:client/client_test.go#TestAsServerErrorPreservesStableContext"
+        ],
+        "test_runtime_server_rejects_non_strict_transport_values": [
+          "go:client/client_test.go#TestClientValidatesRequestsBeforeTransport",
+          "go:openapi/python_contract_test.go#TestGeneratedTransportRejectsValuesOutsideOpenAPI"
+        ]
+      }
     },
     "tests/e2e/test_scheduled_experience_incubation.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:runtime/experience_incubation_test.go#TestScheduledExperienceProcessorIsolatesScopeFailure",
         "go:server/application_test.go#TestOpenApplicationOwnsBothPersistentSchedulerJobs"
-      ]
+      ],
+      "cases": {
+        "test_scheduler_incubates_task_outcome_once_and_preserves_review_gating": [
+          "go:runtime/experience_incubation_test.go#TestScheduledExperienceIncubationUsesFixedSourceWindowBudget",
+          "go:server/application_test.go#TestOpenApplicationOwnsBothPersistentSchedulerJobs",
+          "go:internal/sqlstore/review_test.go#TestReviewApproveCommitsCandidateArtifactAndLineage"
+        ]
+      }
     },
     "tests/e2e/test_server_cli.py": {
       "mode": "cross-layer",
       "supporting_evidence": [
         "go:internal/cli/root_test.go#TestCommandTreeContainsProductCommands",
         "go:server/http_test.go#TestSystemHTTPVerticalSlice"
-      ]
+      ],
+      "cases": {
+        "test_capabilities_flow_through_server_sdk_and_cli": [
+          "go:internal/cli/root_test.go#TestCapabilitiesUsesEnvironmentAndWritesHumanOutput",
+          "go:server/http_test.go#TestSystemHTTPVerticalSlice"
+        ]
+      }
     },
     "tests/e2e/test_sqlite_vec1.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1ProfileContract",
         "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1VersionCompatibility"
-      ]
+      ],
+      "cases": {
+        "test_sqlite_vec1_supports_vector_and_hybrid_search": [
+          "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1ProfileContract",
+          "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1VersionCompatibility"
+        ]
+      }
     },
     "tests/e2e/test_statistics_flow.py": {
       "mode": "cross-layer",
@@ -796,7 +1215,36 @@
         "go:internal/benchmark/locomo/locomo_test.go#TestRunManifestRecordsInferenceAwareAnswerPolicy",
         "go:internal/benchmark/locomo/locomo_test.go#TestRunManifestRecordsUnknownFallbackInferencePolicy",
         "go:internal/benchmark/locomo/locomo_test.go#TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
-      ]
+      ],
+      "cases": {
+        "test_canonical_locomo_dataset_has_expected_shape_and_scored_selection": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
+        ],
+        "test_session_source_contains_dialogue_and_date_without_qa_annotations": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
+        ],
+        "test_answer_metrics_and_session_provenance_are_deterministic": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestAnswerMetricsAndSessionProvenanceAreDeterministic"
+        ],
+        "test_summary_keeps_errors_in_accuracy_denominator": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestSummaryKeepsErrorsInAccuracyDenominator"
+        ],
+        "test_diagnostics_report_unknown_fallback_quality_and_cost": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestDiagnosticsReportUnknownFallbackQualityAndCost"
+        ],
+        "test_run_manifest_is_stable_and_excludes_database_credentials": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestRunManifestIsStableAndExcludesDatabaseCredentials"
+        ],
+        "test_run_manifest_records_inference_aware_answer_policy": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestRunManifestRecordsInferenceAwareAnswerPolicy"
+        ],
+        "test_run_manifest_records_unknown_fallback_inference_policy": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestRunManifestRecordsUnknownFallbackInferencePolicy"
+        ],
+        "test_rejudge_manifest_freezes_answers_and_records_independent_judge": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
+        ]
+      }
     },
     "tests/evaluation/test_locomo_prompts.py": {
       "mode": "go-port",
@@ -805,7 +1253,18 @@
         "go:internal/benchmark/locomo/locomo_test.go#TestUnknownFallbackAnswerPolicyIsExplicitAndMutuallyExclusive",
         "go:internal/benchmark/locomo/locomo_test.go#TestJudgeProfilesKeepStrictAndTopicalContractsDistinct",
         "go:internal/benchmark/locomo/locomo_test.go#TestFrozenLoCoMoPromptHashes"
-      ]
+      ],
+      "cases": {
+        "test_inference_aware_answer_policy_is_explicit_and_requires_source_content": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestInferenceAwareAnswerPolicyIsExplicitAndRequiresSourceContent"
+        ],
+        "test_unknown_fallback_answer_policy_is_explicit_and_mutually_exclusive": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestUnknownFallbackAnswerPolicyIsExplicitAndMutuallyExclusive"
+        ],
+        "test_judge_profiles_keep_strict_and_topical_contracts_distinct": [
+          "go:internal/benchmark/locomo/locomo_test.go#TestJudgeProfilesKeepStrictAndTopicalContractsDistinct"
+        ]
+      }
     },
     "tests/test_api_contract.py": {
       "mode": "go-port",
@@ -884,14 +1343,37 @@
         "go:artifact/model_test.go#TestArtifactCopiesLineageAndRetainsOrder",
         "go:artifact/model_test.go#TestServiceRejectsCrossFamilyRevision",
         "go:artifact/model_test.go#TestRefRejectsWhitespaceAndZeroRevision"
-      ]
+      ],
+      "cases": {
+        "test_artifact_is_a_fixed_family_snapshot_with_direct_lineage": [
+          "go:artifact/model_test.go#TestArtifactCopiesLineageAndRetainsOrder"
+        ],
+        "test_artifact_reference_rejects_invalid_identity": [
+          "go:artifact/model_test.go#TestArtifactReferenceRejectsInvalidIdentity"
+        ],
+        "test_artifact_domain_values_reject_invalid_identity_and_lineage": [
+          "go:artifact/model_test.go#TestArtifactDomainValuesRejectInvalidIdentityAndLineage"
+        ],
+        "test_artifacts_reject_cross_family_revisions_before_storage": [
+          "go:artifact/model_test.go#TestServiceRejectsCrossFamilyRevision"
+        ]
+      }
     },
     "tests/test_capabilities.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:runtime/capabilities_test.go#TestCapabilitiesAreValidatedAndImmutable",
         "go:runtime/capabilities_test.go#TestCapabilitiesRejectDuplicatesAndUnknownValues"
-      ]
+      ],
+      "cases": {
+        "test_capabilities_require_the_complete_transport_shape": [
+          "go:openapi/python_contract_test.go#TestCapabilitiesReportSemanticsWithoutRuntimeTuningValues",
+          "go:openapi/python_contract_test.go#TestGeneratedTransportRejectsValuesOutsideOpenAPI"
+        ],
+        "test_capabilities_reject_unknown_transport_fields": [
+          "go:openapi/python_contract_test.go#TestGeneratedTransportRejectsValuesOutsideOpenAPI"
+        ]
+      }
     },
     "tests/test_ci_release_verification.py": {
       "mode": "go-port",
@@ -900,7 +1382,25 @@
         "go:tools/release/main_test.go#TestDockerNativeAssetDefaultsMatchManifest",
         "go:tools/release/main_test.go#TestArchiveTreeIsDeterministic",
         "go:tools/release/main_test.go#TestLicenseDiscoveryIsStrictAndDeterministic"
-      ]
+      ],
+      "cases": {
+        "test_release_smoke_resolves_console_script_from_verification_python": [
+          "go:tools/release/main_test.go#TestReleaseArchiveKeepsStableExecutablePathAndMode"
+        ],
+        "test_pypi_release_requires_wheel_and_sdist": [
+          "go:tools/release/main_test.go#TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases",
+          "go:tools/release/main_test.go#TestNativeAssetManifestSupportsReleaseMatrix"
+        ],
+        "test_pypi_verification_retries_until_release_is_complete": [
+          "go:tools/release/main_test.go#TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases"
+        ],
+        "test_github_release_requires_published_state_and_expected_assets": [
+          "go:tools/release/main_test.go#TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases"
+        ],
+        "test_github_release_allows_prereleases": [
+          "go:tools/release/main_test.go#TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases"
+        ]
+      }
     },
     "tests/test_cli.py": {
       "mode": "go-port",
@@ -1010,7 +1510,20 @@
         "go:internal/webui/handler_test.go#TestDashboardRoutesAndHeaders",
         "go:internal/webui/handler_test.go#TestHandoffReportPageFeatureGate",
         "go:internal/webui/handler_test.go#TestMountRejectsMissingScopes"
-      ]
+      ],
+      "cases": {
+        "test_dashboard_cannot_run_without_server_authentication": [
+          "go:server/config_test.go#TestProcessConfigEnforcesTrustAndInferenceBoundariesWithoutSecrets"
+        ],
+        "test_dashboard_is_the_authenticated_server_ui_entry": [
+          "go:internal/webui/handler_test.go#TestDashboardRoutesAndHeaders",
+          "go:server/http_test.go#TestDashboardPageIsPublicButScopeInventoryIsAuthenticated"
+        ],
+        "test_handoff_report_page_is_available_only_when_both_features_are_enabled": [
+          "go:internal/webui/handler_test.go#TestHandoffReportPageFeatureGate",
+          "go:server/http_test.go#TestDashboardPageIsPublicButScopeInventoryIsAuthenticated"
+        ]
+      }
     },
     "tests/test_dsh_cli.py": {
       "mode": "go-port",
@@ -1040,13 +1553,38 @@
       "supporting_evidence": [
         "go:handoffreport/service_test.go#TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats",
         "go:handoffreport/service_test.go#TestServiceFreezesExactHeadsAndBuildsCanonicalReport"
-      ]
+      ],
+      "cases": {
+        "test_canonical_json_normalizes_nfc_and_rejects_floats": [
+          "go:handoffreport/service_test.go#TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats"
+        ],
+        "test_selection_digest_is_locale_independent_but_report_digest_is_not": [
+          "go:handoffreport/service_test.go#TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats"
+        ],
+        "test_digest_fields_are_stable_when_a_report_is_revalidated": [
+          "go:handoffreport/service_test.go#TestDigestFieldsStayStableWhenReportIsRevalidated"
+        ]
+      }
     },
     "tests/test_handoff_report_catalog.py": {
       "mode": "go-port",
       "supporting_evidence": [
         "go:internal/sqlstore/handoff_report_test.go#TestHandoffReportSchemaIsOptInAndCatalogRevisionsAreAtomic"
-      ]
+      ],
+      "cases": {
+        "test_catalog_creates_projects_workstreams_and_resolves_scope_membership": [
+          "go:internal/sqlstore/handoff_report_test.go#TestHandoffReportCatalogCreatesProjectsAndResolvesScopeMembership"
+        ],
+        "test_project_and_workstream_updates_use_cas_and_preserve_revision_history": [
+          "go:internal/sqlstore/handoff_report_test.go#TestHandoffReportSchemaIsOptInAndCatalogRevisionsAreAtomic"
+        ],
+        "test_catalog_enforces_project_key_workstream_key_and_scope_identity_uniqueness": [
+          "go:internal/sqlstore/handoff_report_test.go#TestHandoffReportCatalogEnforcesProjectWorkstreamAndScopeUniqueness"
+        ],
+        "test_catalog_lists_with_cursor_and_excludes_archived_by_default": [
+          "go:internal/sqlstore/handoff_report_test.go#TestHandoffReportCatalogPaginatesAndExcludesArchivedProjectsByDefault"
+        ]
+      }
     },
     "tests/test_handoff_report_http.py": {
       "mode": "cross-layer",
@@ -1054,7 +1592,18 @@
         "go:internal/httpapi/middleware_test.go#TestWrapRejectsDisabledHandoffReportRoutesBeforeApplication",
         "go:internal/webui/handler_test.go#TestHandoffReportPageFeatureGate",
         "go:handoffreport/service_test.go#TestServiceFreezesExactHeadsAndBuildsCanonicalReport"
-      ]
+      ],
+      "cases": {
+        "test_handoff_report_catalog_and_json_projection_are_available_over_http": [
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ],
+        "test_handoff_report_routes_are_not_registered_when_feature_is_disabled": [
+          "go:internal/httpapi/middleware_test.go#TestWrapRejectsDisabledHandoffReportRoutesBeforeApplication"
+        ],
+        "test_disabled_handoff_report_does_not_create_report_tables": [
+          "go:server/application_test.go#TestDisabledHandoffReportDoesNotCreateOptionalTables"
+        ]
+      }
     },
     "tests/test_handoff_report_models.py": {
       "mode": "go-port",
@@ -1194,7 +1743,18 @@
       "mode": "go-port",
       "supporting_evidence": [
         "go:internal/sqlstore/handoff_report_test.go#TestHandoffReportWorkspaceRequiresDetachBeforeProjectMove"
-      ]
+      ],
+      "cases": {
+        "test_repository_ref_normalizes_safe_remote_and_relative_subpath": [
+          "go:handoffreport/models_test.go#TestRepositoryRefNormalizesSafeRemoteAndRelativeSubpath"
+        ],
+        "test_workspace_binding_requires_explicit_project_and_uses_cas_for_rebind": [
+          "go:internal/sqlstore/handoff_report_test.go#TestHandoffReportWorkspaceRequiresDetachBeforeProjectMove"
+        ],
+        "test_workspace_attach_rejects_unknown_project_and_missing_exact_version": [
+          "go:internal/sqlstore/handoff_report_test.go#TestHandoffReportWorkspaceRejectsUnknownProjectAndMissingExactVersion"
+        ]
+      }
     },
     "tests/test_js_operations.py": {
       "mode": "retained-host",
@@ -1202,7 +1762,19 @@
         "ts:integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts#matches every OpenAPI operationId exactly",
         "ts:integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts#records method, path, and location for each operation",
         "ts:integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts#matches generated method, path, location, and scope for every operation"
-      ]
+      ],
+      "cases": {
+        "test_committed_js_operations_match_openapi": [
+          "ts:integrations/dsh/plugins/powercontext/tests/gen-check.spec.ts#passes when the committed table matches OpenAPI"
+        ],
+        "test_js_operations_cover_every_openapi_operation": [
+          "ts:integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts#matches every OpenAPI operationId exactly"
+        ],
+        "test_js_operations_record_method_path_location_and_scope": [
+          "ts:integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts#records method, path, and location for each operation",
+          "ts:integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts#matches generated method, path, location, and scope for every operation"
+        ]
+      }
     },
     "tests/test_mcp.py": {
       "mode": "go-port",
@@ -1211,7 +1783,25 @@
         "go:internal/mcpapi/server_test.go#TestToolSchemasPreserveDefaultsAndNestedCitations",
         "go:internal/mcpapi/server_test.go#TestToolCallUsesEndpointDefaultsAndStructuredContent",
         "go:internal/mcpapi/server_test.go#TestToolValidationReturnsStableErrorEnvelope"
-      ]
+      ],
+      "cases": {
+        "test_mcp_exposes_only_the_agent_facing_server_operations": [
+          "go:internal/mcpapi/server_test.go#TestServerExposesFrozenToolSet"
+        ],
+        "test_mcp_exposes_read_only_handoff_report_tools_only_when_feature_routes_are_enabled": [
+          "go:internal/mcpapi/server_test.go#TestServerExposesFrozenToolSet"
+        ],
+        "test_mcp_exact_entry_tools_use_nested_citations": [
+          "go:internal/mcpapi/server_test.go#TestToolSchemasPreserveDefaultsAndNestedCitations"
+        ],
+        "test_mcp_bridge_reuses_logical_request_id_and_is_marked_internal": [
+          "go:internal/mcpapi/server_test.go#TestToolCallUsesEndpointDefaultsAndStructuredContent",
+          "go:server/logging_test.go#TestMCPLogsLogicalCallWithoutStreamableHTTPDuplicate"
+        ],
+        "test_mcp_access_log_counts_the_logical_tool_call_without_the_bridge": [
+          "go:server/logging_test.go#TestMCPLogsLogicalCallWithoutStreamableHTTPDuplicate"
+        ]
+      }
     },
     "tests/test_server.py": {
       "mode": "go-port",
@@ -1312,6 +1902,9 @@
         ],
         "test_embedding_settings_reject_partial_profiles": [
           "go:server/config_test.go#TestProcessConfigRejectsInvalidAndPartialEmbeddingProfiles"
+        ],
+        "test_component_config_rejects_unknown_values": [
+          "go:server/config_test.go#TestComponentConfigHasNoLegacySQLitePathSurface"
         ]
       }
     },
@@ -1389,7 +1982,27 @@
         "go:source/catalog_test.go#TestCatalogGetRequiresExactPersistedValue",
         "go:source/catalog_test.go#TestNewRefMatchesUnicodeCharacterLimits",
         "go:internal/sqlstore/sources_test.go#TestSourceRepositoryPythonPayloadAndIdempotence"
-      ]
+      ],
+      "cases": {
+        "test_catalog_rejects_invalid_backend_results": [
+          "go:source/catalog_test.go#TestCatalogRejectsInvalidBackendResults"
+        ],
+        "test_source_catalog_supports_the_read_only_usage_flow": [
+          "go:source/catalog_test.go#TestSourceServiceSupportsReadOnlyUsageFlow"
+        ],
+        "test_catalog_rejects_persisted_sources_without_an_adapter": [
+          "go:source/catalog_test.go#TestCatalogRejectsPersistedSourcesWithoutAdapter"
+        ],
+        "test_catalog_routes_only_exact_input_and_source_classes": [
+          "go:source/catalog_test.go#TestCatalogRoutesByExactConcreteType"
+        ],
+        "test_adapter_results_and_declarations_are_checked_at_the_boundary": [
+          "go:source/catalog_test.go#TestAdapterResultsAndDeclarationsAreCheckedAtBoundary"
+        ],
+        "test_source_composition_rejects_unregistered_values_before_storage": [
+          "go:source/catalog_test.go#TestSourceCompositionRejectsUnregisteredValuesBeforeStorage"
+        ]
+      }
     },
     "tests/test_system_cli.py": {
       "mode": "cross-layer",

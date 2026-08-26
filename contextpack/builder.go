@@ -8,9 +8,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
 )
 
 const (

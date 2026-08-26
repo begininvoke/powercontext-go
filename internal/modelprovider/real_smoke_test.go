@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 // TestRealProviderSmoke is deliberately opt-in. CI's deterministic provider
@@ -81,6 +81,15 @@ func TestRealProviderSmoke(t *testing.T) {
 			transport, buildErr := factory.EmbeddingTransport(embeddingModel)
 			if buildErr != nil {
 				t.Fatal(buildErr)
+			}
+			if closer, ok := transport.(interface{ Close(context.Context) error }); ok {
+				t.Cleanup(func() {
+					closeCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+					defer cancel()
+					if closeErr := closer.Close(closeCtx); closeErr != nil {
+						t.Errorf("close real embedding provider: %v", closeErr)
+					}
+				})
 			}
 			result, callErr := transport.Embed(
 				ctx,

@@ -8,8 +8,8 @@ import (
 	"io"
 	"slices"
 
-	"github.com/thunguo/powercontext-go/artifact/memory/prompts"
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/artifact/memory/prompts"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 type RerankCandidate struct {

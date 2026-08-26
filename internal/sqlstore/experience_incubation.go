@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/trigger"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/trigger"
 )
 
 // ExperienceIncubationStore keeps the authoritative window snapshot separate

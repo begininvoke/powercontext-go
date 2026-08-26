@@ -13,7 +13,7 @@ import (
 
 	"github.com/knights-analytics/hugot"
 	"github.com/knights-analytics/hugot/options"
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 const (
@@ -203,6 +203,14 @@ func (t *sentenceTransformersTransport) runSafely(ctx context.Context, inputs []
 	}()
 	vectors, err = t.run(inputs)
 	if err != nil {
+		var configuration *inference.ConfigurationError
+		var unavailable *inference.UnavailableError
+		var timeout *inference.TimeoutError
+		var invalid *inference.InvalidOutputError
+		if errors.As(err, &configuration) || errors.As(err, &unavailable) ||
+			errors.As(err, &timeout) || errors.As(err, &invalid) {
+			return nil, err
+		}
 		return nil, inference.WrapUnavailableError("embed", err)
 	}
 	return vectors, nil

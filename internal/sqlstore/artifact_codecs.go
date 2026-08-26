@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
 )
 
 // ExperienceArtifactCodec returns the Python-compatible Experience route.

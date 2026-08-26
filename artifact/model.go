@@ -6,7 +6,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 const (

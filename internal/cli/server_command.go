@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
+	"github.com/ob-labs/powercontext-go/server"
 	"github.com/spf13/cobra"
-	serverlogging "github.com/thunguo/powercontext-go/internal/observability/logging"
-	"github.com/thunguo/powercontext-go/server"
 )
 
 type serverCommandRunner func(context.Context, *commandState, server.ProcessConfig) error

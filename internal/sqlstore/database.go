@@ -263,21 +263,28 @@ func OpenOceanBase(ctx context.Context, config OceanBaseConfig) (*Database, erro
 	if err := owned.Transaction(ctx, func(tx DBTX) error {
 		var name, mode string
 		err := tx.QueryRowContext(ctx, "SHOW VARIABLES LIKE 'ob_compatibility_mode'").Scan(&name, &mode)
-		if errors.Is(err, sql.ErrNoRows) {
-			return &UnsupportedOceanBaseTenantError{}
-		}
-		if err != nil {
+		if err := validateOceanBaseTenantMode(name, mode, err); err != nil {
 			return err
-		}
-		mode = strings.ToUpper(mode)
-		if mode != "MYSQL" {
-			return &UnsupportedOceanBaseTenantError{CompatibilityMode: &mode}
 		}
 		return EnsureBuiltinSchemaForDialect(ctx, tx, MySQLDialect)
 	}); err != nil {
 		return cleanup(err)
 	}
 	return owned, nil
+}
+
+func validateOceanBaseTenantMode(name, mode string, queryErr error) error {
+	if errors.Is(queryErr, sql.ErrNoRows) {
+		return &UnsupportedOceanBaseTenantError{}
+	}
+	if queryErr != nil {
+		return queryErr
+	}
+	mode = strings.ToUpper(mode)
+	if name != "ob_compatibility_mode" || mode != "MYSQL" {
+		return &UnsupportedOceanBaseTenantError{CompatibilityMode: &mode}
+	}
+	return nil
 }
 
 // ValidateOceanBaseURL validates the frozen Python profile URL without
@@ -308,18 +315,28 @@ func oceanBaseDriverConfig(rawURL string) (*mysql.Config, error) {
 	}
 	port := strconv.Itoa(portNumber)
 	password, _ := parsed.User.Password()
-	params := make(map[string]string, len(query)+1)
+	params := make(map[string]string, len(query))
 	for name, values := range query {
 		if len(values) != 1 {
 			return nil, errors.New("sqlstore: OceanBase profile URL query is invalid")
 		}
+		if name == "charset" {
+			continue
+		}
 		params[name] = values[0]
 	}
-	return &mysql.Config{
-		User: parsed.User.Username(), Passwd: password, Net: "tcp",
-		Addr: net.JoinHostPort(parsed.Hostname(), port), DBName: decodedDatabase,
-		Params: params, ParseTime: true,
-	}, nil
+	driverConfig := mysql.NewConfig()
+	if err := driverConfig.Apply(mysql.Charset("utf8mb4", "")); err != nil {
+		return nil, errors.New("sqlstore: OceanBase charset could not be configured")
+	}
+	driverConfig.User = parsed.User.Username()
+	driverConfig.Passwd = password
+	driverConfig.Net = "tcp"
+	driverConfig.Addr = net.JoinHostPort(parsed.Hostname(), port)
+	driverConfig.DBName = decodedDatabase
+	driverConfig.Params = params
+	driverConfig.ParseTime = true
+	return driverConfig, nil
 }
 
 type sqliteConnector struct {

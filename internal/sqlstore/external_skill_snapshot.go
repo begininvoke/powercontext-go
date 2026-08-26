@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 type ExternalSkillSnapshotStore struct {

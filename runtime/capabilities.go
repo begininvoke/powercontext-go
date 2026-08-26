@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/thunguo/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
 )
 
 const PreparedContextV1 = "powercontext.prepared-context.v1"

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/thunguo/powercontext-go/internal/cli"
+	"github.com/ob-labs/powercontext-go/internal/cli"
 )
 
 var (

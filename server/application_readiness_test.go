@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/internal/endpoint"
-	servermetrics "github.com/thunguo/powercontext-go/internal/observability/metrics"
-	"github.com/thunguo/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/internal/endpoint"
+	servermetrics "github.com/ob-labs/powercontext-go/internal/observability/metrics"
+	"github.com/ob-labs/powercontext-go/runtime"
 	"go.opentelemetry.io/otel/trace/noop"
 )
 

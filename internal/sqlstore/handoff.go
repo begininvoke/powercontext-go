@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
 )
 
 // HandoffBackend binds one scoped Handoff lifecycle to the shared immutable

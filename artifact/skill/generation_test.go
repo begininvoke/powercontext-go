@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 type generationGeneratorFunc func(context.Context, artifact.GenerationInput) (inference.GenerationResult[GenerationOutput], error)

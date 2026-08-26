@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestCanonicalReportRejectsWrongProjectRevisionAndHandoffProjection(t *testing.T) {

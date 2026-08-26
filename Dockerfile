@@ -74,7 +74,8 @@ RUN case "${TARGETARCH}" in \
     && install -d /out/tokenizers /out/onnxruntime /tmp/onnxruntime \
     && tar -xzf /tmp/tokenizers.tar.gz -C /out/tokenizers libtokenizers.a \
     && tar -xzf /tmp/onnxruntime.tgz -C /tmp/onnxruntime \
-    && cp -a "/tmp/onnxruntime/onnxruntime-linux-${powercontext_ort_arch}-${ONNXRUNTIME_VERSION}/lib/." /out/onnxruntime/
+    && cp -a "/tmp/onnxruntime/onnxruntime-linux-${powercontext_ort_arch}-${ONNXRUNTIME_VERSION}/lib/"libonnxruntime*.so* /out/onnxruntime/ \
+    && test -n "$(find /out/onnxruntime -maxdepth 1 -type f -name 'libonnxruntime*.so*' -print -quit)"
 
 FROM go-build AS go-build-full
 COPY --from=local-runtime-assets /out/tokenizers /opt/powercontext/tokenizers
@@ -109,7 +110,7 @@ LABEL org.opencontainers.image.title="PowerContext" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${COMMIT}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.source="https://github.com/thunguo/powercontext-go" \
+      org.opencontainers.image.source="https://github.com/ob-labs/powercontext-go" \
       org.opencontainers.image.licenses="Apache-2.0"
 COPY --from=go-build /out/powercontext /usr/local/bin/powercontext
 COPY --from=go-build /out/metadata-standard/ /usr/share/powercontext/
@@ -125,7 +126,7 @@ LABEL org.opencontainers.image.title="PowerContext Full" \
       org.opencontainers.image.version="${VERSION}" \
       org.opencontainers.image.revision="${COMMIT}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.source="https://github.com/thunguo/powercontext-go" \
+      org.opencontainers.image.source="https://github.com/ob-labs/powercontext-go" \
       org.opencontainers.image.licenses="Apache-2.0"
 COPY --from=local-runtime-assets /out/onnxruntime/ /usr/lib/
 COPY --from=go-build-full /out/powercontext-full /usr/local/bin/powercontext

@@ -2,7 +2,7 @@
 
 package modelprovider
 
-import "github.com/thunguo/powercontext-go/inference"
+import "github.com/ob-labs/powercontext-go/inference"
 
 func newSentenceTransformersTransport(Route, EnvLookup) (inference.EmbeddingTransport, error) {
 	return nil, inference.NewConfigurationError(

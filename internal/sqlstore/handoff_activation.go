@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 // HandoffActivationStore owns the two short transactional stages surrounding

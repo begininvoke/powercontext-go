@@ -19,17 +19,17 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	pcclient "github.com/thunguo/powercontext-go/client"
-	"github.com/thunguo/powercontext-go/inference"
-	serverlogging "github.com/thunguo/powercontext-go/internal/observability/logging"
-	"github.com/thunguo/powercontext-go/internal/scheduler"
-	"github.com/thunguo/powercontext-go/source"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	pcclient "github.com/ob-labs/powercontext-go/client"
+	"github.com/ob-labs/powercontext-go/inference"
+	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
+	"github.com/ob-labs/powercontext-go/internal/scheduler"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestOpenApplicationProvidesRunnableSQLiteVerticalSlice(t *testing.T) {

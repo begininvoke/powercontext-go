@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/review"
 )
 
 const (

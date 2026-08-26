@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
 )
 
 const (
@@ -142,7 +142,6 @@ type InferenceConfig struct {
 	EmbeddingNormalization string
 	EmbeddingTimeout       time.Duration
 	EmbeddingBatchSize     int
-	ProviderMilestone      string
 }
 
 type ExternalSkillRoot struct {
@@ -203,12 +202,10 @@ type environmentConfig struct {
 	EmbeddingNormalization   string `env:"INFERENCE_EMBEDDING_NORMALIZATION"`
 	EmbeddingTimeoutSeconds  string `env:"INFERENCE_EMBEDDING_TIMEOUT_SECONDS"`
 	EmbeddingBatchSize       int    `env:"INFERENCE_EMBEDDING_BATCH_SIZE"`
-	ProviderMilestone        string `env:"INFERENCE_PROVIDER_MILESTONE"`
-
-	ExternalSkills      string `env:"EXTERNAL_SKILLS"`
-	ExternalSkillHostID string `env:"EXTERNAL_SKILLS_HOST_ID"`
-	ExternalSkillRoots  string `env:"EXTERNAL_SKILLS_CODEX_ROOTS"`
-	SchedulerPath       string `env:"SCHEDULER_PATH"`
+	ExternalSkills           string `env:"EXTERNAL_SKILLS"`
+	ExternalSkillHostID      string `env:"EXTERNAL_SKILLS_HOST_ID"`
+	ExternalSkillRoots       string `env:"EXTERNAL_SKILLS_CODEX_ROOTS"`
+	SchedulerPath            string `env:"SCHEDULER_PATH"`
 }
 
 type externalSkillsEnvironment struct {
@@ -261,7 +258,7 @@ func defaultEnvironmentConfig() (environmentConfig, error) {
 		DatabaseMaxOpenConns: 8, DatabaseMaxIdleConns: 8,
 		GenerationTimeoutSeconds: "30", GenerationMaxRequests: 2,
 		EmbeddingNormalization: "unit", EmbeddingTimeoutSeconds: "30", EmbeddingBatchSize: 10,
-		ProviderMilestone: "A", SchedulerPath: schedulerPath,
+		SchedulerPath: schedulerPath,
 	}, nil
 }
 
@@ -345,7 +342,7 @@ func buildProcessConfig(value environmentConfig) (ProcessConfig, error) {
 			GenerationMaxRequests: value.GenerationMaxRequests, EmbeddingModel: strings.TrimSpace(value.EmbeddingModel),
 			EmbeddingProfileID: strings.TrimSpace(value.EmbeddingProfileID), EmbeddingDimension: value.EmbeddingDimension,
 			EmbeddingNormalization: strings.TrimSpace(value.EmbeddingNormalization), EmbeddingTimeout: embeddingTimeout,
-			EmbeddingBatchSize: value.EmbeddingBatchSize, ProviderMilestone: strings.ToUpper(strings.TrimSpace(value.ProviderMilestone)),
+			EmbeddingBatchSize: value.EmbeddingBatchSize,
 		},
 		ExternalSkills: ExternalSkillsConfig{HostID: externalHostID, Roots: roots},
 		SchedulerPath:  value.SchedulerPath,
@@ -416,9 +413,6 @@ func (c ProcessConfig) Validate() error {
 	}
 	if c.Inference.EmbeddingDimension < 0 || (c.Inference.EmbeddingModel != "" && c.Inference.EmbeddingDimension < 1) {
 		return errors.New("server: embedding dimension must be positive")
-	}
-	if c.Inference.ProviderMilestone != "A" && c.Inference.ProviderMilestone != "B" {
-		return errors.New("server: provider milestone must be A or B")
 	}
 	if c.Runtime.MemoryRerankEnabled && c.Inference.GenerationModel == "" {
 		return errors.New("server: Memory reranking requires a generation model")

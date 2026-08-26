@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	serverlogging "github.com/thunguo/powercontext-go/internal/observability/logging"
-	requesttrace "github.com/thunguo/powercontext-go/internal/observability/tracing"
+	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
+	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
 	"go.opentelemetry.io/otel/propagation"
 )
 

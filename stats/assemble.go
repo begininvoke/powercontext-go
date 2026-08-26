@@ -5,7 +5,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 // InventoryCounts is a persistence-neutral snapshot of current relational

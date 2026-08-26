@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 type GenerationServiceFactory func(string) (*review.GenerationService, error)

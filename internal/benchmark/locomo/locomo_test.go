@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact/memory/prompts"
-	"github.com/thunguo/powercontext-go/internal/benchmark/locomo"
-	benchmarkprompts "github.com/thunguo/powercontext-go/internal/benchmark/locomo/prompts"
+	"github.com/ob-labs/powercontext-go/artifact/memory/prompts"
+	"github.com/ob-labs/powercontext-go/internal/benchmark/locomo"
+	benchmarkprompts "github.com/ob-labs/powercontext-go/internal/benchmark/locomo/prompts"
 )
 
 func loadDataset(t *testing.T) locomo.Dataset {
@@ -51,6 +51,9 @@ func TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection(t *testing.T) 
 	}
 	if got := len(dataset.SelectedQuestions(locomo.DefaultSelection())); got != 1_540 {
 		t.Fatalf("unexpected scored question count %d", got)
+	}
+	if got, err := locomo.PendingEvaluationCount(dataset, t.TempDir(), nil, nil, nil, false); err != nil || got != 1_540 {
+		t.Fatalf("default pending evaluation count = %d, %v", got, err)
 	}
 	for _, question := range dataset.Questions() {
 		if question.Text() == "What did Melanie paint recently?" {
@@ -97,6 +100,9 @@ func TestAnswerMetricsAndSessionProvenanceAreDeterministic(t *testing.T) {
 	}
 	if locomo.BLEU1("shell necklace", "a shell necklace") <= .5 {
 		t.Fatal("BLEU-1 differs from Oracle")
+	}
+	if got := locomo.NormalizeAnswer("A\u001cTHE\u00a0café!"); got != "café" {
+		t.Fatalf("Unicode normalization = %q, want café", got)
 	}
 	got := locomo.ScoreRetrieval([]string{"D1", "D3"}, [][]string{{"D8"}, {"D3"}, {"D1"}})
 	want := locomo.RetrievalMetrics{EvidenceHit: 1, EvidenceRecall: 1, EvidenceMRR: .5}

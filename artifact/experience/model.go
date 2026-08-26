@@ -3,11 +3,12 @@ package experience
 import (
 	"fmt"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 const (
@@ -26,7 +27,7 @@ func NewContent(situation, action, outcome, lesson string) (Content, error) {
 	for field, value := range map[string]string{
 		"situation": situation, "action": action, "outcome": outcome, "lesson": lesson,
 	} {
-		if strings.TrimSpace(value) == "" {
+		if strings.TrimFunc(value, isPythonWhitespace) == "" {
 			return Content{}, fmt.Errorf("Experience fields must not be blank: %s", field)
 		}
 		if utf8.RuneCountInString(value) > MaxFieldLength {
@@ -34,6 +35,13 @@ func NewContent(situation, action, outcome, lesson string) (Content, error) {
 		}
 	}
 	return Content{situation: situation, action: action, outcome: outcome, lesson: lesson}, nil
+}
+
+// Python str.strip treats the four ASCII information separators as
+// whitespace even though Go's Unicode White_Space table does not. Domain
+// validation follows the frozen Python boundary exactly.
+func isPythonWhitespace(character rune) bool {
+	return unicode.IsSpace(character) || character >= '\u001c' && character <= '\u001f'
 }
 
 func (c Content) Situation() string { return c.situation }

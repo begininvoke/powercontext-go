@@ -6,9 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
 )
 
 func TestMemoryRepositoryCommitsAuthorityAndProjectionAtomically(t *testing.T) {
@@ -106,6 +106,30 @@ func TestMemoryRepositoryRejectsProjectionManifestMismatchBeforeWriting(t *testi
 	var configuration *memory.BackendConfigurationError
 	if !errors.As(err, &configuration) {
 		t.Fatalf("expected configuration error, got %v", err)
+	}
+}
+
+func TestMemoryRepositoriesAreScopeIsolated(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	database := openTestDatabase(t)
+	_, artifacts := repositories(t)
+	first, err := sqlstore.NewMemoryRepository(database, "scope-one", artifacts, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := sqlstore.NewMemoryRepository(database, "scope-two", artifacts, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	committed, err := first.Commit(ctx, initialMemoryCommit(t, "memory"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = second.Get(ctx, committed.Ref())
+	var missing *artifact.NotFoundError
+	if !errors.As(err, &missing) {
+		t.Fatalf("cross-scope Get error = %v", err)
 	}
 }
 

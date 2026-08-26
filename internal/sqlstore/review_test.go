@@ -7,11 +7,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestReviewApproveCommitsCandidateArtifactAndLineage(t *testing.T) {

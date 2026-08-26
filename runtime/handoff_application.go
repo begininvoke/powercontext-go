@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/stats"
-	"github.com/thunguo/powercontext-go/trigger"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/trigger"
 )
 
 const DefaultHandoffArtifactID = "handoff"

@@ -3,7 +3,7 @@ package memory
 import (
 	"slices"
 
-	"github.com/thunguo/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact"
 )
 
 // Projection is rebuildable active-head search state. EntryVersion and vector

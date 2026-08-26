@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 type handoffGeneratorFunc func(context.Context, GenerationInput) (inference.GenerationResult[GenerationOutput], error)

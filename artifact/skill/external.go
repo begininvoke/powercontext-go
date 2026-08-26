@@ -346,20 +346,20 @@ func skillMetadata(manifest string) (string, string, error) {
 		return "", "", fmt.Errorf("Codex Skill manifest must be UTF-8")
 	}
 	scanner := bufio.NewScanner(strings.NewReader(string(contents)))
-	if !scanner.Scan() || strings.TrimSpace(scanner.Text()) != "---" {
+	if !scanner.Scan() || trimPythonWhitespace(scanner.Text()) != "---" {
 		return "", "", fmt.Errorf("Codex Skill manifest is missing frontmatter")
 	}
 	metadata := make(map[string]string)
 	terminated := false
 	for scanner.Scan() {
 		line := scanner.Text()
-		if strings.TrimSpace(line) == "---" {
+		if trimPythonWhitespace(line) == "---" {
 			terminated = true
 			break
 		}
 		field, raw, found := strings.Cut(line, ":")
 		if found && (field == "name" || field == "description") {
-			value, err := frontmatterScalar(strings.TrimSpace(raw))
+			value, err := frontmatterScalar(trimPythonWhitespace(raw))
 			if err != nil {
 				return "", "", err
 			}
@@ -503,7 +503,8 @@ func readBounded(path string, maximum int) ([]byte, error) {
 }
 
 func externalText(label, value string, maximum int) error {
-	if strings.TrimSpace(value) == "" || value != strings.TrimSpace(value) {
+	trimmed := trimPythonWhitespace(value)
+	if trimmed == "" || value != trimmed {
 		return fmt.Errorf("external Skill %s must be non-empty and trimmed", label)
 	}
 	if utf8.RuneCountInString(value) > maximum {

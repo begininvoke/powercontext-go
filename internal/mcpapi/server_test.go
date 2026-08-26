@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/internal/endpoint"
-	requesttrace "github.com/thunguo/powercontext-go/internal/observability/tracing"
-	"github.com/thunguo/powercontext-go/runtime"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/internal/endpoint"
+	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
+	"github.com/ob-labs/powercontext-go/runtime"
 )
 
 var baseToolNames = []string{

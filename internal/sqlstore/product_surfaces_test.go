@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/stats"
-	"github.com/thunguo/powercontext-go/trigger"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/trigger"
 )
 
 func TestExternalSkillReplacementIsScopedAtomicAndDeterministic(t *testing.T) {

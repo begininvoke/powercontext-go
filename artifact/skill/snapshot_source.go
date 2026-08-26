@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 const ExternalSnapshotSourceType = "external-skill-snapshot"

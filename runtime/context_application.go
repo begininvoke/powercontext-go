@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/contextpack"
-	"github.com/thunguo/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/contextpack"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 // ExperienceRecall is the narrow read surface Context preparation consumes.

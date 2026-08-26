@@ -3,11 +3,12 @@ package handoffreport_test
 import (
 	"encoding/json"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/handoffreport"
 )
 
 var modelNow = time.Date(2026, time.August, 5, 4, 0, 0, 0, time.UTC)
@@ -287,6 +288,39 @@ func TestStableSortHelpersUseNormalizedTitleScopeAndEffectiveTime(t *testing.T) 
 		activities[1].EventID() != "evt-late" || activities[2].EventID() != "evt-current" ||
 		selections[0].ScopeID() != "scope-1" {
 		t.Fatalf("stable orders = workstreams:%v activities:%v selections:%v", workstreams, activities, selections)
+	}
+}
+
+func TestRepositoryRefNormalizesSafeRemoteAndRelativeSubpath(t *testing.T) {
+	t.Parallel()
+	remote := "HTTPS://GitHub.com/oceanbase/powercontext.git/"
+	subpath := "./services/api"
+	value, err := handoffreport.NewRepositoryRef(
+		handoffreport.RepositoryGitHub,
+		nil,
+		&remote,
+		&subpath,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := value.NormalizedRemote(); got == nil || *got != "https://github.com/oceanbase/powercontext.git" {
+		t.Fatalf("normalized remote = %#v", got)
+	}
+	if got := value.Subpath(); got == nil || *got != "services/api" {
+		t.Fatalf("normalized subpath = %#v", got)
+	}
+
+	credentials := "https://user@example.com/repo.git"
+	if _, err := handoffreport.NewRepositoryRef(handoffreport.RepositoryGitHub, nil, &credentials, nil); err == nil || !strings.Contains(err.Error(), "credentials") {
+		t.Fatalf("credential-bearing remote error = %v", err)
+	}
+	parent := "../api"
+	if _, err := handoffreport.NewRepositoryRef(handoffreport.RepositoryGitHub, nil, &remote, &parent); err == nil || !strings.Contains(err.Error(), "parent traversal") {
+		t.Fatalf("parent traversal error = %v", err)
+	}
+	if _, err := handoffreport.NewRepositoryRef(handoffreport.RepositoryLocal, nil, nil, nil); err == nil || !strings.Contains(err.Error(), "must contain") {
+		t.Fatalf("empty local repository error = %v", err)
 	}
 }
 

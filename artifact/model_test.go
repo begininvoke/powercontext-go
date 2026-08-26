@@ -3,10 +3,11 @@ package artifact_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestArtifactCopiesLineageAndRetainsOrder(t *testing.T) {
@@ -88,5 +89,41 @@ func TestRefRejectsWhitespaceAndZeroRevision(t *testing.T) {
 		if _, err := artifact.NewRef(test.family, test.id, test.revision); err == nil {
 			t.Fatalf("expected invalid ref for %#v", test)
 		}
+	}
+}
+
+func TestArtifactReferenceRejectsInvalidIdentity(t *testing.T) {
+	tests := []struct {
+		family, artifactID string
+		revision           int64
+	}{
+		{"", "artifact", 1},
+		{" family", "artifact", 1},
+		{strings.Repeat("x", artifact.MaxFamilyLength+1), "artifact", 1},
+		{"memory", "", 1},
+		{"memory", " artifact", 1},
+		{"memory", strings.Repeat("x", artifact.MaxIDLength+1), 1},
+		{"memory", "artifact", 0},
+		{"memory", "artifact", -1},
+	}
+	for _, test := range tests {
+		if _, err := artifact.NewRef(test.family, test.artifactID, test.revision); err == nil {
+			t.Fatalf("invalid identity was accepted: %#v", test)
+		}
+	}
+}
+
+func TestArtifactDomainValuesRejectInvalidIdentityAndLineage(t *testing.T) {
+	if _, err := artifact.New("", 1, artifact.Draft[string]{}); err == nil {
+		t.Fatal("zero Draft produced an Artifact")
+	}
+	if _, err := artifact.NewDraft("memory", "content", []source.Ref{{}}, nil); err == nil {
+		t.Fatal("zero Source lineage was accepted")
+	}
+	if _, err := artifact.NewDraft("memory", "content", nil, []artifact.Ref{{}}); err == nil {
+		t.Fatal("zero Artifact lineage was accepted")
+	}
+	if _, err := artifact.Restore(artifact.Ref{}, "content", artifact.Lineage{}); err == nil {
+		t.Fatal("zero Artifact identity was restored")
 	}
 }

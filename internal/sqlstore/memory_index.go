@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
 )
 
 // CompositeMemoryIndex combines orthogonal FTS/vector projections while

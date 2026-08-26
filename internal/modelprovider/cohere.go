@@ -11,7 +11,7 @@ import (
 	cohere "github.com/cohere-ai/cohere-go/v2"
 	"github.com/cohere-ai/cohere-go/v2/core"
 	coherev2 "github.com/cohere-ai/cohere-go/v2/v2"
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 type CohereConfig struct {

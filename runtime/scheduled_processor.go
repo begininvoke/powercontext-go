@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	experienceartifact "github.com/thunguo/powercontext-go/artifact/experience"
+	experienceartifact "github.com/ob-labs/powercontext-go/artifact/experience"
 )
 
 const (

@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 func TestLocalEmbeddingTransportPreservesInputsAndVectors(t *testing.T) {
@@ -183,6 +183,22 @@ func TestLocalEmbeddingTransportContainsNativeFailures(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestLocalEmbeddingTransportPreservesStableInferenceFailures(t *testing.T) {
+	configuration := inference.NewConfigurationError("embedding-model", "model download failed")
+	transport := newLocalEmbeddingTransport(
+		func([]string) ([][]float32, error) { return nil, configuration },
+		func() error { return nil },
+	)
+	_, err := transport.Embed(t.Context(), []string{"text"}, inference.EmbeddingDocument)
+	var observed *inference.ConfigurationError
+	if !errors.As(err, &observed) || observed != configuration {
+		t.Fatalf("stable inference error was reclassified: %v", err)
+	}
+	if err := transport.Close(t.Context()); err != nil {
+		t.Fatal(err)
 	}
 }
 

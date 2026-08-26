@@ -99,6 +99,9 @@ func EnsureHandoffReportSchemaForDialect(ctx context.Context, db DBTX, dialect D
 		return fmt.Errorf("sqlstore: unsupported Handoff Report schema dialect %q", dialect)
 	}
 	for _, statement := range handoffReportSchema {
+		if dialect == MySQLDialect {
+			statement = quoteCursorIdentifier(statement)
+		}
 		if dialect == MySQLDialect && strings.HasPrefix(strings.TrimSpace(statement), "CREATE INDEX IF NOT EXISTS ") {
 			fields := strings.Fields(statement)
 			if len(fields) < 8 {

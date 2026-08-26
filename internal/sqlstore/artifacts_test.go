@@ -6,13 +6,13 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestArtifactRepositoryPreservesPayloadRevisionAndOrderedLineage(t *testing.T) {
@@ -197,6 +197,44 @@ func TestArtifactRepositoryConcurrentCASHasOneWinner(t *testing.T) {
 	}
 	if winners != 1 || conflicts != 1 {
 		t.Fatalf("winners=%d conflicts=%d", winners, conflicts)
+	}
+}
+
+func TestArtifactLineageAndHeadForeignKeysAreEnforced(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	database := openTestDatabase(t)
+	if _, err := database.SQLDB().ExecContext(ctx, `INSERT INTO pc_artifacts
+        (scope_id, family, artifact_id, revision, content) VALUES (?, ?, ?, ?, ?)`,
+		"scope-fk", "experience", "experience-1", 1, []byte(`{}`)); err != nil {
+		t.Fatal(err)
+	}
+	statements := []struct {
+		query string
+		args  []any
+	}{
+		{
+			query: `INSERT INTO pc_artifact_lineage_sources
+                (scope_id, family, artifact_id, revision, ordinal, source_type, source_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			args: []any{"scope-fk", "experience", "experience-1", 1, 0, "content", "missing"},
+		},
+		{
+			query: `INSERT INTO pc_artifact_lineage_artifacts
+                (scope_id, family, artifact_id, revision, ordinal, upstream_family, upstream_artifact_id, upstream_revision)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			args: []any{"scope-fk", "experience", "experience-1", 1, 0, "skill", "missing", 1},
+		},
+		{
+			query: `INSERT INTO pc_artifact_heads
+                (scope_id, family, artifact_id, revision) VALUES (?, ?, ?, ?)`,
+			args: []any{"scope-fk", "experience", "missing", 1},
+		},
+	}
+	for index, statement := range statements {
+		if _, err := database.SQLDB().ExecContext(ctx, statement.query, statement.args...); err == nil {
+			t.Fatalf("foreign-key violation %d was accepted", index)
+		}
 	}
 }
 

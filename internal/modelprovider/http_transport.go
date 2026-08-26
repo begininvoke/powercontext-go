@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 const maxProviderResponseBytes int64 = 8 << 20

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/thunguo/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
 )
 
 // ExternalSkillRepository reads and replaces rebuildable host projections.

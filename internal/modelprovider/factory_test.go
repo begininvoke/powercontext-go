@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 type testEnvironment map[string]string

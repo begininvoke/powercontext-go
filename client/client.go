@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
 	"github.com/ogen-go/ogen/ogenerrors"
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	requesttrace "github.com/thunguo/powercontext-go/internal/observability/tracing"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"

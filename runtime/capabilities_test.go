@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
 )
 
 func TestCapabilitiesAreValidatedAndImmutable(t *testing.T) {

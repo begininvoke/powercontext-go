@@ -7,9 +7,9 @@ import (
 	"slices"
 	"unicode/utf8"
 
-	"github.com/thunguo/powercontext-go/artifact/experience/prompts"
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact/experience/prompts"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 const (

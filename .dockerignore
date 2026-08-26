@@ -1,8 +1,10 @@
 .git
+.gitnexus
 .github
 .idea
 .vscode
 .venv
+.DS_Store
 bin
 coverage
 dist

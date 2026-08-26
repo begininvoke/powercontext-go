@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/thunguo/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact"
 )
 
 // ArtifactCodec is an exact family/content route for one persisted Artifact

@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/trigger"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/trigger"
 )
 
 func TestMemoryFlushArtifactAndCursorCASAreOneTransaction(t *testing.T) {

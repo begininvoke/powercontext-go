@@ -3,11 +3,11 @@ package endpoint
 import (
 	"context"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/runtime"
-	"github.com/thunguo/powercontext-go/source"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 type HandoffOperations interface {

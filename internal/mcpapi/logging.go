@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	serverlogging "github.com/thunguo/powercontext-go/internal/observability/logging"
+	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
 )
 
 // AccessLogMiddleware observes logical MCP protocol requests. It must be

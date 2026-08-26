@@ -15,8 +15,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/thunguo/powercontext-go/artifact/memory/prompts"
-	benchmarkprompts "github.com/thunguo/powercontext-go/internal/benchmark/locomo/prompts"
+	"github.com/ob-labs/powercontext-go/artifact/memory/prompts"
+	benchmarkprompts "github.com/ob-labs/powercontext-go/internal/benchmark/locomo/prompts"
 )
 
 const BenchmarkTemperature = 0.0

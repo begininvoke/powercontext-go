@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 type SourceReceipt struct {

@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
 )
 
 func TestCodexProviderDiscoversAndExactlyResolvesLocalPackage(t *testing.T) {
@@ -139,6 +139,8 @@ func TestSkillContentRequiresCompletePortableInstructions(t *testing.T) {
 		{"name", " trailing ", "instructions", []string{"check"}},
 		{"name", "description", "\n\t", []string{"check"}},
 		{"name", "description", "instructions", []string{""}},
+		{"\u001c", "description", "instructions", []string{"check"}},
+		{"name", "description", "\u001f", []string{"check"}},
 	}
 	for index, value := range invalid {
 		if _, err := skill.NewContent(value.name, value.description, value.instructions, value.validation); err == nil {

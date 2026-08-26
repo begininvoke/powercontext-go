@@ -5,7 +5,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 const PydanticAIVersion = "2.29.0"

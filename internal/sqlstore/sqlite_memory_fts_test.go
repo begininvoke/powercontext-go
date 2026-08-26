@@ -6,9 +6,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
 )
 
 func TestSQLiteMemoryFTSIndexRebuildAndSearch(t *testing.T) {

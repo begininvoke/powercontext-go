@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 // ExperienceIncubationBackend is the use-case-shaped two-transaction port.

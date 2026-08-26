@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
 )
 
 const frozenOpenAPISHA256 = "704b89aba9f5c2a499e3de9729521cda9eb570995b4950df1b59cc899764fa1c"

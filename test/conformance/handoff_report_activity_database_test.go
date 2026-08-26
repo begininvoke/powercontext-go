@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/handoffreport"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
 )
 
 func TestPythonGoPythonHandoffReportActivityDatabaseCompatibility(t *testing.T) {

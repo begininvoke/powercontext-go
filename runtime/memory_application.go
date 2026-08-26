@@ -3,12 +3,13 @@ package runtime
 import (
 	"context"
 	"errors"
+	"slices"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/source"
-	"github.com/thunguo/powercontext-go/stats"
-	"github.com/thunguo/powercontext-go/trigger"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/trigger"
 )
 
 const (
@@ -118,6 +119,7 @@ type MemorySearchPage struct {
 	MemoryRef *artifact.Ref
 	Mode      *memory.SearchMode
 	Hits      []memory.Hit
+	Rerank    *memory.RerankTrace
 }
 
 type MemoryChangesPage struct {
@@ -280,7 +282,12 @@ func (a *MemoryApplication) search(
 	}
 	ref := current.Ref()
 	usedMode := search.Mode
-	return MemorySearchPage{MemoryRef: &ref, Mode: &usedMode, Hits: cloneHits(search.Hits)}, nil
+	return MemorySearchPage{
+		MemoryRef: &ref,
+		Mode:      &usedMode,
+		Hits:      cloneHits(search.Hits),
+		Rerank:    cloneRerankTrace(search.Rerank),
+	}, nil
 }
 
 func (a *MemoryApplication) List(
@@ -594,7 +601,26 @@ func cloneSearchPage(value MemorySearchPage) MemorySearchPage {
 		value.Mode = &copy
 	}
 	value.Hits = cloneHits(value.Hits)
+	value.Rerank = cloneRerankTrace(value.Rerank)
 	return value
+}
+
+func cloneRerankTrace(value *memory.RerankTrace) *memory.RerankTrace {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	copy.CandidateHits = cloneHits(value.CandidateHits)
+	copy.SelectedRanks = slices.Clone(value.SelectedRanks)
+	if value.Usage.InputTokens != nil {
+		inputTokens := *value.Usage.InputTokens
+		copy.Usage.InputTokens = &inputTokens
+	}
+	if value.Usage.OutputTokens != nil {
+		outputTokens := *value.Usage.OutputTokens
+		copy.Usage.OutputTokens = &outputTokens
+	}
+	return &copy
 }
 
 func cloneChangesPage(value MemoryChangesPage) MemoryChangesPage {

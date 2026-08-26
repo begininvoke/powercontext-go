@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 type capturedAnthropicRequest struct {

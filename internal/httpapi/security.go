@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
 )
 
 // Security satisfies ogen's optional OpenAPI bearer scheme. Enforcement is

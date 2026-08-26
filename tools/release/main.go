@@ -32,14 +32,16 @@ import (
 const (
 	assetsPath       = "build/native-assets.json"
 	oraclePath       = "test/conformance/testdata/python-v0.0.1/manifest.json"
-	modulePath       = "github.com/thunguo/powercontext-go"
+	modulePath       = "github.com/ob-labs/powercontext-go"
 	maxLicenseBytes  = 2 << 20
 	maxMetadataBytes = 16 << 20
 )
 
 var (
-	semanticVersion = regexp.MustCompile(`^v?[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$`)
-	commitHash      = regexp.MustCompile(`^[0-9a-f]{40}$`)
+	semanticVersion  = regexp.MustCompile(`^v?[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?$`)
+	commitHash       = regexp.MustCompile(`^[0-9a-f]{40}$`)
+	darwinORTLibrary = regexp.MustCompile(`^libonnxruntime(?:_[A-Za-z0-9_]+)?(?:\.[0-9]+)*\.dylib$`)
+	linuxORTLibrary  = regexp.MustCompile(`^libonnxruntime(?:_[A-Za-z0-9_]+)?\.so(?:\.[0-9]+)*$`)
 
 	//go:embed licenses/*.txt
 	nativeLicenses embed.FS
@@ -389,7 +391,7 @@ func packageRelease(options packageOptions) (packageResult, error) {
 	}
 
 	temporarySBOM := filepath.Join(temporary, artifactName+".spdx.json")
-	if err := generateSBOM(options.Syft, root, temporarySBOM); err != nil {
+	if err := generateSBOM(options.Syft, root, temporarySBOM, assets.Syft.Version, buildTime); err != nil {
 		return packageResult{}, err
 	}
 	if err := copyRegularFile(temporarySBOM, filepath.Join(root, "SBOM.spdx.json"), 0o644); err != nil {
@@ -653,11 +655,14 @@ func stageRelease(repository, root string, options packageOptions, facts binaryF
 		}
 	}
 	if options.Edition == "full" {
-		if err := copyTree(options.ONNXRuntimeDir, filepath.Join(root, "lib", "onnxruntime")); err != nil {
+		if err := copyONNXRuntime(
+			options.ONNXRuntimeDir,
+			filepath.Join(root, "lib", "onnxruntime"),
+			facts.GOOS,
+		); err != nil {
 			return err
 		}
 	}
-	_ = facts
 	return nil
 }
 
@@ -869,8 +874,14 @@ func writeLicense(writer *strings.Builder, name string, contents []byte) {
 	writer.WriteByte('\n')
 }
 
-func generateSBOM(syft, root, output string) error {
-	command := exec.Command(syft, "scan", "dir:"+root, "--output", "spdx-json="+output)
+func generateSBOM(syft, root, output, syftVersion string, created time.Time) error {
+	sourceName := filepath.Base(root)
+	command := exec.Command(
+		syft,
+		"scan", "dir:"+root,
+		"--source-name", sourceName,
+		"--output", "spdx-json="+output,
+	)
 	command.Env = append(os.Environ(), "SYFT_CHECK_FOR_APP_UPDATE=false")
 	combined, err := command.CombinedOutput()
 	if err != nil {
@@ -884,7 +895,18 @@ func generateSBOM(syft, root, output string) error {
 	if err := json.Unmarshal(contents, &document); err != nil || document["spdxVersion"] == nil {
 		return errors.New("Syft did not produce a valid SPDX JSON document")
 	}
-	return nil
+	creationInfo, ok := document["creationInfo"].(map[string]any)
+	if !ok {
+		return errors.New("Syft SPDX document has no creationInfo object")
+	}
+	document["name"] = sourceName
+	document["documentNamespace"] = "https://github.com/ob-labs/powercontext-go/sbom/" + sourceName
+	creationInfo["created"] = created.UTC().Format(time.RFC3339)
+	creationInfo["creators"] = []string{
+		"Organization: Anchore, Inc",
+		"Tool: syft-" + syftVersion,
+	}
+	return writeJSON(output, document)
 }
 
 func runChecksum(arguments []string) error {
@@ -1094,6 +1116,10 @@ func copyTree(source, destination string) error {
 	if err != nil {
 		return err
 	}
+	root, err = filepath.EvalSymlinks(root)
+	if err != nil {
+		return err
+	}
 	info, err := os.Stat(root)
 	if err != nil {
 		return err
@@ -1139,6 +1165,9 @@ func copyTree(source, destination string) error {
 			if err != nil {
 				return err
 			}
+			if filepath.IsAbs(link) {
+				return fmt.Errorf("release symlink %q is absolute", relative)
+			}
 			return os.Symlink(link, target)
 		}
 		if !info.Mode().IsRegular() {
@@ -1146,6 +1175,97 @@ func copyTree(source, destination string) error {
 		}
 		return copyRegularFile(path, target, os.FileMode(normalizedFileMode(info.Mode())))
 	})
+}
+
+// copyONNXRuntime keeps release bundles relocatable and limited to the native
+// libraries needed at runtime. Upstream archives also contain CMake metadata,
+// pkg-config files, and (on macOS) large dSYM trees; those are build inputs, not
+// runtime dependencies.
+func copyONNXRuntime(source, destination, goos string) error {
+	root, err := filepath.Abs(source)
+	if err != nil {
+		return err
+	}
+	root, err = filepath.EvalSymlinks(root)
+	if err != nil {
+		return err
+	}
+	info, err := os.Stat(root)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("ONNX Runtime library source %q is not a directory", filepath.Base(source))
+	}
+	if goos != "darwin" && goos != "linux" {
+		return fmt.Errorf("unsupported ONNX Runtime release target %q", goos)
+	}
+	if err := os.MkdirAll(destination, 0o755); err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	copiedRegular := false
+	for _, entry := range entries {
+		if !isONNXRuntimeLibrary(entry.Name(), goos) {
+			continue
+		}
+		sourcePath := filepath.Join(root, entry.Name())
+		targetPath := filepath.Join(destination, entry.Name())
+		entryInfo, err := os.Lstat(sourcePath)
+		if err != nil {
+			return err
+		}
+		if entryInfo.Mode()&os.ModeSymlink != 0 {
+			link, err := os.Readlink(sourcePath)
+			if err != nil {
+				return err
+			}
+			if filepath.IsAbs(link) {
+				return fmt.Errorf("ONNX Runtime symlink %q is absolute", entry.Name())
+			}
+			resolved, err := filepath.EvalSymlinks(sourcePath)
+			if err != nil {
+				return err
+			}
+			inside, err := filepath.Rel(root, resolved)
+			if err != nil || inside == ".." || strings.HasPrefix(inside, ".."+string(filepath.Separator)) {
+				return fmt.Errorf("ONNX Runtime symlink %q escapes its source tree", entry.Name())
+			}
+			if !isONNXRuntimeLibrary(filepath.Base(resolved), goos) {
+				return fmt.Errorf("ONNX Runtime symlink %q has an invalid target", entry.Name())
+			}
+			if err := os.Symlink(link, targetPath); err != nil {
+				return err
+			}
+			continue
+		}
+		if !entryInfo.Mode().IsRegular() {
+			return fmt.Errorf("unsupported ONNX Runtime entry %q", entry.Name())
+		}
+		if err := copyRegularFile(sourcePath, targetPath, os.FileMode(normalizedFileMode(entryInfo.Mode()))); err != nil {
+			return err
+		}
+		copiedRegular = true
+	}
+	if !copiedRegular {
+		return fmt.Errorf("ONNX Runtime library directory %q contains no runtime library for %s", filepath.Base(source), goos)
+	}
+	return nil
+}
+
+func isONNXRuntimeLibrary(name, goos string) bool {
+	switch goos {
+	case "darwin":
+		return darwinORTLibrary.MatchString(name)
+	case "linux":
+		return linuxORTLibrary.MatchString(name)
+	default:
+		return false
+	}
 }
 
 func skipReleaseEntry(entry fs.DirEntry) bool {

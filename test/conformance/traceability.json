@@ -3,9 +3,9 @@
   "oracle_commit": "9e23c336492c8bba16c6f26083298b6f484a91b0",
   "python_test_file_count": 87,
   "python_test_case_count": 413,
-  "case_specific_evidence_count": 259,
-  "file_supporting_evidence_count": 154,
-  "case_specific_evidence_minimum": 259,
+  "case_specific_evidence_count": 413,
+  "file_supporting_evidence_count": 0,
+  "case_specific_evidence_minimum": 413,
   "entries": [
     {
       "python": {
@@ -14,7 +14,7 @@
         "line": 13
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "py",
@@ -30,7 +30,7 @@
         "line": 23
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "py",
@@ -51,7 +51,7 @@
         "line": 43
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "py",
@@ -72,7 +72,7 @@
         "line": 23
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -93,7 +93,7 @@
         "line": 8
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "py",
@@ -109,22 +109,12 @@
         "line": 53
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/experience/incubation_test.go",
           "test": "TestLLMCandidatePipelineMapsBoundedTaskOutcomes"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/experience/incubation_test.go",
-          "test": "TestLLMCandidatePipelineSkipsIneligibleWindow"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/experience/incubation_test.go",
-          "test": "TestLLMCandidatePipelineRejectsEvidenceOutsideWindow"
         }
       ]
     },
@@ -135,22 +125,12 @@
         "line": 84
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/experience/incubation_test.go",
-          "test": "TestLLMCandidatePipelineMapsBoundedTaskOutcomes"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/experience/incubation_test.go",
           "test": "TestLLMCandidatePipelineSkipsIneligibleWindow"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/experience/incubation_test.go",
-          "test": "TestLLMCandidatePipelineRejectsEvidenceOutsideWindow"
         }
       ]
     },
@@ -161,18 +141,8 @@
         "line": 97
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "artifact/experience/incubation_test.go",
-          "test": "TestLLMCandidatePipelineMapsBoundedTaskOutcomes"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/experience/incubation_test.go",
-          "test": "TestLLMCandidatePipelineSkipsIneligibleWindow"
-        },
         {
           "kind": "go",
           "file": "artifact/experience/incubation_test.go",
@@ -187,17 +157,12 @@
         "line": 18
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/experience/generation_test.go",
-          "test": "TestLLMGeneratorReturnsTypedProposalAndNoOp"
-        },
-        {
-          "kind": "go",
-          "file": "test/conformance/domain_contract_test.go",
-          "test": "TestGoDomainConstantsMatchFrozenPythonOracle"
+          "file": "artifact/experience/model_test.go",
+          "test": "TestExperienceContentPreservesCompleteReusableJudgment"
         }
       ]
     },
@@ -208,17 +173,12 @@
         "line": 27
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/experience/generation_test.go",
-          "test": "TestLLMGeneratorReturnsTypedProposalAndNoOp"
-        },
-        {
-          "kind": "go",
-          "file": "test/conformance/domain_contract_test.go",
-          "test": "TestGoDomainConstantsMatchFrozenPythonOracle"
+          "file": "artifact/experience/model_test.go",
+          "test": "TestExperienceContentRequiresEveryJudgmentPart"
         }
       ]
     },
@@ -229,17 +189,12 @@
         "line": 36
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/experience/generation_test.go",
-          "test": "TestLLMGeneratorReturnsTypedProposalAndNoOp"
-        },
-        {
-          "kind": "go",
-          "file": "test/conformance/domain_contract_test.go",
-          "test": "TestGoDomainConstantsMatchFrozenPythonOracle"
+          "file": "artifact/experience/model_test.go",
+          "test": "TestExperienceContentRejectsBlankJudgmentParts"
         }
       ]
     },
@@ -250,17 +205,12 @@
         "line": 45
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/experience/generation_test.go",
-          "test": "TestLLMGeneratorReturnsTypedProposalAndNoOp"
-        },
-        {
-          "kind": "go",
-          "file": "test/conformance/domain_contract_test.go",
-          "test": "TestGoDomainConstantsMatchFrozenPythonOracle"
+          "file": "artifact/experience/model_test.go",
+          "test": "TestExperienceContentBoundsEveryJudgmentPart"
         }
       ]
     },
@@ -791,17 +741,12 @@
         "line": 35
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/memory/extraction_test.go",
           "test": "TestLLMCandidatePipelineMapsOnlyBoundedEvidence"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/memory/extraction_test.go",
-          "test": "TestLLMCandidatePipelineRejectsOutsideEvidence"
         }
       ]
     },
@@ -812,13 +757,8 @@
         "line": 66
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "artifact/memory/extraction_test.go",
-          "test": "TestLLMCandidatePipelineMapsOnlyBoundedEvidence"
-        },
         {
           "kind": "go",
           "file": "artifact/memory/extraction_test.go",
@@ -977,12 +917,17 @@
         "line": 13
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/memory/prompts/prompts_test.go",
-          "test": "TestFrozenPromptHashes"
+          "file": "artifact/memory/extraction_test.go",
+          "test": "TestRuntimeDefaultsToCodingExtractionProfile"
+        },
+        {
+          "kind": "go",
+          "file": "server/config_test.go",
+          "test": "TestDefaultConfigUsesPersistentUserStorage"
         }
       ]
     },
@@ -993,12 +938,17 @@
         "line": 21
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/memory/prompts/prompts_test.go",
-          "test": "TestFrozenPromptHashes"
+          "file": "artifact/memory/extraction_test.go",
+          "test": "TestConversationProfileSelectsVersionedPolicy"
+        },
+        {
+          "kind": "go",
+          "file": "server/config_test.go",
+          "test": "TestLoadConfigMatchesFrozenServerEnvironment"
         }
       ]
     },
@@ -1009,17 +959,12 @@
         "line": 42
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/memory/reranking_test.go",
           "test": "TestLLMRerankerNormalizesSparseRanks"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/memory/reranking_test.go",
-          "test": "TestLLMRerankerFallsBackToCoarseOrder"
         }
       ]
     },
@@ -1030,13 +975,8 @@
         "line": 65
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "artifact/memory/reranking_test.go",
-          "test": "TestLLMRerankerNormalizesSparseRanks"
-        },
         {
           "kind": "go",
           "file": "artifact/memory/reranking_test.go",
@@ -1099,32 +1039,12 @@
         "line": 40
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/skill/external_test.go",
           "test": "TestCodexProviderDiscoversAndExactlyResolvesLocalPackage"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestExactResolutionRejectsContentDriftUntilRescan"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestResolutionIsBoundToConfiguredHostAndRoot"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestScanSkipsInvalidOrSymlinkedPackages"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestCodexProviderRequiresUniqueStableRootIDs"
         }
       ]
     },
@@ -1135,32 +1055,12 @@
         "line": 58
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/skill/external_test.go",
-          "test": "TestCodexProviderDiscoversAndExactlyResolvesLocalPackage"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
           "test": "TestExactResolutionRejectsContentDriftUntilRescan"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestResolutionIsBoundToConfiguredHostAndRoot"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestScanSkipsInvalidOrSymlinkedPackages"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestCodexProviderRequiresUniqueStableRootIDs"
         }
       ]
     },
@@ -1171,32 +1071,12 @@
         "line": 75
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/skill/external_test.go",
-          "test": "TestCodexProviderDiscoversAndExactlyResolvesLocalPackage"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestExactResolutionRejectsContentDriftUntilRescan"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
           "test": "TestResolutionIsBoundToConfiguredHostAndRoot"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestScanSkipsInvalidOrSymlinkedPackages"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestCodexProviderRequiresUniqueStableRootIDs"
         }
       ]
     },
@@ -1207,32 +1087,12 @@
         "line": 90
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/skill/external_test.go",
-          "test": "TestCodexProviderDiscoversAndExactlyResolvesLocalPackage"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestExactResolutionRejectsContentDriftUntilRescan"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestResolutionIsBoundToConfiguredHostAndRoot"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
           "test": "TestScanSkipsInvalidOrSymlinkedPackages"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestCodexProviderRequiresUniqueStableRootIDs"
         }
       ]
     },
@@ -1243,28 +1103,8 @@
         "line": 104
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestCodexProviderDiscoversAndExactlyResolvesLocalPackage"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestExactResolutionRejectsContentDriftUntilRescan"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestResolutionIsBoundToConfiguredHostAndRoot"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestScanSkipsInvalidOrSymlinkedPackages"
-        },
         {
           "kind": "go",
           "file": "artifact/skill/external_test.go",
@@ -1279,7 +1119,7 @@
         "line": 7
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -1295,7 +1135,7 @@
         "line": 27
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -1311,17 +1151,12 @@
         "line": 28
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/skill/external_test.go",
           "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/product_surfaces_test.go",
-          "test": "TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
         }
       ]
     },
@@ -1332,13 +1167,8 @@
         "line": 72
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
-        },
         {
           "kind": "go",
           "file": "internal/sqlstore/product_surfaces_test.go",
@@ -1597,12 +1427,12 @@
         "line": 6
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
-          "test": "TestBuilderTruncatesUnicodeDeterministicallyWithinFinalBudget"
+          "file": "inference/tokens_test.go",
+          "test": "TestCharacterEstimatorIsDeterministicForASCIIAndNonASCIIText"
         }
       ]
     },
@@ -1613,17 +1443,12 @@
         "line": 27
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/artifacts_test.go",
           "test": "TestArtifactRepositoryPreservesPayloadRevisionAndOrderedLineage"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/artifacts_test.go",
-          "test": "TestArtifactRepositoryConcurrentCASHasOneWinner"
         },
         {
           "kind": "go",
@@ -1639,7 +1464,7 @@
         "line": 85
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -1650,11 +1475,6 @@
           "kind": "go",
           "file": "internal/sqlstore/artifacts_test.go",
           "test": "TestArtifactRepositoryConcurrentCASHasOneWinner"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/artifacts_test.go",
-          "test": "TestMemoryAndHandoffPayloadsMatchPythonFieldOrder"
         }
       ]
     },
@@ -1665,22 +1485,12 @@
         "line": 117
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/artifacts_test.go",
-          "test": "TestArtifactRepositoryPreservesPayloadRevisionAndOrderedLineage"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/artifacts_test.go",
-          "test": "TestArtifactRepositoryConcurrentCASHasOneWinner"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/artifacts_test.go",
-          "test": "TestMemoryAndHandoffPayloadsMatchPythonFieldOrder"
+          "test": "TestArtifactLineageAndHeadForeignKeysAreEnforced"
         }
       ]
     },
@@ -1691,7 +1501,7 @@
         "line": 12
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -1707,17 +1517,17 @@
         "line": 41
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/context_application_test.go",
-          "test": "TestContextApplicationRecallsExperienceWithinOneScopedOperation"
+          "file": "internal/sqlstore/database_oceanbase_test.go",
+          "test": "TestMySQLSchemaUsesPythonPayloadVariants"
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/experience_incubation_test.go",
-          "test": "TestExperienceCandidatesAndCursorCASAreOneTransaction"
+          "file": "internal/sqlstore/database_oceanbase_test.go",
+          "test": "TestEveryMySQLUTF8MB4KeyStaysBelowInnoDBLimit"
         }
       ]
     },
@@ -1728,17 +1538,12 @@
         "line": 49
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/context_application_test.go",
-          "test": "TestContextApplicationRecallsExperienceWithinOneScopedOperation"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/experience_incubation_test.go",
-          "test": "TestExperienceCandidatesAndCursorCASAreOneTransaction"
+          "file": "internal/sqlstore/experience_index_migration_test.go",
+          "test": "TestSQLiteExperienceIndexUpgradesLegacyArtifactHeadsIdempotently"
         }
       ]
     },
@@ -1749,17 +1554,12 @@
         "line": 77
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/context_application_test.go",
-          "test": "TestContextApplicationRecallsExperienceWithinOneScopedOperation"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/experience_incubation_test.go",
-          "test": "TestExperienceCandidatesAndCursorCASAreOneTransaction"
+          "file": "internal/sqlstore/experience_index_migration_test.go",
+          "test": "TestOceanBaseExperienceIndexUsesMediumTextMigration"
         }
       ]
     },
@@ -1770,17 +1570,17 @@
         "line": 91
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/context_application_test.go",
-          "test": "TestContextApplicationRecallsExperienceWithinOneScopedOperation"
+          "file": "internal/sqlstore/experience_index_test.go",
+          "test": "TestSQLiteExperienceFTSTracksCurrentHeadsAndRebuilds"
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/experience_incubation_test.go",
-          "test": "TestExperienceCandidatesAndCursorCASAreOneTransaction"
+          "file": "internal/sqlstore/review_test.go",
+          "test": "TestReviewApproveCommitsCandidateArtifactAndLineage"
         }
       ]
     },
@@ -1791,7 +1591,7 @@
         "line": 25
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -1807,7 +1607,7 @@
         "line": 62
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -1823,22 +1623,17 @@
         "line": 39
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryCommitsAuthorityAndProjectionAtomically"
+          "file": "internal/sqlstore/database_oceanbase_test.go",
+          "test": "TestMySQLSchemaUsesPythonPayloadVariants"
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryRollsBackArtifactWhenIndexReplaceFails"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryRejectsProjectionManifestMismatchBeforeWriting"
+          "file": "internal/sqlstore/database_oceanbase_test.go",
+          "test": "TestEveryMySQLUTF8MB4KeyStaysBelowInnoDBLimit"
         }
       ]
     },
@@ -1849,7 +1644,7 @@
         "line": 60
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -1858,13 +1653,8 @@
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryRollsBackArtifactWhenIndexReplaceFails"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryRejectsProjectionManifestMismatchBeforeWriting"
+          "file": "internal/sqlstore/sqlite_memory_fts_test.go",
+          "test": "TestSQLiteMemoryFTSIndexRebuildAndSearch"
         }
       ]
     },
@@ -1875,22 +1665,12 @@
         "line": 121
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryCommitsAuthorityAndProjectionAtomically"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryRollsBackArtifactWhenIndexReplaceFails"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryRejectsProjectionManifestMismatchBeforeWriting"
+          "file": "internal/sqlstore/sqlite_memory_fts_test.go",
+          "test": "TestSQLiteMemoryFTSIndexRebuildAndSearch"
         }
       ]
     },
@@ -1901,22 +1681,12 @@
         "line": 162
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryCommitsAuthorityAndProjectionAtomically"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryRollsBackArtifactWhenIndexReplaceFails"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/memory_test.go",
-          "test": "TestMemoryRepositoryRejectsProjectionManifestMismatchBeforeWriting"
+          "test": "TestMemoryRepositoriesAreScopeIsolated"
         }
       ]
     },
@@ -1927,7 +1697,7 @@
         "line": 34
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -1943,12 +1713,12 @@
         "line": 47
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestMySQLSchemaUsesPythonPayloadVariants"
+          "test": "TestEveryMySQLUTF8MB4KeyStaysBelowInnoDBLimit"
         }
       ]
     },
@@ -1959,22 +1729,12 @@
         "line": 82
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestOceanBaseDriverConfigPreservesFrozenURLContract"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
           "test": "TestOceanBaseDriverConfigRejectsIncompleteOrWrongURLsWithoutLeakingSecrets"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestMySQLSchemaUsesPythonPayloadVariants"
         }
       ]
     },
@@ -1985,13 +1745,8 @@
         "line": 87
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestOceanBaseDriverConfigPreservesFrozenURLContract"
-        },
         {
           "kind": "go",
           "file": "internal/sqlstore/database_oceanbase_test.go",
@@ -1999,8 +1754,8 @@
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestMySQLSchemaUsesPythonPayloadVariants"
+          "file": "server/config_test.go",
+          "test": "TestProcessConfigValidatesOceanBaseURLWithoutLeakingPassword"
         }
       ]
     },
@@ -2011,22 +1766,12 @@
         "line": 103
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/database_oceanbase_test.go",
           "test": "TestOceanBaseDriverConfigPreservesFrozenURLContract"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestOceanBaseDriverConfigRejectsIncompleteOrWrongURLsWithoutLeakingSecrets"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestMySQLSchemaUsesPythonPayloadVariants"
         }
       ]
     },
@@ -2037,22 +1782,12 @@
         "line": 117
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestOceanBaseDriverConfigPreservesFrozenURLContract"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestOceanBaseDriverConfigRejectsIncompleteOrWrongURLsWithoutLeakingSecrets"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestMySQLSchemaUsesPythonPayloadVariants"
+          "test": "TestOceanBaseProfileRequiresMySQLTenant"
         }
       ]
     },
@@ -2063,22 +1798,12 @@
         "line": 142
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestOceanBaseDriverConfigPreservesFrozenURLContract"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestOceanBaseDriverConfigRejectsIncompleteOrWrongURLsWithoutLeakingSecrets"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_oceanbase_test.go",
-          "test": "TestMySQLSchemaUsesPythonPayloadVariants"
+          "file": "test/e2e/oceanbase_live_test.go",
+          "test": "TestLiveOceanBaseProfileSmoke"
         }
       ]
     },
@@ -2089,17 +1814,17 @@
         "line": 43
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
+          "file": "internal/sqlstore/sources_test.go",
+          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
         },
         {
           "kind": "go",
-          "file": "server/config_test.go",
-          "test": "TestProcessConfigValidatesOceanBaseURLWithoutLeakingPassword"
+          "file": "test/e2e/http_memory_test.go",
+          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
         }
       ]
     },
@@ -2110,17 +1835,12 @@
         "line": 57
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "server/config_test.go",
-          "test": "TestProcessConfigValidatesOceanBaseURLWithoutLeakingPassword"
+          "file": "internal/sqlstore/memory_flush_test.go",
+          "test": "TestMemoryFlushArtifactAndCursorCASAreOneTransaction"
         }
       ]
     },
@@ -2131,17 +1851,17 @@
         "line": 96
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
+          "file": "internal/sqlstore/sources_test.go",
+          "test": "TestSourceRepositorySerializesConcurrentJournalPositions"
         },
         {
           "kind": "go",
-          "file": "server/config_test.go",
-          "test": "TestProcessConfigValidatesOceanBaseURLWithoutLeakingPassword"
+          "file": "internal/sqlstore/memory_flush_test.go",
+          "test": "TestMemoryFlushArtifactAndCursorCASAreOneTransaction"
         }
       ]
     },
@@ -2152,17 +1872,12 @@
         "line": 126
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "server/config_test.go",
-          "test": "TestProcessConfigValidatesOceanBaseURLWithoutLeakingPassword"
+          "file": "internal/sqlstore/memory_flush_test.go",
+          "test": "TestMemoryFlushPlanningDoesNotHoldDatabaseTransaction"
         }
       ]
     },
@@ -2173,22 +1888,12 @@
         "line": 23
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositorySerializesConcurrentJournalPositions"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryRejectsIndexedIdentityMismatch"
+          "test": "TestTwoSourceAdaptersShareRepositoryAndJournal"
         }
       ]
     },
@@ -2199,22 +1904,12 @@
         "line": 55
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/sources_test.go",
           "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositorySerializesConcurrentJournalPositions"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryRejectsIndexedIdentityMismatch"
         }
       ]
     },
@@ -2225,22 +1920,12 @@
         "line": 76
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositorySerializesConcurrentJournalPositions"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryRejectsIndexedIdentityMismatch"
+          "test": "TestSourceRepositoryRejectsScopeOutsideRelationalIdentityBaseline"
         }
       ]
     },
@@ -2251,22 +1936,12 @@
         "line": 92
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
           "test": "TestSourceRepositorySerializesConcurrentJournalPositions"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryRejectsIndexedIdentityMismatch"
         }
       ]
     },
@@ -2277,22 +1952,12 @@
         "line": 18
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/sqlstore/database_test.go",
-          "test": "TestOpenSQLiteInitializesSchemaAndEveryConnection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_test.go",
-          "test": "TestDatabaseCloseRejectsNewTransactions"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_test.go",
-          "test": "TestDatabaseCanceledCloseRestoresAdmission"
+          "file": "server/config_test.go",
+          "test": "TestSQLiteDSNRequiresFrozenDialectAndAbsolutePath"
         }
       ]
     },
@@ -2303,22 +1968,12 @@
         "line": 23
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/database_test.go",
-          "test": "TestOpenSQLiteInitializesSchemaAndEveryConnection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_test.go",
-          "test": "TestDatabaseCloseRejectsNewTransactions"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_test.go",
-          "test": "TestDatabaseCanceledCloseRestoresAdmission"
+          "test": "TestSQLiteProfileCreatesMissingDatabaseDirectory"
         }
       ]
     },
@@ -2329,7 +1984,7 @@
         "line": 35
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -2338,13 +1993,8 @@
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/database_test.go",
-          "test": "TestDatabaseCloseRejectsNewTransactions"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/database_test.go",
-          "test": "TestDatabaseCanceledCloseRestoresAdmission"
+          "file": "internal/sqlstore/artifacts_test.go",
+          "test": "TestArtifactLineageAndHeadForeignKeysAreEnforced"
         }
       ]
     },
@@ -2605,7 +2255,7 @@
         "line": 53
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -2614,13 +2264,8 @@
         },
         {
           "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestExperienceIncubationRejectsPipelineEvidenceOutsideWindow"
-        },
-        {
-          "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestScheduledExperienceProcessorIsolatesScopeFailure"
+          "file": "internal/sqlstore/experience_incubation_test.go",
+          "test": "TestExperienceCandidatesAndCursorCASAreOneTransaction"
         }
       ]
     },
@@ -2631,22 +2276,12 @@
         "line": 109
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "runtime/experience_incubation_test.go",
-          "test": "TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence"
-        },
-        {
-          "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestExperienceIncubationRejectsPipelineEvidenceOutsideWindow"
-        },
-        {
-          "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestScheduledExperienceProcessorIsolatesScopeFailure"
+          "test": "TestExperienceIncubationRetriesSameWindowAfterGenerationFailure"
         }
       ]
     },
@@ -2657,22 +2292,12 @@
         "line": 139
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "runtime/experience_incubation_test.go",
-          "test": "TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence"
-        },
-        {
-          "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestExperienceIncubationRejectsPipelineEvidenceOutsideWindow"
-        },
-        {
-          "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestScheduledExperienceProcessorIsolatesScopeFailure"
+          "test": "TestScheduledExperienceIncubationUsesFixedSourceWindowBudget"
         }
       ]
     },
@@ -2683,22 +2308,12 @@
         "line": 167
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence"
-        },
-        {
-          "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestExperienceIncubationRejectsPipelineEvidenceOutsideWindow"
-        },
-        {
-          "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
-          "test": "TestScheduledExperienceProcessorIsolatesScopeFailure"
+          "file": "server/config_test.go",
+          "test": "TestScheduledExperienceIncubationRequiresGenerationModel"
         }
       ]
     },
@@ -2709,17 +2324,12 @@
         "line": 37
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
-        },
-        {
-          "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestProcessConfigEnforcesTrustAndInferenceBoundaries"
+          "file": "runtime/external_skill_application_test.go",
+          "test": "TestRuntimeExposesConfiguredExternalSkillRegistryWithoutModel"
         }
       ]
     },
@@ -2730,17 +2340,12 @@
         "line": 77
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
-        },
-        {
-          "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestProcessConfigEnforcesTrustAndInferenceBoundaries"
+          "file": "runtime/external_skill_application_test.go",
+          "test": "TestRuntimeReportsUnconfiguredExternalSkillRegistry"
         }
       ]
     },
@@ -2751,17 +2356,12 @@
         "line": 103
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
-        },
-        {
-          "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestProcessConfigEnforcesTrustAndInferenceBoundaries"
+          "file": "test/e2e/http_memory_test.go",
+          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
         }
       ]
     },
@@ -2772,17 +2372,12 @@
         "line": 139
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
-        },
-        {
-          "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestProcessConfigEnforcesTrustAndInferenceBoundaries"
+          "file": "runtime/external_skill_application_test.go",
+          "test": "TestExternalSkillImportRequiresGenerationBeforeSnapshot"
         }
       ]
     },
@@ -2793,17 +2388,17 @@
         "line": 166
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/skill/external_test.go",
-          "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
+          "test": "TestExactResolutionRejectsContentDriftUntilRescan"
         },
         {
           "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestProcessConfigEnforcesTrustAndInferenceBoundaries"
+          "file": "test/e2e/http_memory_test.go",
+          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
         }
       ]
     },
@@ -3576,22 +3171,12 @@
         "line": 11
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/cli/artifact_commands_test.go",
           "test": "TestExactManagedSkillProjectsToNewCodexSkillDirectory"
-        },
-        {
-          "kind": "go",
-          "file": "internal/cli/artifact_commands_test.go",
-          "test": "TestCodexProjectionNeverOverwritesExistingDirectory"
-        },
-        {
-          "kind": "go",
-          "file": "internal/cli/artifact_commands_test.go",
-          "test": "TestCodexProjectionRejectsInvalidManagedContent"
         }
       ]
     },
@@ -3602,22 +3187,12 @@
         "line": 38
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/cli/artifact_commands_test.go",
-          "test": "TestExactManagedSkillProjectsToNewCodexSkillDirectory"
-        },
-        {
-          "kind": "go",
-          "file": "internal/cli/artifact_commands_test.go",
           "test": "TestCodexProjectionNeverOverwritesExistingDirectory"
-        },
-        {
-          "kind": "go",
-          "file": "internal/cli/artifact_commands_test.go",
-          "test": "TestCodexProjectionRejectsInvalidManagedContent"
         }
       ]
     },
@@ -3628,18 +3203,8 @@
         "line": 62
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "internal/cli/artifact_commands_test.go",
-          "test": "TestExactManagedSkillProjectsToNewCodexSkillDirectory"
-        },
-        {
-          "kind": "go",
-          "file": "internal/cli/artifact_commands_test.go",
-          "test": "TestCodexProjectionNeverOverwritesExistingDirectory"
-        },
         {
           "kind": "go",
           "file": "internal/cli/artifact_commands_test.go",
@@ -3654,7 +3219,7 @@
         "line": 13
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -3663,8 +3228,8 @@
         },
         {
           "kind": "go",
-          "file": "artifact/skill/generation_test.go",
-          "test": "TestLLMGeneratorReturnsCompleteSkill"
+          "file": "server/application_test.go",
+          "test": "TestGoClientGeneratesReviewedExperienceAndSkillCandidates"
         },
         {
           "kind": "go",
@@ -3680,7 +3245,7 @@
         "line": 10
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -3696,17 +3261,12 @@
         "line": 33
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "server/application_test.go",
           "test": "TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "test/e2e/http_memory_test.go",
-          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
         }
       ]
     },
@@ -3717,17 +3277,17 @@
         "line": 93
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/application_test.go",
-          "test": "TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
+          "file": "runtime/lifecycle_test.go",
+          "test": "TestScopedReadsForSameScopeCanOverlap"
         },
         {
           "kind": "go",
-          "file": "test/e2e/http_memory_test.go",
-          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
+          "file": "artifact/memory/service_contract_test.go",
+          "test": "TestMemorySearchAppliesInjectedRerankerAfterCoarseFusion"
         }
       ]
     },
@@ -3780,7 +3340,7 @@
         "line": 41
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "py",
@@ -3801,7 +3361,7 @@
         "line": 24
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "ts",
@@ -3817,17 +3377,17 @@
         "line": 25
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
+        {
+          "kind": "go",
+          "file": "runtime/external_skill_application_test.go",
+          "test": "TestRuntimeExposesConfiguredExternalSkillRegistryWithoutModel"
+        },
         {
           "kind": "go",
           "file": "artifact/skill/external_test.go",
           "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/product_surfaces_test.go",
-          "test": "TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
         }
       ]
     },
@@ -3838,17 +3398,17 @@
         "line": 97
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/skill/external_test.go",
-          "test": "TestRegistryRefreshesProjectionAndChecksLiveAvailability"
+          "file": "runtime/external_skill_application_test.go",
+          "test": "TestExternalSkillImportRequiresGenerationBeforeSnapshot"
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/product_surfaces_test.go",
-          "test": "TestExternalSkillReplacementIsScopedAtomicAndDeterministic"
+          "file": "test/e2e/http_memory_test.go",
+          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
         }
       ]
     },
@@ -3859,18 +3419,8 @@
         "line": 48
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "artifact/handoff/generation_test.go",
-          "test": "TestLLMGenerationPipelineMapsBoundedEvidence"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/product_surfaces_test.go",
-          "test": "TestHandoffBackendUsesArtifactCASAndDomainNotFound"
-        },
         {
           "kind": "go",
           "file": "test/e2e/http_memory_test.go",
@@ -3885,22 +3435,17 @@
         "line": 89
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/handoff/generation_test.go",
-          "test": "TestLLMGenerationPipelineMapsBoundedEvidence"
+          "file": "server/application_test.go",
+          "test": "TestOpenApplicationPersistsBusinessInferenceAndRecallAcrossRestartWithoutMeteringReadiness"
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/product_surfaces_test.go",
-          "test": "TestHandoffBackendUsesArtifactCASAndDomainNotFound"
-        },
-        {
-          "kind": "go",
-          "file": "test/e2e/http_memory_test.go",
-          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
+          "file": "internal/scheduler/scheduler_test.go",
+          "test": "TestSchedulerPersistsStableJobAndReconcilesDisabledJob"
         }
       ]
     },
@@ -3911,17 +3456,12 @@
         "line": 126
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/handoff/generation_test.go",
-          "test": "TestLLMGenerationPipelineMapsBoundedEvidence"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/product_surfaces_test.go",
-          "test": "TestHandoffBackendUsesArtifactCASAndDomainNotFound"
+          "file": "artifact/handoff/service_test.go",
+          "test": "TestHandoffServiceDraftCanBeCorrectedBeforeTemporaryHandoffFinalized"
         },
         {
           "kind": "go",
@@ -3937,22 +3477,17 @@
         "line": 232
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/handoff/generation_test.go",
-          "test": "TestLLMGenerationPipelineMapsBoundedEvidence"
+          "file": "artifact/handoff/service_test.go",
+          "test": "TestHandoffServiceStalePreparedCannotReplaceNewerMilestone"
         },
         {
           "kind": "go",
-          "file": "internal/sqlstore/product_surfaces_test.go",
-          "test": "TestHandoffBackendUsesArtifactCASAndDomainNotFound"
-        },
-        {
-          "kind": "go",
-          "file": "test/e2e/http_memory_test.go",
-          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
+          "file": "artifact/handoff/service_test.go",
+          "test": "TestHandoffServiceRejectsCrossScopePreparedHandoff"
         }
       ]
     },
@@ -3963,17 +3498,12 @@
         "line": 280
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "artifact/handoff/generation_test.go",
-          "test": "TestLLMGenerationPipelineMapsBoundedEvidence"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/product_surfaces_test.go",
-          "test": "TestHandoffBackendUsesArtifactCASAndDomainNotFound"
+          "file": "artifact/handoff/service_test.go",
+          "test": "TestHandoffServiceContinueLatestReportsEmptyWithoutMilestone"
         },
         {
           "kind": "go",
@@ -3989,17 +3519,12 @@
         "line": 29
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/mcpapi/server_test.go",
           "test": "TestServerExposesFrozenToolSet"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolCallUsesEndpointDefaultsAndStructuredContent"
         },
         {
           "kind": "go",
@@ -4015,13 +3540,8 @@
         "line": 135
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestServerExposesFrozenToolSet"
-        },
         {
           "kind": "go",
           "file": "internal/mcpapi/server_test.go",
@@ -4029,8 +3549,8 @@
         },
         {
           "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestOptionalMCPRouteUsesConfiguredPath"
+          "file": "test/e2e/http_memory_test.go",
+          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
         }
       ]
     },
@@ -4041,18 +3561,8 @@
         "line": 229
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestServerExposesFrozenToolSet"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolCallUsesEndpointDefaultsAndStructuredContent"
-        },
         {
           "kind": "go",
           "file": "server/http_test.go",
@@ -4067,17 +3577,17 @@
         "line": 26
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
+        {
+          "kind": "go",
+          "file": "server/logging_test.go",
+          "test": "TestMCPLogsLogicalCallWithoutStreamableHTTPDuplicate"
+        },
         {
           "kind": "go",
           "file": "server/http_test.go",
           "test": "TestHTTPAndMCPMetricsUseBoundedOperationLabels"
-        },
-        {
-          "kind": "go",
-          "file": "server/tracing_test.go",
-          "test": "TestHTTPAndApplicationSpansPreserveW3CParentWithoutSensitiveAttributes"
         }
       ]
     },
@@ -4088,17 +3598,17 @@
         "line": 116
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestHTTPAndMCPMetricsUseBoundedOperationLabels"
+          "file": "inference/tracing_test.go",
+          "test": "TestEmbeddingSpanNestsUnderActiveOperationWithoutRecordingTextOrVectors"
         },
         {
           "kind": "go",
-          "file": "server/tracing_test.go",
-          "test": "TestHTTPAndApplicationSpansPreserveW3CParentWithoutSensitiveAttributes"
+          "file": "inference/tracing_test.go",
+          "test": "TestInferenceTracingFollowsProviderSamplingSetting"
         }
       ]
     },
@@ -4146,13 +3656,8 @@
         "line": 129
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestSystemHTTPVerticalSlice"
-        },
         {
           "kind": "go",
           "file": "test/e2e/http_memory_test.go",
@@ -4160,8 +3665,8 @@
         },
         {
           "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestHTTPAuthenticationAndUnboundReadiness"
+          "file": "test/e2e/oceanbase_live_test.go",
+          "test": "TestLiveOceanBaseProfileSmoke"
         }
       ]
     },
@@ -4172,22 +3677,17 @@
         "line": 200
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestSystemHTTPVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "test/e2e/http_memory_test.go",
-          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
+          "file": "server/application_readiness_test.go",
+          "test": "TestApplicationReadinessClassifiesConfiguredInferenceWithoutLeakingFailures"
         },
         {
           "kind": "go",
           "file": "server/http_test.go",
-          "test": "TestHTTPAuthenticationAndUnboundReadiness"
+          "test": "TestHTTPReadinessMapsNotReadyAndDegradedStatuses"
         }
       ]
     },
@@ -4198,22 +3698,12 @@
         "line": 235
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestSystemHTTPVerticalSlice"
-        },
         {
           "kind": "go",
           "file": "test/e2e/http_memory_test.go",
           "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestHTTPAuthenticationAndUnboundReadiness"
         }
       ]
     },
@@ -4224,22 +3714,17 @@
         "line": 329
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestSystemHTTPVerticalSlice"
+          "file": "internal/sqlstore/sqlite_memory_vec1_test.go",
+          "test": "TestSQLiteVec1ProfileContract"
         },
         {
           "kind": "go",
-          "file": "test/e2e/http_memory_test.go",
-          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestHTTPAuthenticationAndUnboundReadiness"
+          "file": "test/e2e/oceanbase_live_test.go",
+          "test": "TestLiveOceanBaseProfileSmoke"
         }
       ]
     },
@@ -4250,22 +3735,17 @@
         "line": 405
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestSystemHTTPVerticalSlice"
+          "file": "server/application_test.go",
+          "test": "TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
         },
         {
           "kind": "go",
           "file": "test/e2e/http_memory_test.go",
           "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestHTTPAuthenticationAndUnboundReadiness"
         }
       ]
     },
@@ -4276,22 +3756,17 @@
         "line": 509
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestSystemHTTPVerticalSlice"
+          "file": "client/client_test.go",
+          "test": "TestClientPreservesDeclaredServerErrorContext"
         },
         {
           "kind": "go",
-          "file": "test/e2e/http_memory_test.go",
-          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestHTTPAuthenticationAndUnboundReadiness"
+          "file": "client/client_test.go",
+          "test": "TestAsServerErrorPreservesStableContext"
         }
       ]
     },
@@ -4302,22 +3777,17 @@
         "line": 556
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestSystemHTTPVerticalSlice"
+          "file": "client/client_test.go",
+          "test": "TestClientValidatesRequestsBeforeTransport"
         },
         {
           "kind": "go",
-          "file": "test/e2e/http_memory_test.go",
-          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
-        },
-        {
-          "kind": "go",
-          "file": "server/http_test.go",
-          "test": "TestHTTPAuthenticationAndUnboundReadiness"
+          "file": "openapi/python_contract_test.go",
+          "test": "TestGeneratedTransportRejectsValuesOutsideOpenAPI"
         }
       ]
     },
@@ -4328,17 +3798,22 @@
         "line": 69
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "runtime/experience_incubation_test.go",
-          "test": "TestScheduledExperienceProcessorIsolatesScopeFailure"
+          "test": "TestScheduledExperienceIncubationUsesFixedSourceWindowBudget"
         },
         {
           "kind": "go",
           "file": "server/application_test.go",
           "test": "TestOpenApplicationOwnsBothPersistentSchedulerJobs"
+        },
+        {
+          "kind": "go",
+          "file": "internal/sqlstore/review_test.go",
+          "test": "TestReviewApproveCommitsCandidateArtifactAndLineage"
         }
       ]
     },
@@ -4349,12 +3824,12 @@
         "line": 16
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/cli/root_test.go",
-          "test": "TestCommandTreeContainsProductCommands"
+          "test": "TestCapabilitiesUsesEnvironmentAndWritesHumanOutput"
         },
         {
           "kind": "go",
@@ -4370,7 +3845,7 @@
         "line": 52
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -4417,52 +3892,12 @@
         "line": 31
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
         }
       ]
     },
@@ -4473,52 +3908,12 @@
         "line": 47
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
         }
       ]
     },
@@ -4529,52 +3924,12 @@
         "line": 60
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
         }
       ]
     },
@@ -4585,52 +3940,12 @@
         "line": 71
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
         }
       ]
     },
@@ -4641,52 +3956,12 @@
         "line": 105
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
         }
       ]
     },
@@ -4697,52 +3972,12 @@
         "line": 141
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
         }
       ]
     },
@@ -4753,52 +3988,12 @@
         "line": 195
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
         }
       ]
     },
@@ -4809,52 +4004,12 @@
         "line": 241
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRejudgeManifestFreezesAnswersAndRecordsIndependentJudge"
         }
       ]
     },
@@ -4865,48 +4020,8 @@
         "line": 290
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestCanonicalLoCoMoDatasetHasExpectedShapeAndScoredSelection"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSessionSourceContainsDialogueAndDateWithoutQAAnnotations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestAnswerMetricsAndSessionProvenanceAreDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestSummaryKeepsErrorsInAccuracyDenominator"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestDiagnosticsReportUnknownFallbackQualityAndCost"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestIsStableAndExcludesDatabaseCredentials"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsInferenceAwareAnswerPolicy"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestRunManifestRecordsUnknownFallbackInferencePolicy"
-        },
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
@@ -4921,27 +4036,12 @@
         "line": 17
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestInferenceAwareAnswerPolicyIsExplicitAndRequiresSourceContent"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestUnknownFallbackAnswerPolicyIsExplicitAndMutuallyExclusive"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestJudgeProfilesKeepStrictAndTopicalContractsDistinct"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestFrozenLoCoMoPromptHashes"
         }
       ]
     },
@@ -4952,27 +4052,12 @@
         "line": 28
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestInferenceAwareAnswerPolicyIsExplicitAndRequiresSourceContent"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestUnknownFallbackAnswerPolicyIsExplicitAndMutuallyExclusive"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestJudgeProfilesKeepStrictAndTopicalContractsDistinct"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestFrozenLoCoMoPromptHashes"
         }
       ]
     },
@@ -4983,27 +4068,12 @@
         "line": 38
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestInferenceAwareAnswerPolicyIsExplicitAndRequiresSourceContent"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestUnknownFallbackAnswerPolicyIsExplicitAndMutuallyExclusive"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
           "test": "TestJudgeProfilesKeepStrictAndTopicalContractsDistinct"
-        },
-        {
-          "kind": "go",
-          "file": "internal/benchmark/locomo/locomo_test.go",
-          "test": "TestFrozenLoCoMoPromptHashes"
         }
       ]
     },
@@ -5338,22 +4408,12 @@
         "line": 38
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/model_test.go",
           "test": "TestArtifactCopiesLineageAndRetainsOrder"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/model_test.go",
-          "test": "TestServiceRejectsCrossFamilyRevision"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/model_test.go",
-          "test": "TestRefRejectsWhitespaceAndZeroRevision"
         }
       ]
     },
@@ -5364,22 +4424,12 @@
         "line": 67
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/model_test.go",
-          "test": "TestArtifactCopiesLineageAndRetainsOrder"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/model_test.go",
-          "test": "TestServiceRejectsCrossFamilyRevision"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/model_test.go",
-          "test": "TestRefRejectsWhitespaceAndZeroRevision"
+          "test": "TestArtifactReferenceRejectsInvalidIdentity"
         }
       ]
     },
@@ -5390,22 +4440,12 @@
         "line": 116
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/model_test.go",
-          "test": "TestArtifactCopiesLineageAndRetainsOrder"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/model_test.go",
-          "test": "TestServiceRejectsCrossFamilyRevision"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/model_test.go",
-          "test": "TestRefRejectsWhitespaceAndZeroRevision"
+          "test": "TestArtifactDomainValuesRejectInvalidIdentityAndLineage"
         }
       ]
     },
@@ -5416,22 +4456,12 @@
         "line": 122
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "artifact/model_test.go",
-          "test": "TestArtifactCopiesLineageAndRetainsOrder"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/model_test.go",
           "test": "TestServiceRejectsCrossFamilyRevision"
-        },
-        {
-          "kind": "go",
-          "file": "artifact/model_test.go",
-          "test": "TestRefRejectsWhitespaceAndZeroRevision"
         }
       ]
     },
@@ -5442,17 +4472,17 @@
         "line": 7
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/capabilities_test.go",
-          "test": "TestCapabilitiesAreValidatedAndImmutable"
+          "file": "openapi/python_contract_test.go",
+          "test": "TestCapabilitiesReportSemanticsWithoutRuntimeTuningValues"
         },
         {
           "kind": "go",
-          "file": "runtime/capabilities_test.go",
-          "test": "TestCapabilitiesRejectDuplicatesAndUnknownValues"
+          "file": "openapi/python_contract_test.go",
+          "test": "TestGeneratedTransportRejectsValuesOutsideOpenAPI"
         }
       ]
     },
@@ -5463,17 +4493,12 @@
         "line": 18
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/capabilities_test.go",
-          "test": "TestCapabilitiesAreValidatedAndImmutable"
-        },
-        {
-          "kind": "go",
-          "file": "runtime/capabilities_test.go",
-          "test": "TestCapabilitiesRejectDuplicatesAndUnknownValues"
+          "file": "openapi/python_contract_test.go",
+          "test": "TestGeneratedTransportRejectsValuesOutsideOpenAPI"
         }
       ]
     },
@@ -5484,27 +4509,12 @@
         "line": 25
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "tools/release/main_test.go",
-          "test": "TestNativeAssetManifestSupportsReleaseMatrix"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestDockerNativeAssetDefaultsMatchManifest"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestArchiveTreeIsDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestLicenseDiscoveryIsStrictAndDeterministic"
+          "test": "TestReleaseArchiveKeepsStableExecutablePathAndMode"
         }
       ]
     },
@@ -5515,27 +4525,17 @@
         "line": 38
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "tools/release/main_test.go",
+          "test": "TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases"
+        },
+        {
+          "kind": "go",
+          "file": "tools/release/main_test.go",
           "test": "TestNativeAssetManifestSupportsReleaseMatrix"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestDockerNativeAssetDefaultsMatchManifest"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestArchiveTreeIsDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestLicenseDiscoveryIsStrictAndDeterministic"
         }
       ]
     },
@@ -5546,27 +4546,12 @@
         "line": 57
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "tools/release/main_test.go",
-          "test": "TestNativeAssetManifestSupportsReleaseMatrix"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestDockerNativeAssetDefaultsMatchManifest"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestArchiveTreeIsDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestLicenseDiscoveryIsStrictAndDeterministic"
+          "test": "TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases"
         }
       ]
     },
@@ -5577,27 +4562,12 @@
         "line": 81
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "tools/release/main_test.go",
-          "test": "TestNativeAssetManifestSupportsReleaseMatrix"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestDockerNativeAssetDefaultsMatchManifest"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestArchiveTreeIsDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestLicenseDiscoveryIsStrictAndDeterministic"
+          "test": "TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases"
         }
       ]
     },
@@ -5608,27 +4578,12 @@
         "line": 100
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "tools/release/main_test.go",
-          "test": "TestNativeAssetManifestSupportsReleaseMatrix"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestDockerNativeAssetDefaultsMatchManifest"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestArchiveTreeIsDeterministic"
-        },
-        {
-          "kind": "go",
-          "file": "tools/release/main_test.go",
-          "test": "TestLicenseDiscoveryIsStrictAndDeterministic"
+          "test": "TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases"
         }
       ]
     },
@@ -6065,22 +5020,12 @@
         "line": 23
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestDashboardRoutesAndHeaders"
-        },
-        {
-          "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestHandoffReportPageFeatureGate"
-        },
-        {
-          "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestMountRejectsMissingScopes"
+          "file": "server/config_test.go",
+          "test": "TestProcessConfigEnforcesTrustAndInferenceBoundariesWithoutSecrets"
         }
       ]
     },
@@ -6091,7 +5036,7 @@
         "line": 33
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -6100,13 +5045,8 @@
         },
         {
           "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestHandoffReportPageFeatureGate"
-        },
-        {
-          "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestMountRejectsMissingScopes"
+          "file": "server/http_test.go",
+          "test": "TestDashboardPageIsPublicButScopeInventoryIsAuthenticated"
         }
       ]
     },
@@ -6117,13 +5057,8 @@
         "line": 75
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestDashboardRoutesAndHeaders"
-        },
         {
           "kind": "go",
           "file": "internal/webui/handler_test.go",
@@ -6131,8 +5066,8 @@
         },
         {
           "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestMountRejectsMissingScopes"
+          "file": "server/http_test.go",
+          "test": "TestDashboardPageIsPublicButScopeInventoryIsAuthenticated"
         }
       ]
     },
@@ -6239,17 +5174,12 @@
         "line": 49
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "handoffreport/service_test.go",
           "test": "TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats"
-        },
-        {
-          "kind": "go",
-          "file": "handoffreport/service_test.go",
-          "test": "TestServiceFreezesExactHeadsAndBuildsCanonicalReport"
         }
       ]
     },
@@ -6260,17 +5190,12 @@
         "line": 56
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "handoffreport/service_test.go",
           "test": "TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats"
-        },
-        {
-          "kind": "go",
-          "file": "handoffreport/service_test.go",
-          "test": "TestServiceFreezesExactHeadsAndBuildsCanonicalReport"
         }
       ]
     },
@@ -6281,17 +5206,12 @@
         "line": 67
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "handoffreport/service_test.go",
-          "test": "TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats"
-        },
-        {
-          "kind": "go",
-          "file": "handoffreport/service_test.go",
-          "test": "TestServiceFreezesExactHeadsAndBuildsCanonicalReport"
+          "test": "TestDigestFieldsStayStableWhenReportIsRevalidated"
         }
       ]
     },
@@ -6302,12 +5222,12 @@
         "line": 31
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/handoff_report_test.go",
-          "test": "TestHandoffReportSchemaIsOptInAndCatalogRevisionsAreAtomic"
+          "test": "TestHandoffReportCatalogCreatesProjectsAndResolvesScopeMembership"
         }
       ]
     },
@@ -6318,7 +5238,7 @@
         "line": 63
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -6334,12 +5254,12 @@
         "line": 140
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/handoff_report_test.go",
-          "test": "TestHandoffReportSchemaIsOptInAndCatalogRevisionsAreAtomic"
+          "test": "TestHandoffReportCatalogEnforcesProjectWorkstreamAndScopeUniqueness"
         }
       ]
     },
@@ -6350,12 +5270,12 @@
         "line": 203
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/handoff_report_test.go",
-          "test": "TestHandoffReportSchemaIsOptInAndCatalogRevisionsAreAtomic"
+          "test": "TestHandoffReportCatalogPaginatesAndExcludesArchivedProjectsByDefault"
         }
       ]
     },
@@ -6366,22 +5286,12 @@
         "line": 12
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/httpapi/middleware_test.go",
-          "test": "TestWrapRejectsDisabledHandoffReportRoutesBeforeApplication"
-        },
-        {
-          "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestHandoffReportPageFeatureGate"
-        },
-        {
-          "kind": "go",
-          "file": "handoffreport/service_test.go",
-          "test": "TestServiceFreezesExactHeadsAndBuildsCanonicalReport"
+          "file": "test/e2e/http_memory_test.go",
+          "test": "TestHTTPSourceAndMemorySQLiteVerticalSlice"
         }
       ]
     },
@@ -6392,22 +5302,12 @@
         "line": 222
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/httpapi/middleware_test.go",
           "test": "TestWrapRejectsDisabledHandoffReportRoutesBeforeApplication"
-        },
-        {
-          "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestHandoffReportPageFeatureGate"
-        },
-        {
-          "kind": "go",
-          "file": "handoffreport/service_test.go",
-          "test": "TestServiceFreezesExactHeadsAndBuildsCanonicalReport"
         }
       ]
     },
@@ -6418,22 +5318,12 @@
         "line": 232
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/httpapi/middleware_test.go",
-          "test": "TestWrapRejectsDisabledHandoffReportRoutesBeforeApplication"
-        },
-        {
-          "kind": "go",
-          "file": "internal/webui/handler_test.go",
-          "test": "TestHandoffReportPageFeatureGate"
-        },
-        {
-          "kind": "go",
-          "file": "handoffreport/service_test.go",
-          "test": "TestServiceFreezesExactHeadsAndBuildsCanonicalReport"
+          "file": "server/application_test.go",
+          "test": "TestDisabledHandoffReportDoesNotCreateOptionalTables"
         }
       ]
     },
@@ -6972,12 +5862,12 @@
         "line": 22
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/sqlstore/handoff_report_test.go",
-          "test": "TestHandoffReportWorkspaceRequiresDetachBeforeProjectMove"
+          "file": "handoffreport/models_test.go",
+          "test": "TestRepositoryRefNormalizesSafeRemoteAndRelativeSubpath"
         }
       ]
     },
@@ -6988,7 +5878,7 @@
         "line": 44
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
@@ -7004,12 +5894,12 @@
         "line": 136
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/sqlstore/handoff_report_test.go",
-          "test": "TestHandoffReportWorkspaceRequiresDetachBeforeProjectMove"
+          "test": "TestHandoffReportWorkspaceRejectsUnknownProjectAndMissingExactVersion"
         }
       ]
     },
@@ -7020,22 +5910,12 @@
         "line": 22
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "ts",
           "file": "integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts",
           "test": "matches every OpenAPI operationId exactly"
-        },
-        {
-          "kind": "ts",
-          "file": "integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts",
-          "test": "records method, path, and location for each operation"
-        },
-        {
-          "kind": "ts",
-          "file": "integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts",
-          "test": "matches generated method, path, location, and scope for every operation"
         }
       ]
     },
@@ -7046,13 +5926,8 @@
         "line": 36
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "ts",
-          "file": "integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts",
-          "test": "matches every OpenAPI operationId exactly"
-        },
         {
           "kind": "ts",
           "file": "integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts",
@@ -7072,22 +5947,12 @@
         "line": 52
       },
       "mode": "retained-host",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "ts",
-          "file": "integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts",
-          "test": "matches every OpenAPI operationId exactly"
-        },
-        {
-          "kind": "ts",
-          "file": "integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts",
-          "test": "records method, path, and location for each operation"
-        },
-        {
-          "kind": "ts",
-          "file": "integrations/dsh/plugins/powercontext/tests/operations-coverage.spec.ts",
-          "test": "matches generated method, path, location, and scope for every operation"
+          "file": "integrations/dsh/plugins/powercontext/tests/gen-check.spec.ts",
+          "test": "passes when the committed table matches OpenAPI"
         }
       ]
     },
@@ -7098,27 +5963,12 @@
         "line": 25
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/mcpapi/server_test.go",
           "test": "TestServerExposesFrozenToolSet"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolSchemasPreserveDefaultsAndNestedCitations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolCallUsesEndpointDefaultsAndStructuredContent"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolValidationReturnsStableErrorEnvelope"
         }
       ]
     },
@@ -7129,27 +5979,12 @@
         "line": 57
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/mcpapi/server_test.go",
           "test": "TestServerExposesFrozenToolSet"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolSchemasPreserveDefaultsAndNestedCitations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolCallUsesEndpointDefaultsAndStructuredContent"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolValidationReturnsStableErrorEnvelope"
         }
       ]
     },
@@ -7160,27 +5995,12 @@
         "line": 70
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "internal/mcpapi/server_test.go",
-          "test": "TestServerExposesFrozenToolSet"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
           "test": "TestToolSchemasPreserveDefaultsAndNestedCitations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolCallUsesEndpointDefaultsAndStructuredContent"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolValidationReturnsStableErrorEnvelope"
         }
       ]
     },
@@ -7191,18 +6011,8 @@
         "line": 89
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestServerExposesFrozenToolSet"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolSchemasPreserveDefaultsAndNestedCitations"
-        },
         {
           "kind": "go",
           "file": "internal/mcpapi/server_test.go",
@@ -7210,8 +6020,8 @@
         },
         {
           "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolValidationReturnsStableErrorEnvelope"
+          "file": "server/logging_test.go",
+          "test": "TestMCPLogsLogicalCallWithoutStreamableHTTPDuplicate"
         }
       ]
     },
@@ -7222,27 +6032,12 @@
         "line": 146
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestServerExposesFrozenToolSet"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolSchemasPreserveDefaultsAndNestedCitations"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolCallUsesEndpointDefaultsAndStructuredContent"
-        },
-        {
-          "kind": "go",
-          "file": "internal/mcpapi/server_test.go",
-          "test": "TestToolValidationReturnsStableErrorEnvelope"
+          "file": "server/logging_test.go",
+          "test": "TestMCPLogsLogicalCallWithoutStreamableHTTPDuplicate"
         }
       ]
     },
@@ -7678,22 +6473,12 @@
         "line": 54
       },
       "mode": "go-port",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
-          "file": "inference/embedding_test.go",
-          "test": "TestBatchedEmbeddingModelPreservesOrderAndUsage"
-        },
-        {
-          "kind": "go",
-          "file": "inference/embedding_test.go",
-          "test": "TestBatchedEmbeddingModelValidatesProviderEnvelope"
-        },
-        {
-          "kind": "go",
-          "file": "internal/modelprovider/openai_test.go",
-          "test": "TestOpenAIEmbeddingTransportUsesOrderedBatchAndUsage"
+          "file": "server/config_test.go",
+          "test": "TestComponentConfigHasNoLegacySQLitePathSurface"
         }
       ]
     },
@@ -7917,27 +6702,12 @@
         "line": 116
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "source/catalog_test.go",
-          "test": "TestCatalogRoutesByExactConcreteType"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestCatalogGetRequiresExactPersistedValue"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestNewRefMatchesUnicodeCharacterLimits"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
+          "test": "TestCatalogRejectsInvalidBackendResults"
         }
       ]
     },
@@ -7948,27 +6718,12 @@
         "line": 130
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "source/catalog_test.go",
-          "test": "TestCatalogRoutesByExactConcreteType"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestCatalogGetRequiresExactPersistedValue"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestNewRefMatchesUnicodeCharacterLimits"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
+          "test": "TestSourceServiceSupportsReadOnlyUsageFlow"
         }
       ]
     },
@@ -7979,27 +6734,12 @@
         "line": 180
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "source/catalog_test.go",
-          "test": "TestCatalogRoutesByExactConcreteType"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestCatalogGetRequiresExactPersistedValue"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestNewRefMatchesUnicodeCharacterLimits"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
+          "test": "TestCatalogRejectsPersistedSourcesWithoutAdapter"
         }
       ]
     },
@@ -8010,27 +6750,12 @@
         "line": 196
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "source/catalog_test.go",
           "test": "TestCatalogRoutesByExactConcreteType"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestCatalogGetRequiresExactPersistedValue"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestNewRefMatchesUnicodeCharacterLimits"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
         }
       ]
     },
@@ -8041,27 +6766,12 @@
         "line": 227
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "source/catalog_test.go",
-          "test": "TestCatalogRoutesByExactConcreteType"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestCatalogGetRequiresExactPersistedValue"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestNewRefMatchesUnicodeCharacterLimits"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
+          "test": "TestAdapterResultsAndDeclarationsAreCheckedAtBoundary"
         }
       ]
     },
@@ -8072,27 +6782,12 @@
         "line": 256
       },
       "mode": "cross-layer",
-      "evidence_level": "file-supporting",
+      "evidence_level": "case-specific",
       "evidence": [
         {
           "kind": "go",
           "file": "source/catalog_test.go",
-          "test": "TestCatalogRoutesByExactConcreteType"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestCatalogGetRequiresExactPersistedValue"
-        },
-        {
-          "kind": "go",
-          "file": "source/catalog_test.go",
-          "test": "TestNewRefMatchesUnicodeCharacterLimits"
-        },
-        {
-          "kind": "go",
-          "file": "internal/sqlstore/sources_test.go",
-          "test": "TestSourceRepositoryPythonPayloadAndIdempotence"
+          "test": "TestSourceCompositionRejectsUnregisteredValuesBeforeStorage"
         }
       ]
     },

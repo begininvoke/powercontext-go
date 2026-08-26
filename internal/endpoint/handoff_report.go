@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/go-faster/jx"
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/handoffreport"
-	"github.com/thunguo/powercontext-go/runtime"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/runtime"
 )
 
 // HandoffReportOperations is deliberately shaped around the optional product

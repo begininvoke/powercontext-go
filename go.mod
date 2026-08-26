@@ -1,4 +1,4 @@
-module github.com/thunguo/powercontext-go
+module github.com/ob-labs/powercontext-go
 
 go 1.25.0
 

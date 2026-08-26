@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestExperienceCandidatesAndCursorCASAreOneTransaction(t *testing.T) {

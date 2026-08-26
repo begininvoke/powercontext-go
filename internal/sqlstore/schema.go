@@ -3,8 +3,18 @@ package sqlstore
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 )
+
+var cursorIdentifierPattern = regexp.MustCompile(`\bcursor\b`)
+
+// quoteCursorIdentifier preserves the frozen column name while making SQL
+// valid on OceanBase, where CURSOR is reserved. Backtick identifiers are also
+// accepted by SQLite, so repositories can use one statement on both profiles.
+func quoteCursorIdentifier(statement string) string {
+	return cursorIdentifierPattern.ReplaceAllString(statement, "`cursor`")
+}
 
 // builtinSchema is deliberately explicit. These names, columns, constraints,
 // and key orders are the Python v0.0.1 on-disk contract; Go-only state must not
@@ -250,6 +260,7 @@ func EnsureBuiltinSchemaForDialect(ctx context.Context, db DBTX, dialect Dialect
 		if dialect == MySQLDialect {
 			statement = strings.ReplaceAll(statement, " BLOB", " MEDIUMBLOB")
 			statement = strings.ReplaceAll(statement, " TEXT", " MEDIUMTEXT")
+			statement = quoteCursorIdentifier(statement)
 		}
 		if _, err := db.ExecContext(ctx, statement); err != nil {
 			return err

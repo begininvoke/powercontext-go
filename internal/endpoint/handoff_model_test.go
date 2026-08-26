@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
 )
 
 func TestHandoffWireRejectsUnknownSchemaVersions(t *testing.T) {

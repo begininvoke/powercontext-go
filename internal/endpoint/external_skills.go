@@ -3,10 +3,10 @@ package endpoint
 import (
 	"context"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/runtime"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/runtime"
 )
 
 type ExternalSkillOperations interface {

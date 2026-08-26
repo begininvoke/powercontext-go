@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 type EnvLookup func(string) (string, bool)

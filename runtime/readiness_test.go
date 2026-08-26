@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 func TestReadinessChecksAggregateAndIsolate(t *testing.T) {

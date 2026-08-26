@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/internal/endpoint"
-	serverlogging "github.com/thunguo/powercontext-go/internal/observability/logging"
-	requesttrace "github.com/thunguo/powercontext-go/internal/observability/tracing"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/internal/endpoint"
+	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
+	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
 	"go.opentelemetry.io/otel/trace"
 )
 

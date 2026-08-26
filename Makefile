@@ -10,8 +10,8 @@ COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || printf unknown)
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(BUILD_DATE)
 
-.PHONY: generate check-generated fmt fmt-check vet test test-sqlite test-race test-full \
-	build build-full check package-standard package-full
+.PHONY: generate check-generated fmt fmt-check vet test test-sqlite test-race test-full test-oceanbase-live \
+	build build-full smoke smoke-full check package-standard package-full
 
 generate:
 	$(GO) generate ./openapi
@@ -47,6 +47,10 @@ test-full:
 	CGO_ENABLED=1 CGO_LDFLAGS="$(CGO_LDFLAGS) -L$(TOKENIZERS_LIB_DIR)" \
 		$(GO) test -tags '$(FULL_TAGS)' ./...
 
+test-oceanbase-live:
+	@test -n "$$POWERCONTEXT_TEST_OCEANBASE_URL" || { echo 'POWERCONTEXT_TEST_OCEANBASE_URL must name a dedicated OceanBase MySQL-mode database' >&2; exit 2; }
+	$(GO) test -count=1 -run TestLiveOceanBaseProfileSmoke -v ./test/e2e
+
 build:
 	mkdir -p bin
 	CGO_ENABLED=1 $(GO) build -tags '$(STANDARD_TAGS)' -trimpath \
@@ -58,6 +62,12 @@ build-full:
 	CGO_ENABLED=1 CGO_LDFLAGS="$(CGO_LDFLAGS) -L$(TOKENIZERS_LIB_DIR)" \
 		$(GO) build -tags '$(FULL_TAGS)' -trimpath -ldflags '$(LDFLAGS)' \
 		-o bin/powercontext-full ./cmd/powercontext
+
+smoke: build
+	$(GO) run ./tools/process-smoke -binary bin/powercontext -version "$(VERSION)"
+
+smoke-full: build-full
+	$(GO) run ./tools/process-smoke -binary bin/powercontext-full -version "$(VERSION)"
 
 package-standard: build
 	@test -f "$(VEC1_EXTENSION)" || { echo 'VEC1_EXTENSION must name the compiled Vec1 library' >&2; exit 2; }

@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/stats"
-	"github.com/thunguo/powercontext-go/trigger"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/trigger"
 )
 
 // ScopedStatistics assembles one scope's inventory and bounded daily usage in

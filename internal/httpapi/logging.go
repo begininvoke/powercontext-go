@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 
-	serverlogging "github.com/thunguo/powercontext-go/internal/observability/logging"
+	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
 )
 
 type ApplicationError struct {

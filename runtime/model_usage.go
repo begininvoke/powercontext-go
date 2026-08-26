@@ -3,8 +3,8 @@ package runtime
 import (
 	"context"
 
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 // ModelUsageRecorder is the best-effort application-side sink used by

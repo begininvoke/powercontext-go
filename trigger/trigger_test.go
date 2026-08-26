@@ -3,7 +3,7 @@ package trigger_test
 import (
 	"testing"
 
-	"github.com/thunguo/powercontext-go/trigger"
+	"github.com/ob-labs/powercontext-go/trigger"
 )
 
 func TestTransitionCopiesActions(t *testing.T) {

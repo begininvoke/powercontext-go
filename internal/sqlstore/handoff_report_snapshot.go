@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/thunguo/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/handoffreport"
 )
 
 // ReadHandoffReportInputs freezes the mutable catalog and Activity journal in

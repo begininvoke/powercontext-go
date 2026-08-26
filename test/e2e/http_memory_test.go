@@ -15,17 +15,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/artifact/skill"
-	"github.com/thunguo/powercontext-go/internal/endpoint"
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/runtime"
-	"github.com/thunguo/powercontext-go/server"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/internal/endpoint"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/server"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
@@ -442,7 +442,7 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 		"project_id": "prj_report-1", "scope_id": "project:test", "key": "migration",
 		"title": "Go migration", "kind": "feature",
 		"external_refs": []any{map[string]any{
-			"kind": "issue", "provider": "github", "external_id": "42", "url": "https://github.com/thunguo/powercontext-go/issues/42",
+			"kind": "issue", "provider": "github", "external_id": "42", "url": "https://github.com/ob-labs/powercontext-go/issues/42",
 		}},
 		"labels": []any{"go", "migration"},
 	})
@@ -469,8 +469,8 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 	}
 
 	repositoryRef := map[string]any{
-		"provider": "github", "repository_id": "thunguo/powercontext-go",
-		"normalized_remote": "https://github.com/thunguo/powercontext-go.git", "subpath": nil,
+		"provider": "github", "repository_id": "ob-labs/powercontext-go",
+		"normalized_remote": "https://github.com/ob-labs/powercontext-go.git", "subpath": nil,
 	}
 	attachedWorkspace := postJSON(t, httpHandler, "/v1/handoff-reports/workspace-bindings/attach", map[string]any{
 		"workspace_instance_id": "workspace-1", "project_id": "prj_report-1",

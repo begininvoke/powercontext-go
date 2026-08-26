@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/internal/sqlstore"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestSourceRepositoryPythonPayloadAndIdempotence(t *testing.T) {
@@ -128,6 +130,136 @@ func TestSourceRepositorySerializesConcurrentJournalPositions(t *testing.T) {
 	}
 	if highWatermark != count {
 		t.Fatalf("high watermark = %d", highWatermark)
+	}
+
+	repeated := contentSource(t, "same-source", "same-content", nil)
+	positions = positions[:0]
+	secondErrors := make(chan error, 8)
+	for range 8 {
+		group.Go(func() {
+			var stored sqlstore.StoredSource
+			err := database.Transaction(ctx, func(tx sqlstore.DBTX) error {
+				var addErr error
+				stored, addErr = repository.Add(ctx, tx, "scope-idempotent", repeated)
+				return addErr
+			})
+			if err != nil {
+				secondErrors <- err
+				return
+			}
+			positionsMu.Lock()
+			positions = append(positions, int(stored.JournalPosition))
+			positionsMu.Unlock()
+		})
+	}
+	group.Wait()
+	close(secondErrors)
+	for err := range secondErrors {
+		t.Error(err)
+	}
+	if t.Failed() {
+		return
+	}
+	for _, position := range positions {
+		if position != 1 {
+			t.Fatalf("idempotent positions = %v", positions)
+		}
+	}
+	following := contentSource(t, "following-source", "following-content", nil)
+	if err := database.Transaction(ctx, func(tx sqlstore.DBTX) error {
+		stored, addErr := repository.Add(ctx, tx, "scope-idempotent", following)
+		if addErr == nil && stored.JournalPosition != 2 {
+			t.Fatalf("following position = %d", stored.JournalPosition)
+		}
+		return addErr
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestTwoSourceAdaptersShareRepositoryAndJournal(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	database := openTestDatabase(t)
+	repository, err := sqlstore.NewSourceRepository(
+		sqlstore.SQLiteDialect,
+		sqlstore.ContentSourceCodec(),
+		sqlstore.ExternalSkillSnapshotSourceCodec(),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	registration, err := skill.NewRegistration(
+		"codex:project:repository/friendly-python", "codex", "codex", "workstation-1",
+		skill.ProjectScope, "/workspace/.agents/skills/friendly-python", strings.Repeat("a", 64),
+		"friendly-python", "Use when writing Python.",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := skill.NewSnapshot(registration, "---\nname: friendly-python\n---\n\nKeep boundaries explicit.\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	external, err := (skill.SnapshotSourceAdapter{}).Resolve(ctx, skill.SnapshotCapture{
+		Snapshot: snapshot, Mode: skill.ImportModeImport,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := contentSource(t, "note-1", "Review the repository boundary.", nil)
+	var first, second, repeated sqlstore.StoredSource
+	if err := database.Transaction(ctx, func(tx sqlstore.DBTX) error {
+		var addErr error
+		first, addErr = repository.Add(ctx, tx, "scope-a", content)
+		if addErr != nil {
+			return addErr
+		}
+		second, addErr = repository.Add(ctx, tx, "scope-a", external)
+		if addErr != nil {
+			return addErr
+		}
+		repeated, addErr = repository.Add(ctx, tx, "scope-a", content)
+		return addErr
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if first.JournalPosition != 1 || second.JournalPosition != 2 || repeated.JournalPosition != 1 {
+		t.Fatalf("positions = %d/%d/%d", first.JournalPosition, second.JournalPosition, repeated.JournalPosition)
+	}
+	if err := database.Transaction(ctx, func(tx sqlstore.DBTX) error {
+		listed, listErr := repository.List(ctx, tx, "scope-a", 1, nil)
+		if listErr != nil {
+			return listErr
+		}
+		if len(listed) != 1 {
+			t.Fatalf("listed = %#v", listed)
+		}
+		_, ok := listed[0].Value.(skill.SnapshotSource)
+		if !ok {
+			t.Fatalf("decoded Source = %T", listed[0].Value)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSourceRepositoryRejectsScopeOutsideRelationalIdentityBaseline(t *testing.T) {
+	database := openTestDatabase(t)
+	repository, err := sqlstore.NewSourceRepository(sqlstore.SQLiteDialect, sqlstore.ContentSourceCodec())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = database.Transaction(context.Background(), func(tx sqlstore.DBTX) error {
+		_, addErr := repository.Add(
+			context.Background(), tx, strings.Repeat("x", 257), contentSource(t, "note", "body", nil),
+		)
+		return addErr
+	})
+	var invalid *sqlstore.InvalidRepositoryArgumentError
+	if !errors.As(err, &invalid) || invalid.Field != "scope_id" {
+		t.Fatalf("scope error = %v", err)
 	}
 }
 

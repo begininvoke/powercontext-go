@@ -5,7 +5,7 @@ import (
 	"context"
 	"io"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
 )
 
 const handoffReportPath = "/v1/handoff-reports/get"

@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact/experience"
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence(t *testing.T) {
@@ -73,6 +73,73 @@ func TestExperienceIncubationRejectsPipelineEvidenceOutsideWindow(t *testing.T) 
 	}
 }
 
+func TestExperienceIncubationRetriesSameWindowAfterGenerationFailure(t *testing.T) {
+	t.Parallel()
+	ref, _ := source.NewRef(source.ContentType, "task-1")
+	backend := &fakeIncubationBackend{
+		previous: source.NewCursor(0), next: source.NewCursor(1), high: 1,
+		values: []source.Value{incubationSource(t, "task-1")}, available: []source.Ref{ref},
+	}
+	calls := 0
+	application, err := NewExperienceIncubationApplication(
+		New(), func(string) (ExperienceIncubationBackend, error) { return backend, nil },
+		incubationPipelineFunc(func(context.Context, []source.Value) ([]experience.CandidateInput, error) {
+			calls++
+			if calls == 1 {
+				return nil, inference.NewUnavailableError("experience-incubate")
+			}
+			return []experience.CandidateInput{incubationPlan(t, ref)}, nil
+		}),
+		func(string) (string, error) { return "candidate-1", nil },
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := application.Incubate(context.Background(), "scope", experience.IncubationWindowLimit); err == nil {
+		t.Fatal("generation failure was hidden")
+	}
+	if backend.applied {
+		t.Fatal("failed inference advanced the cursor")
+	}
+	result, err := application.Incubate(context.Background(), "scope", experience.IncubationWindowLimit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if calls != 2 || !backend.applied || result.PreviousCursor != 0 || result.CurrentCursor != 1 || result.CandidateCount != 1 {
+		t.Fatalf("calls=%d applied=%v result=%#v", calls, backend.applied, result)
+	}
+}
+
+func TestScheduledExperienceIncubationUsesFixedSourceWindowBudget(t *testing.T) {
+	t.Parallel()
+	ref, _ := source.NewRef(source.ContentType, "task-1")
+	backend := &fakeIncubationBackend{
+		previous: source.NewCursor(0), next: source.NewCursor(1), high: 1,
+		values: []source.Value{incubationSource(t, "task-1")}, available: []source.Ref{ref},
+	}
+	lifecycle := New()
+	application, err := NewExperienceIncubationApplication(
+		lifecycle, func(string) (ExperienceIncubationBackend, error) { return backend, nil },
+		incubationPipelineFunc(func(context.Context, []source.Value) ([]experience.CandidateInput, error) {
+			return nil, nil
+		}),
+		func(string) (string, error) { return "candidate", nil },
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	processor, err := NewScheduledProcessor(lifecycle, staticScopes{"scope"}, nil, application, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := processor.IncubateExperiences(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(backend.observedLimits) != 1 || backend.observedLimits[0] != experience.IncubationWindowLimit {
+		t.Fatalf("observed limits = %v", backend.observedLimits)
+	}
+}
+
 func TestScheduledExperienceProcessorIsolatesScopeFailure(t *testing.T) {
 	t.Parallel()
 
@@ -129,11 +196,13 @@ type fakeIncubationBackend struct {
 	candidateIDs   []string
 	plans          []experience.CandidateInput
 	applyErr       error
+	observedLimits []int64
 }
 
 func (b *fakeIncubationBackend) ObserveWindow(
-	context.Context, string, int64,
+	_ context.Context, _ string, limit int64,
 ) (source.Cursor, source.Cursor, *int64, int64, []source.Value, []source.Ref, error) {
+	b.observedLimits = append(b.observedLimits, limit)
 	return b.previous, b.next, nil, b.high, b.values, b.available, nil
 }
 

@@ -117,6 +117,41 @@ jobs:
           POWERCONTEXT_APSCHEDULER_PYTHON: ${{ github.workspace }}/_oracle/.venv/bin/python
         run: go test -count=1 ./test/conformance ./internal/scheduler
 
+  oceanbase-live:
+    name: OceanBase live compatibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      oceanbase:
+        image: ghcr.io/oceanbase/oceanbase-ce@sha256:31086a6900c21c479c2bcd942b6a28c53b17a51f4e9b9eb8eafcc596adfcd2e3
+        env:
+          MODE: slim
+          OB_DATABASE: powercontext
+          OB_TENANT_PASSWORD: powercontext-e2e
+        ports:
+          - 2881:2881
+        options: >-
+          --ulimit nofile=65536:65536
+          --health-cmd "obclient -h127.0.0.1 -P2881 -uroot@test -ppowercontext-e2e -Dpowercontext -e 'SELECT 1' >/dev/null 2>&1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 120
+          --health-start-period 30s
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run real OceanBase schema and cursor tests
+        env:
+          POWERCONTEXT_TEST_OCEANBASE_URL: mysql+aoceanbase://root%40test:powercontext-e2e@127.0.0.1:2881/powercontext?charset=utf8mb4
+        run: make test-oceanbase-live
+
   platform:
     name: Standard (${{ matrix.target }})
     strategy:
@@ -151,8 +186,7 @@ jobs:
       - name: Test SQLite and build the CGO binary
         run: |
           make test-sqlite
-          make build VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
-          test "$(./bin/powercontext --version)" = ci
+          make smoke VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
 
   full:
     name: Full build tags (${{ matrix.target }})
@@ -196,8 +230,7 @@ jobs:
           TOKENIZERS_LIB_DIR: ${{ runner.temp }}/tokenizers
         run: |
           make test-full
-          make build-full VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
-          test "$(./bin/powercontext-full --version)" = ci
+          make smoke-full VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
 
   host-adapters:
     name: Host adapters

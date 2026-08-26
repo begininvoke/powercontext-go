@@ -5,8 +5,8 @@ import (
 	"errors"
 	"net/http"
 
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
 	"github.com/ogen-go/ogen/ogenerrors"
-	v1 "github.com/thunguo/powercontext-go/api/v1"
 )
 
 // ErrorMapper maps application/domain errors at the transport boundary. The

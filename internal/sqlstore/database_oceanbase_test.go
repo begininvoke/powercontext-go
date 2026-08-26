@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"errors"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -31,8 +34,9 @@ func TestOceanBaseDriverConfigPreservesFrozenURLContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	if config.User != "root@tenant" || config.Passwd != "secret" || config.Addr != "127.0.0.1:2881" ||
-		config.DBName != "powercontext" || config.Params["charset"] != "utf8mb4" || !config.ParseTime {
-		t.Fatalf("config = %#v", config)
+		config.DBName != "powercontext" || !strings.Contains(config.FormatDSN(), "charset=utf8mb4") ||
+		len(config.Params) != 0 || !config.ParseTime || !config.AllowNativePasswords {
+		t.Fatal("OceanBase driver config does not preserve the frozen URL semantics")
 	}
 }
 
@@ -65,8 +69,91 @@ func TestMySQLSchemaUsesPythonPayloadVariants(t *testing.T) {
 	}
 	joined := strings.Join(recorder.statements, "\n")
 	if !strings.Contains(joined, "payload MEDIUMBLOB NOT NULL") ||
+		!strings.Contains(joined, "`cursor` MEDIUMBLOB NOT NULL") ||
 		!strings.Contains(joined, "searchable_text MEDIUMTEXT") ||
 		strings.Contains(joined, " payload BLOB") {
 		t.Fatalf("unexpected MySQL schema:\n%s", joined)
+	}
+}
+
+func TestOceanBaseQuotesCursorWithoutChangingCompatibleTableNames(t *testing.T) {
+	statement := quoteCursorIdentifier("SELECT cursor FROM pc_source_cursors WHERE cursor > ? ORDER BY cursor")
+	if statement != "SELECT `cursor` FROM pc_source_cursors WHERE `cursor` > ? ORDER BY `cursor`" {
+		t.Fatalf("quoted statement = %q", statement)
+	}
+}
+
+func TestEveryMySQLUTF8MB4KeyStaysBelowInnoDBLimit(t *testing.T) {
+	recorder := &recordingDBTX{}
+	if err := EnsureBuiltinSchemaForDialect(t.Context(), recorder, MySQLDialect); err != nil {
+		t.Fatal(err)
+	}
+	columnPattern := regexp.MustCompile(`(?m)^\s*([a-z_]+)\s+(VARCHAR\((\d+)\)|BIGINT|INTEGER|DATE)`)
+	constraintPattern := regexp.MustCompile(`(?is)(?:PRIMARY KEY|UNIQUE|FOREIGN KEY)\s*\(([^)]*)\)`)
+	maximum := 0
+	constraintCount := 0
+	for _, statement := range recorder.statements {
+		budgets := make(map[string]int)
+		for _, match := range columnPattern.FindAllStringSubmatch(statement, -1) {
+			switch {
+			case match[3] != "":
+				characters, err := strconv.Atoi(match[3])
+				if err != nil {
+					t.Fatal(err)
+				}
+				budgets[match[1]] = characters * 4
+			case match[2] == "BIGINT":
+				budgets[match[1]] = 8
+			case match[2] == "INTEGER":
+				budgets[match[1]] = 4
+			case match[2] == "DATE":
+				budgets[match[1]] = 3
+			}
+		}
+		for _, match := range constraintPattern.FindAllStringSubmatch(statement, -1) {
+			constraintCount++
+			total := 0
+			for _, raw := range strings.Split(match[1], ",") {
+				name := strings.Trim(strings.TrimSpace(raw), "`")
+				budget, ok := budgets[name]
+				if !ok {
+					t.Fatalf("unbudgeted key column %q in %q", name, match[0])
+				}
+				total += budget
+			}
+			if total >= 3072 {
+				t.Fatalf("InnoDB key budget = %d for %q", total, match[0])
+			}
+			maximum = max(maximum, total)
+		}
+	}
+	if constraintCount == 0 || maximum != 2560 {
+		t.Fatalf("constraints = %d, maximum key budget = %d", constraintCount, maximum)
+	}
+}
+
+func TestOceanBaseProfileRequiresMySQLTenant(t *testing.T) {
+	tests := []struct {
+		name, mode string
+		queryErr   error
+		valid      bool
+	}{
+		{name: "ob_compatibility_mode", mode: "MYSQL", valid: true},
+		{name: "ob_compatibility_mode", mode: "mysql", valid: true},
+		{name: "ob_compatibility_mode", mode: "ORACLE"},
+		{name: "wrong", mode: "MYSQL"},
+		{queryErr: sql.ErrNoRows},
+	}
+	for _, test := range tests {
+		err := validateOceanBaseTenantMode(test.name, test.mode, test.queryErr)
+		if test.valid && err != nil {
+			t.Fatalf("valid tenant rejected: %v", err)
+		}
+		if !test.valid {
+			var unsupported *UnsupportedOceanBaseTenantError
+			if !errors.As(err, &unsupported) {
+				t.Fatalf("tenant %q/%q error = %v", test.name, test.mode, err)
+			}
+		}
 	}
 }

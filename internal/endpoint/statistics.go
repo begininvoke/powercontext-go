@@ -3,8 +3,8 @@ package endpoint
 import (
 	"context"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/stats"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 type StatisticsOperations interface {

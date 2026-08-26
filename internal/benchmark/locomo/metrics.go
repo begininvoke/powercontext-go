@@ -1,6 +1,8 @@
 package locomo
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
 	"slices"
 	"sort"
@@ -11,7 +13,7 @@ import (
 func NormalizeAnswer(value string) string {
 	var normalized strings.Builder
 	for _, character := range strings.ToLower(value) {
-		if unicode.IsLetter(character) || unicode.IsNumber(character) || unicode.IsSpace(character) {
+		if unicode.IsLetter(character) || unicode.IsNumber(character) {
 			normalized.WriteRune(character)
 		} else {
 			normalized.WriteByte(' ')
@@ -156,6 +158,83 @@ type Summary struct {
 	Metrics        map[string]float64  `json:"metrics"`
 	LatencyP50     map[string]*float64 `json:"latency_ms_p50"`
 	LatencyP95     map[string]*float64 `json:"latency_ms_p95"`
+}
+
+// MarshalJSON preserves the frozen Python summary shape: metric and latency
+// fields are flat because result consumers compare them across implementations.
+func (s Summary) MarshalJSON() ([]byte, error) {
+	value := map[string]any{
+		"question_count": s.QuestionCount, "completed_count": s.CompletedCount, "error_count": s.ErrorCount,
+	}
+	for name, metric := range s.Metrics {
+		value[name] = metric
+	}
+	for phase, latency := range s.LatencyP50 {
+		value[phase+"_latency_ms_p50"] = latency
+	}
+	for phase, latency := range s.LatencyP95 {
+		value[phase+"_latency_ms_p95"] = latency
+	}
+	return json.Marshal(value)
+}
+
+// UnmarshalJSON accepts the same flat shape emitted by the Python Oracle and
+// MarshalJSON. It lets a resumed rejudge return its original frozen summary.
+func (s *Summary) UnmarshalJSON(encoded []byte) error {
+	var value map[string]json.RawMessage
+	if err := json.Unmarshal(encoded, &value); err != nil {
+		return err
+	}
+	decodeInt := func(name string, output *int) error {
+		raw, ok := value[name]
+		if !ok {
+			return fmt.Errorf("LoCoMo summary is missing %s", name)
+		}
+		return json.Unmarshal(raw, output)
+	}
+	if err := decodeInt("question_count", &s.QuestionCount); err != nil {
+		return err
+	}
+	if err := decodeInt("completed_count", &s.CompletedCount); err != nil {
+		return err
+	}
+	if err := decodeInt("error_count", &s.ErrorCount); err != nil {
+		return err
+	}
+	s.Metrics = make(map[string]float64, len(summaryMetricNames))
+	for _, name := range summaryMetricNames {
+		raw, ok := value[name]
+		if !ok {
+			continue
+		}
+		var metric float64
+		if err := json.Unmarshal(raw, &metric); err != nil {
+			return fmt.Errorf("decode LoCoMo summary metric %s: %w", name, err)
+		}
+		s.Metrics[name] = metric
+	}
+	s.LatencyP50 = make(map[string]*float64)
+	s.LatencyP95 = make(map[string]*float64)
+	for name, raw := range value {
+		var target map[string]*float64
+		var phase string
+		switch {
+		case strings.HasSuffix(name, "_latency_ms_p50"):
+			target = s.LatencyP50
+			phase = strings.TrimSuffix(name, "_latency_ms_p50")
+		case strings.HasSuffix(name, "_latency_ms_p95"):
+			target = s.LatencyP95
+			phase = strings.TrimSuffix(name, "_latency_ms_p95")
+		default:
+			continue
+		}
+		var latency *float64
+		if err := json.Unmarshal(raw, &latency); err != nil {
+			return fmt.Errorf("decode LoCoMo summary latency %s: %w", name, err)
+		}
+		target[phase] = latency
+	}
+	return nil
 }
 
 var summaryMetricNames = []string{

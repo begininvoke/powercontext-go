@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/inference"
-	"github.com/thunguo/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 type recordedModelUsage struct {

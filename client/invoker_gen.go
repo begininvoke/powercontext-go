@@ -5,7 +5,7 @@ package client
 import (
 	"context"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
 )
 
 type normalizedInvoker struct{ raw v1.Invoker }

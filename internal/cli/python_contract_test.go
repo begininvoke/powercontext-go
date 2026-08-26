@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/server"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/server"
 )
 
 const generatedNoOpJSON = `{"status":"no_op","candidate":null}`

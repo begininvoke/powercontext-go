@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/thunguo/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/stats"
 )
 
 // StatisticsReader is the exact read surface needed by the product-facing

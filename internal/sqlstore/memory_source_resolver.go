@@ -5,7 +5,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 // MemorySourceResolver exposes the exact Source catalog semantics required by

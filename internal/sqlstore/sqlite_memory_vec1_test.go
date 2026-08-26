@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
 )
 
 func TestSQLiteVec1ProfileContract(t *testing.T) {

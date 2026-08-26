@@ -3,8 +3,8 @@ package endpoint
 import (
 	"context"
 
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/runtime"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/runtime"
 )
 
 type CapabilityProvider func(context.Context) (runtime.Capabilities, error)
@@ -29,7 +29,6 @@ type HandlerOptions struct {
 // implementation makes an omitted binding fail explicitly instead of being
 // guessed at the transport layer.
 type Handler struct {
-	v1.UnimplementedHandler
 	capabilities  CapabilityProvider
 	readiness     ReadinessProvider
 	sources       SourceOperations
@@ -42,6 +41,8 @@ type Handler struct {
 	handoffReport HandoffReportOperations
 	statistics    StatisticsOperations
 }
+
+var _ v1.Handler = (*Handler)(nil)
 
 func NewHandler(options HandlerOptions) *Handler {
 	return &Handler{

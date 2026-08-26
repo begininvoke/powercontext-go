@@ -6,10 +6,10 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/handoffreport"
-	pcruntime "github.com/thunguo/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/handoffreport"
+	pcruntime "github.com/ob-labs/powercontext-go/runtime"
 )
 
 func TestOptimisticSelectionFreezesStableHeadsInScopeOrder(t *testing.T) {

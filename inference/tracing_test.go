@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	servertracing "github.com/thunguo/powercontext-go/internal/observability/tracing"
+	servertracing "github.com/ob-labs/powercontext-go/internal/observability/tracing"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"

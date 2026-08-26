@@ -11,14 +11,14 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	v1 "github.com/thunguo/powercontext-go/api/v1"
-	"github.com/thunguo/powercontext-go/artifact/memory"
-	"github.com/thunguo/powercontext-go/internal/endpoint"
-	"github.com/thunguo/powercontext-go/internal/httpapi"
-	servermetrics "github.com/thunguo/powercontext-go/internal/observability/metrics"
-	"github.com/thunguo/powercontext-go/internal/webui"
-	"github.com/thunguo/powercontext-go/review"
-	"github.com/thunguo/powercontext-go/runtime"
+	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/internal/endpoint"
+	"github.com/ob-labs/powercontext-go/internal/httpapi"
+	servermetrics "github.com/ob-labs/powercontext-go/internal/observability/metrics"
+	"github.com/ob-labs/powercontext-go/internal/webui"
+	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/runtime"
 )
 
 func repeatHTTPValue[T any](value T, count int) []T {

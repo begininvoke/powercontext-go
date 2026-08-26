@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/thunguo/powercontext-go/internal/endpoint"
+	"github.com/ob-labs/powercontext-go/internal/endpoint"
 	"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"

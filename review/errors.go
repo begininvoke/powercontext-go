@@ -3,7 +3,7 @@ package review
 import (
 	"fmt"
 
-	"github.com/thunguo/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact"
 )
 
 type CandidateNotFoundError struct{ CandidateID string }

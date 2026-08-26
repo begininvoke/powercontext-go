@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/thunguo/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/handoffreport"
 )
 
 func (s *HandoffReportStore) RecordActivity(ctx context.Context, event handoffreport.ActivityEvent) (handoffreport.StoredActivity, error) {
@@ -99,7 +99,7 @@ func (s *HandoffReportStore) recordActivity(ctx context.Context, tx DBTX, event 
 	if found {
 		return idempotentActivity(existing, payload)
 	}
-	result, err := tx.ExecContext(ctx, "UPDATE pc_handoff_report_activity_heads SET cursor = cursor + 1 WHERE project_id = ?", event.ProjectID())
+	result, err := tx.ExecContext(ctx, quoteCursorIdentifier("UPDATE pc_handoff_report_activity_heads SET cursor = cursor + 1 WHERE project_id = ?"), event.ProjectID())
 	if err != nil {
 		return handoffreport.StoredActivity{}, err
 	}
@@ -111,7 +111,7 @@ func (s *HandoffReportStore) recordActivity(ctx context.Context, tx DBTX, event 
 		return handoffreport.StoredActivity{}, fmt.Errorf("Handoff Report Activity cursor allocator is missing")
 	}
 	var cursor int64
-	if err := tx.QueryRowContext(ctx, "SELECT cursor FROM pc_handoff_report_activity_heads WHERE project_id = ?", event.ProjectID()).Scan(&cursor); err != nil {
+	if err := tx.QueryRowContext(ctx, quoteCursorIdentifier("SELECT cursor FROM pc_handoff_report_activity_heads WHERE project_id = ?"), event.ProjectID()).Scan(&cursor); err != nil {
 		return handoffreport.StoredActivity{}, err
 	}
 	if cursor < 1 {
@@ -125,10 +125,10 @@ func (s *HandoffReportStore) recordActivity(ctx context.Context, tx DBTX, event 
 	if value := event.EffectivePeriodTime(); value != nil {
 		period = handoffreport.UTCText(*value)
 	}
-	_, err = tx.ExecContext(ctx, `INSERT INTO pc_handoff_report_activities (
+	_, err = tx.ExecContext(ctx, quoteCursorIdentifier(`INSERT INTO pc_handoff_report_activities (
         project_id, cursor, event_id, scope_id, source, source_event_id,
         occurred_at, observed_at, period_at, time_basis, payload
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, event.ProjectID(), cursor, event.EventID(), reportNullableString(event.ScopeID()), event.Source(), event.SourceEventID(), occurred, handoffreport.UTCText(event.ObservedAt()), period, event.TimeBasis(), string(payload))
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`), event.ProjectID(), cursor, event.EventID(), reportNullableString(event.ScopeID()), event.Source(), event.SourceEventID(), occurred, handoffreport.UTCText(event.ObservedAt()), period, event.TimeBasis(), string(payload))
 	if err != nil {
 		existing, found, findErr := s.findActivityByIdentity(ctx, tx, event.Source(), event.SourceEventID())
 		if findErr == nil && found {
@@ -149,9 +149,9 @@ func (s *HandoffReportStore) recordActivity(ctx context.Context, tx DBTX, event 
 }
 
 func (s *HandoffReportStore) reserveActivityWriter(ctx context.Context, tx DBTX, projectID string) error {
-	statement := "INSERT INTO pc_handoff_report_activity_heads (project_id, cursor) VALUES (?, 0) ON CONFLICT(project_id) DO UPDATE SET cursor = cursor"
+	statement := quoteCursorIdentifier("INSERT INTO pc_handoff_report_activity_heads (project_id, cursor) VALUES (?, 0) ON CONFLICT(project_id) DO UPDATE SET cursor = cursor")
 	if s.dialect == MySQLDialect {
-		statement = "INSERT INTO pc_handoff_report_activity_heads (project_id, cursor) VALUES (?, 0) ON DUPLICATE KEY UPDATE cursor = cursor"
+		statement = quoteCursorIdentifier("INSERT INTO pc_handoff_report_activity_heads (project_id, cursor) VALUES (?, 0) ON DUPLICATE KEY UPDATE cursor = cursor")
 	}
 	_, err := tx.ExecContext(ctx, statement, projectID)
 	return err
@@ -172,7 +172,7 @@ type activityRow struct {
 }
 
 func (s *HandoffReportStore) findActivityByIdentity(ctx context.Context, tx DBTX, source handoffreport.ActivitySource, eventID string) (activityRow, bool, error) {
-	row, err := scanActivity(tx.QueryRowContext(ctx, "SELECT project_id, cursor, event_id, scope_id, source, source_event_id, occurred_at, observed_at, period_at, time_basis, payload FROM pc_handoff_report_activities WHERE source = ? AND source_event_id = ?", source, eventID))
+	row, err := scanActivity(tx.QueryRowContext(ctx, quoteCursorIdentifier("SELECT project_id, cursor, event_id, scope_id, source, source_event_id, occurred_at, observed_at, period_at, time_basis, payload FROM pc_handoff_report_activities WHERE source = ? AND source_event_id = ?"), source, eventID))
 	if errors.Is(err, sql.ErrNoRows) {
 		return activityRow{}, false, nil
 	}
@@ -180,7 +180,7 @@ func (s *HandoffReportStore) findActivityByIdentity(ctx context.Context, tx DBTX
 }
 
 func (s *HandoffReportStore) findActivityByProjectCursor(ctx context.Context, tx DBTX, projectID string, cursor int64) (activityRow, bool, error) {
-	row, err := scanActivity(tx.QueryRowContext(ctx, "SELECT project_id, cursor, event_id, scope_id, source, source_event_id, occurred_at, observed_at, period_at, time_basis, payload FROM pc_handoff_report_activities WHERE project_id = ? AND cursor = ?", projectID, cursor))
+	row, err := scanActivity(tx.QueryRowContext(ctx, quoteCursorIdentifier("SELECT project_id, cursor, event_id, scope_id, source, source_event_id, occurred_at, observed_at, period_at, time_basis, payload FROM pc_handoff_report_activities WHERE project_id = ? AND cursor = ?"), projectID, cursor))
 	if errors.Is(err, sql.ErrNoRows) {
 		return activityRow{}, false, nil
 	}
@@ -239,7 +239,7 @@ func (s *HandoffReportStore) activityHighWatermark(ctx context.Context, tx DBTX,
 		return 0, activityRepositoryError(err)
 	}
 	var value int64
-	err := tx.QueryRowContext(ctx, "SELECT cursor FROM pc_handoff_report_activity_heads WHERE project_id = ?", projectID).Scan(&value)
+	err := tx.QueryRowContext(ctx, quoteCursorIdentifier("SELECT cursor FROM pc_handoff_report_activity_heads WHERE project_id = ?"), projectID).Scan(&value)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, nil
 	}
@@ -277,10 +277,10 @@ func (s *HandoffReportStore) listActivityRows(ctx context.Context, tx DBTX, proj
 	if sources != nil && len(sources) == 0 {
 		return []handoffreport.StoredActivity{}, nil
 	}
-	query := "SELECT project_id, cursor, event_id, scope_id, source, source_event_id, occurred_at, observed_at, period_at, time_basis, payload FROM pc_handoff_report_activities WHERE project_id = ? AND cursor > ?"
+	query := quoteCursorIdentifier("SELECT project_id, cursor, event_id, scope_id, source, source_event_id, occurred_at, observed_at, period_at, time_basis, payload FROM pc_handoff_report_activities WHERE project_id = ? AND cursor > ?")
 	args := []any{projectID, after}
 	if through != nil {
-		query += " AND cursor <= ?"
+		query += " AND `cursor` <= ?"
 		args = append(args, *through)
 	}
 	if start != nil {
@@ -297,7 +297,7 @@ func (s *HandoffReportStore) listActivityRows(ctx context.Context, tx DBTX, proj
 			args = append(args, source)
 		}
 	}
-	query += " ORDER BY cursor LIMIT ?"
+	query += " ORDER BY `cursor` LIMIT ?"
 	args = append(args, limit)
 	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {

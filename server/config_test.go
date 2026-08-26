@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/artifact/memory"
 )
 
 func TestLoadConfigMatchesFrozenServerEnvironment(t *testing.T) {
@@ -161,6 +162,17 @@ func TestProcessConfigRejectsInvalidAndPartialEmbeddingProfiles(t *testing.T) {
 	}
 }
 
+func TestComponentConfigHasNoLegacySQLitePathSurface(t *testing.T) {
+	t.Parallel()
+	typeOfSQLite := reflect.TypeOf(SQLiteDatabaseConfig{})
+	if _, found := typeOfSQLite.FieldByName("LegacyPath"); found {
+		t.Fatal("SQLiteConfig exposes the removed legacy_path component setting")
+	}
+	if _, found := typeOfSQLite.FieldByName("Path"); found {
+		t.Fatal("SQLiteConfig exposes a second path authority beside URL")
+	}
+}
+
 func TestLoadConfigRejectsAmbiguousExternalSkillEnvironment(t *testing.T) {
 	t.Setenv(PowerContextHomeEnv, t.TempDir())
 	t.Setenv("POWERCONTEXT_SERVER_EXTERNAL_SKILLS", `{"host_id":"host","codex_roots":[]}`)
@@ -252,6 +264,20 @@ func TestProcessConfigEnforcesTrustAndInferenceBoundariesWithoutSecrets(t *testi
 	config.Inference.EmbeddingModel = "openai:text-embedding-3-small"
 	if err := config.Validate(); err == nil {
 		t.Fatal("partial embedding profile was accepted")
+	}
+}
+
+func TestScheduledExperienceIncubationRequiresGenerationModel(t *testing.T) {
+	config, err := DefaultConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	interval := time.Minute
+	config.Runtime.ExperienceIncubationInterval = &interval
+	config.Inference.GenerationModel = ""
+	err = config.Validate()
+	if err == nil || !strings.Contains(err.Error(), "scheduled Experience incubation requires a generation model") {
+		t.Fatalf("validation error = %v", err)
 	}
 }
 

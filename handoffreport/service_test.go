@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/thunguo/powercontext-go/artifact"
-	"github.com/thunguo/powercontext-go/artifact/handoff"
-	"github.com/thunguo/powercontext-go/handoffreport"
-	"github.com/thunguo/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/source"
 )
 
 func TestServiceFreezesExactHeadsAndBuildsCanonicalReport(t *testing.T) {
@@ -129,6 +129,43 @@ func TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats(t *testing.
 	}
 	if chinese.ReportDigest() == english.ReportDigest() {
 		t.Fatalf("locale did not change report digest")
+	}
+}
+
+func TestDigestFieldsStayStableWhenReportIsRevalidated(t *testing.T) {
+	t.Parallel()
+	selected := reportHandoff(t, 1)
+	reader := &reportReader{values: map[string]*handoff.Handoff{"scope-a": &selected}}
+	service, err := handoffreport.NewService(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := service.Generate(context.Background(), handoffreport.GenerateInput{
+		Project:           domainProject(t),
+		Workstreams:       []handoffreport.WorkstreamDescriptor{domainWorkstream(t, "scope-a")},
+		GeneratedAt:       time.Date(2026, time.August, 6, 0, 0, 0, 0, time.UTC),
+		Format:            handoffreport.FormatJSON,
+		ReportKind:        handoffreport.ReportHandoff,
+		NormalizedFilters: map[string]any{},
+		ActivityCoverage:  handoffreport.ActivityNotConfigured,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantSelection, wantReport := report.SelectionDigest(), report.ReportDigest()
+	if err := report.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	selection, err := handoffreport.SelectionDigest(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest, err := handoffreport.ReportDigest(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if selection != wantSelection || digest != wantReport {
+		t.Fatalf("revalidated digests = (%q, %q), want (%q, %q)", selection, digest, wantSelection, wantReport)
 	}
 }
 
