@@ -1,0 +1,32 @@
+# Go build and test output
+/bin/
+/dist/
+/coverage/
+*.coverprofile
+*.test
+
+# Host adapter build and test output
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+# Local runtime state
+*.db
+*.db-shm
+*.db-wal
+!test/conformance/testdata/**/*.db
+*.log
+/benchmark/locomo/results/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/
+.gitnexus

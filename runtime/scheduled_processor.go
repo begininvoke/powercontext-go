@@ -1,0 +1,168 @@
+package runtime
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	experienceartifact "github.com/ob-labs/powercontext-go/artifact/experience"
+)
+
+const (
+	ProcessSourceWindowOperation = "process_source_window"
+	IncubateExperienceOperation  = "incubate_experience_candidates"
+	ScheduledProcessingSuccess   = "success"
+	ScheduledProcessingNoop      = "noop"
+	ScheduledProcessingFailure   = "failure"
+	ScheduledProcessingCancelled = "cancelled"
+)
+
+type ScheduledScopeLister interface {
+	ScopeIDs(context.Context) ([]string, error)
+}
+
+type ScheduledObservation struct {
+	Operation      string
+	Outcome        string
+	Duration       time.Duration
+	SourceCount    int
+	CandidateCount *int
+	Err            error
+}
+
+type ScheduledObserver func(context.Context, ScheduledObservation)
+
+// ScheduledProcessor serializes both persisted jobs globally, then visits
+// Source-backed Scopes deterministically. Each Scope keeps its normal write
+// gate, while one failure is observed and isolated from later Scopes.
+type ScheduledProcessor struct {
+	runtime    *Runtime
+	scopes     ScheduledScopeLister
+	memory     *MemoryApplication
+	experience *ExperienceIncubationApplication
+	observe    ScheduledObserver
+	clock      func() time.Time
+}
+
+func NewScheduledProcessor(
+	runtime *Runtime,
+	scopes ScheduledScopeLister,
+	memory *MemoryApplication,
+	experience *ExperienceIncubationApplication,
+	observer ScheduledObserver,
+	clock func() time.Time,
+) (*ScheduledProcessor, error) {
+	if runtime == nil || scopes == nil || (memory == nil && experience == nil) {
+		return nil, errors.New("runtime: scheduled processor dependencies must not be nil")
+	}
+	if clock == nil {
+		clock = time.Now
+	}
+	return &ScheduledProcessor{
+		runtime: runtime, scopes: scopes, memory: memory, experience: experience,
+		observe: observer, clock: clock,
+	}, nil
+}
+
+func (p *ScheduledProcessor) ProcessSourceWindows(ctx context.Context) error {
+	if p.memory == nil {
+		return &StateError{Code: "memory-flush"}
+	}
+	return p.process(ctx, ProcessSourceWindowOperation, func(ctx context.Context, scope string) ScheduledObservation {
+		started := p.clock()
+		result, err := p.memory.flush(ctx, scope)
+		observation := ScheduledObservation{
+			Operation: ProcessSourceWindowOperation, Duration: elapsed(p.clock(), started),
+			SourceCount: result.ProcessedSourceCount, Err: err,
+		}
+		observation.Outcome = scheduledOutcome(result.Processed(), err)
+		return observation
+	})
+}
+
+func (p *ScheduledProcessor) IncubateExperiences(ctx context.Context) error {
+	if p.experience == nil {
+		return &StateError{Code: "experience-incubation"}
+	}
+	return p.process(ctx, IncubateExperienceOperation, func(ctx context.Context, scope string) ScheduledObservation {
+		started := p.clock()
+		result, err := p.experience.incubate(ctx, scope, experienceIncubationWindowLimit)
+		candidateCount := result.CandidateCount
+		observation := ScheduledObservation{
+			Operation: IncubateExperienceOperation, Duration: elapsed(p.clock(), started),
+			SourceCount: result.ProcessedSourceCount, CandidateCount: &candidateCount, Err: err,
+		}
+		observation.Outcome = scheduledOutcome(result.Processed(), err)
+		return observation
+	})
+}
+
+const experienceIncubationWindowLimit = int64(experienceartifact.IncubationWindowLimit)
+
+func (p *ScheduledProcessor) process(
+	ctx context.Context,
+	operation string,
+	processScope func(context.Context, string) ScheduledObservation,
+) error {
+	return p.runtime.Background(ctx, func(ctx context.Context) error {
+		scopes, err := p.scopes.ScopeIDs(ctx)
+		if err != nil {
+			return err
+		}
+		for _, rawScope := range scopes {
+			if p.runtime.isClosing() {
+				break
+			}
+			scope, err := ValidateScopeID(rawScope)
+			if err != nil {
+				p.notify(ctx, ScheduledObservation{Operation: operation, Outcome: ScheduledProcessingFailure, Err: err})
+				continue
+			}
+			release, err := p.runtime.scopes.acquire(ctx, scope)
+			if err != nil {
+				outcome := ScheduledProcessingFailure
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+					outcome = ScheduledProcessingCancelled
+				}
+				p.notify(ctx, ScheduledObservation{Operation: operation, Outcome: outcome, Err: err})
+				return err
+			}
+			observation := processScope(ctx, scope)
+			release()
+			p.notify(ctx, observation)
+		}
+		return nil
+	})
+}
+
+func (p *ScheduledProcessor) notify(ctx context.Context, observation ScheduledObservation) {
+	if p.observe != nil {
+		p.observe(ctx, observation)
+	}
+}
+
+func (r *Runtime) isClosing() bool {
+	r.stateMu.Lock()
+	defer r.stateMu.Unlock()
+	return r.closing || r.closed
+}
+
+func scheduledOutcome(processed bool, err error) string {
+	if err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return ScheduledProcessingCancelled
+		}
+		return ScheduledProcessingFailure
+	}
+	if processed {
+		return ScheduledProcessingSuccess
+	}
+	return ScheduledProcessingNoop
+}
+
+func elapsed(now, started time.Time) time.Duration {
+	if duration := now.Sub(started); duration > 0 {
+		return duration
+	}
+	return 0
+}

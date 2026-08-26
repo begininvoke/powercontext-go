@@ -1,0 +1,1 @@
+{"properties":{"selected_ranks":{"items":{"type":"integer"},"type":"array"}},"required":["selected_ranks"],"title":"MemoryRerankOutput","type":"object","description":"Original coarse ranks selected in descending answer utility."}

@@ -1,0 +1,286 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOTOOLCHAIN: local
+
+jobs:
+  quality:
+    name: Contract, race, and static checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download locked modules
+        run: go mod download
+
+      - name: Verify generated contracts
+        run: make check-generated
+
+      - name: Verify formatting
+        run: make fmt-check
+
+      - name: Vet
+        run: make vet
+
+      - name: Run standard tests with the race detector
+        run: make test-race
+
+      - name: Verify module files are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+
+  frozen-oracle:
+    name: Frozen Python Oracle and differential fixtures
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out Go implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Check out frozen Python Oracle
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: oceanbase/powercontext
+          ref: 9e23c336492c8bba16c6f26083298b6f484a91b0
+          path: _oracle
+
+      - name: Verify Oracle identity
+        run: test "$(git -C _oracle rev-parse HEAD)" = 9e23c336492c8bba16c6f26083298b6f484a91b0
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0
+        with:
+          version: "0.10.12"
+          enable-cache: true
+
+      - name: Install the locked Oracle environment
+        run: uv sync --project _oracle --locked
+
+      - name: Run the frozen Python suite
+        run: _oracle/.venv/bin/python -m pytest _oracle/tests
+
+      - name: Regenerate and compare frozen fixtures
+        run: |
+          fixture_root="$RUNNER_TEMP/powercontext-oracle-fixtures"
+          mkdir -p "$fixture_root"
+          _oracle/.venv/bin/python test/conformance/python_oracle_fixture.py \
+            generate "$fixture_root/authority.db" --snapshot "$fixture_root/authority-rows.json"
+          _oracle/.venv/bin/python test/conformance/python_scheduler_fixture.py \
+            generate "$fixture_root/scheduler.db"
+          _oracle/.venv/bin/python test/conformance/python_domain_contract_fixture.py \
+            "$fixture_root/domain-contract.json"
+          _oracle/.venv/bin/python test/conformance/python_handoff_report_fixture.py \
+            "$fixture_root/handoff-report-digests.json"
+          for name in authority.db authority-rows.json scheduler.db domain-contract.json handoff-report-digests.json; do
+            cmp "$fixture_root/$name" "test/conformance/testdata/python-v0.0.1/$name"
+          done
+          go run ./tools/fixture-generate -python _oracle -check
+          go run ./tools/traceability-generate -check
+
+      - name: Run Python to Go to Python compatibility tests
+        env:
+          POWERCONTEXT_ORACLE_PYTHON: ${{ github.workspace }}/_oracle/.venv/bin/python
+          POWERCONTEXT_APSCHEDULER_PYTHON: ${{ github.workspace }}/_oracle/.venv/bin/python
+        run: go test -count=1 ./test/conformance ./internal/scheduler
+
+  oceanbase-live:
+    name: OceanBase live compatibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      oceanbase:
+        image: ghcr.io/oceanbase/oceanbase-ce@sha256:31086a6900c21c479c2bcd942b6a28c53b17a51f4e9b9eb8eafcc596adfcd2e3
+        env:
+          MODE: slim
+          OB_DATABASE: powercontext
+          OB_TENANT_PASSWORD: powercontext-e2e
+        ports:
+          - 2881:2881
+        options: >-
+          --ulimit nofile=65536:65536
+          --health-cmd "obclient -h127.0.0.1 -P2881 -uroot@test -ppowercontext-e2e -Dpowercontext -e 'SELECT 1' >/dev/null 2>&1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 120
+          --health-start-period 30s
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run real OceanBase schema and cursor tests
+        env:
+          POWERCONTEXT_TEST_OCEANBASE_URL: mysql+aoceanbase://root%40test:powercontext-e2e@127.0.0.1:2881/powercontext?charset=utf8mb4
+        run: make test-oceanbase-live
+
+  platform:
+    name: Standard (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-amd64
+            runner: ubuntu-24.04
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+          - target: darwin-amd64
+            runner: macos-15-intel
+          - target: darwin-arm64
+            runner: macos-15
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify native target
+        env:
+          EXPECTED_TARGET: ${{ matrix.target }}
+        run: test "$(go env GOOS)-$(go env GOARCH)" = "$EXPECTED_TARGET"
+
+      - name: Test SQLite and build the CGO binary
+        run: |
+          make test-sqlite
+          make smoke VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
+
+  full:
+    name: Full build tags (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-amd64
+            runner: ubuntu-24.04
+          - target: linux-arm64
+            runner: ubuntu-24.04-arm
+          - target: darwin-amd64
+            runner: macos-15-intel
+          - target: darwin-arm64
+            runner: macos-15
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download and verify the native tokenizer library
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          url="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field url)"
+          expected="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field sha256)"
+          mkdir -p "$RUNNER_TEMP/tokenizers"
+          curl --fail --location --retry 3 --output "$RUNNER_TEMP/tokenizers.tar.gz" "$url"
+          go run ./tools/release verify -sha256 "$expected" "$RUNNER_TEMP/tokenizers.tar.gz"
+          tar -xzf "$RUNNER_TEMP/tokenizers.tar.gz" -C "$RUNNER_TEMP/tokenizers" libtokenizers.a
+
+      - name: Test and build the Full binary
+        env:
+          TOKENIZERS_LIB_DIR: ${{ runner.temp }}/tokenizers
+        run: |
+          make test-full
+          make smoke-full VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
+
+  host-adapters:
+    name: Host adapters
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.12"
+
+      - name: Set up Go for the DSH call-through test
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0
+        with:
+          version: "0.10.12"
+          enable-cache: true
+
+      - name: Test Codex and Bub adapters
+        run: |
+          uv run --project integrations/codex/plugins/powercontext --locked --with pytest \
+            pytest integrations/codex/tests
+          uv run --project integrations/bub --locked --with pytest pytest integrations/bub/tests
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: "10.34.5"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: integrations/dsh/plugins/powercontext/pnpm-lock.yaml
+
+      - name: Test and rebuild the DSH adapter
+        working-directory: integrations/dsh/plugins/powercontext
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run gen:check
+          pnpm test
+          pnpm run test:e2e
+          pnpm build
+          git diff --exit-code -- src/operations.generated.ts lib

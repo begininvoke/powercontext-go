@@ -1,0 +1,159 @@
+// Command api-generate generates the Go HTTP contract from the frozen OpenAPI
+// document without modifying that authoritative file.
+package main
+
+import (
+	"bytes"
+	"errors"
+	"flag"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+)
+
+func main() {
+	var specification string
+	var target string
+	var packageName string
+	var clientInvoker string
+	flag.StringVar(&specification, "spec", "powercontext.yaml", "canonical OpenAPI document")
+	flag.StringVar(&target, "target", "../api/v1", "generated package directory")
+	flag.StringVar(&packageName, "package", "v1", "generated Go package name")
+	flag.StringVar(&clientInvoker, "client-invoker", "", "optional normalized Client Invoker output")
+	flag.Parse()
+	if err := run(specification, target, packageName, clientInvoker); err != nil {
+		fmt.Fprintln(os.Stderr, "api-generate:", err)
+		os.Exit(1)
+	}
+}
+
+func run(specification, target, packageName, clientInvoker string) error {
+	if specification == "" || target == "" || packageName == "" {
+		return errors.New("spec, target, and package must not be empty")
+	}
+	source, err := os.ReadFile(specification)
+	if err != nil {
+		return err
+	}
+	generatedInput, err := normalizeNullableReferences(source)
+	if err != nil {
+		return err
+	}
+	temporary, err := os.CreateTemp("", "powercontext-ogen-*.json")
+	if err != nil {
+		return err
+	}
+	temporaryName := temporary.Name()
+	defer os.Remove(temporaryName)
+	if _, err := temporary.Write(generatedInput); err != nil {
+		temporary.Close()
+		return err
+	}
+	if err := temporary.Close(); err != nil {
+		return err
+	}
+	absoluteTarget, err := filepath.Abs(target)
+	if err != nil {
+		return err
+	}
+	command := exec.Command(
+		"go", "tool", "ogen", "--target", absoluteTarget,
+		"--package", packageName, "--clean", temporaryName,
+	)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+	if err := command.Run(); err != nil {
+		return fmt.Errorf("run ogen: %w", err)
+	}
+	if err := rewriteDateTimeEncoders(absoluteTarget); err != nil {
+		return fmt.Errorf("rewrite date-time encoders: %w", err)
+	}
+	if err := generateContractValidation(
+		source,
+		filepath.Join(absoluteTarget, "powercontext_contract_validation_gen.go"),
+	); err != nil {
+		return fmt.Errorf("generate PowerContext contract validation: %w", err)
+	}
+	if clientInvoker != "" {
+		invokerTarget, err := filepath.Abs(clientInvoker)
+		if err != nil {
+			return err
+		}
+		if err := generateClientInvoker(
+			source,
+			filepath.Join(absoluteTarget, "oas_client_gen.go"),
+			invokerTarget,
+		); err != nil {
+			return fmt.Errorf("generate normalized Client Invoker: %w", err)
+		}
+	}
+	return nil
+}
+
+// rewriteDateTimeEncoders keeps generated wire structs as time.Time while
+// replacing ogen's second-precision RFC3339 encoder with PowerContext's UTC
+// microsecond policy. The canonical OpenAPI remains byte-for-byte identical to
+// the Python Oracle; this deterministic generation step changes only emitted
+// Go transport code.
+func rewriteDateTimeEncoders(target string) error {
+	path := filepath.Join(target, "oas_json_gen.go")
+	contents, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	const generated = "json.EncodeDateTime"
+	const replacement = "encodeDateTime"
+	count := bytes.Count(contents, []byte(generated))
+	if count == 0 {
+		return errors.New("generated JSON contains no date-time encoders")
+	}
+	rewritten := bytes.ReplaceAll(contents, []byte(generated), []byte(replacement))
+	return os.WriteFile(path, rewritten, 0o644)
+}
+
+// OpenAPI 3.0 ignores siblings of $ref, while the frozen document uses the
+// common `$ref` + `nullable: true` spelling. Express the same contract as the
+// JSON Schema union understood by ogen so required nullable references become
+// real nullable Go values instead of invalid zero-value sentinels.
+func normalizeNullableReferences(source []byte) ([]byte, error) {
+	lines := bytes.SplitAfter(source, []byte{'\n'})
+	var output bytes.Buffer
+	replacements := 0
+	for index := 0; index < len(lines); index++ {
+		indent, reference, ok := referenceLine(lines[index])
+		if !ok || index+1 >= len(lines) || !nullableLine(lines[index+1], indent) {
+			output.Write(lines[index])
+			continue
+		}
+		newline := "\n"
+		if bytes.HasSuffix(lines[index], []byte("\r\n")) {
+			newline = "\r\n"
+		}
+		fmt.Fprintf(&output, "%soneOf:%s%s  - $ref: %s%s%s  - type: \"null\"%s",
+			indent, newline, indent, reference, newline, indent, newline)
+		index++
+		replacements++
+	}
+	if replacements == 0 {
+		return nil, errors.New("canonical OpenAPI contains no nullable $ref siblings to normalize")
+	}
+	return output.Bytes(), nil
+}
+
+func referenceLine(line []byte) (indent, reference string, ok bool) {
+	text := strings.TrimSuffix(strings.TrimSuffix(string(line), "\n"), "\r")
+	trimmed := strings.TrimLeft(text, " ")
+	if !strings.HasPrefix(trimmed, "$ref:") {
+		return "", "", false
+	}
+	indent = text[:len(text)-len(trimmed)]
+	reference = strings.TrimSpace(strings.TrimPrefix(trimmed, "$ref:"))
+	return indent, reference, reference != ""
+}
+
+func nullableLine(line []byte, indent string) bool {
+	text := strings.TrimSuffix(strings.TrimSuffix(string(line), "\n"), "\r")
+	return text == indent+"nullable: true"
+}

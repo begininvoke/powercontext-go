@@ -1,0 +1,4 @@
+allowBuilds:
+  # esbuild's pinned package installs its platform-specific executable.
+  esbuild: true
+autoInstallPeers: false
