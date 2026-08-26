@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-const oracleCommit = "9e23c336492c8bba16c6f26083298b6f484a91b0"
+const oracleCommit = "3a6cb0151670eaff7dc0293466edd673124e80da"
 
 var testPattern = regexp.MustCompile(`^(?:async\s+)?def\s+(test_[A-Za-z0-9_]+)\s*\(`)
 
@@ -48,7 +48,7 @@ func main() {
 	pythonRoot := flag.String("python", "../powercontext", "path to the frozen Python repository")
 	output := flag.String(
 		"output",
-		"test/conformance/testdata/python-v0.0.1/manifest.json",
+		"test/conformance/testdata/python-v0.0.2/manifest.json",
 		"manifest output path",
 	)
 	check := flag.Bool("check", false, "verify the committed manifest without rewriting it")

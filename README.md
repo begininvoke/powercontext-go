@@ -1,19 +1,19 @@
 # PowerContext Go
 
 PowerContext Go is the Go 1.25 implementation of PowerContext. It preserves
-the frozen Python `v0.0.1` observable contract while using Go-native domain
+the frozen Python `v0.0.2` observable contract while using Go-native domain
 types, lifecycle ownership, concurrency, persistence, transports, and release
 packaging.
 
 ```text
 module github.com/ob-labs/powercontext-go
-oracle 9e23c336492c8bba16c6f26083298b6f484a91b0
+oracle 3a6cb0151670eaff7dc0293466edd673124e80da
 ```
 
 The HTTP source of truth is [`openapi/powercontext.yaml`](openapi/powercontext.yaml).
 Generated code under `api/v1` and generated operation tables are never edited
-by hand. Compatibility evidence lives under `test/conformance`: all 413 frozen
-Python test cases have case-specific Go or retained-host evidence.
+by hand. Compatibility evidence lives under `test/conformance`: all 622 frozen
+Python test cases are inventoried with resolvable Go or retained-host evidence.
 
 ## Repository shape
 
@@ -26,9 +26,9 @@ Python test cases have case-specific Go or retained-host evidence.
 - `client` and `server` are public remote and process facades.
 - `internal` contains concrete adapters: SQL, providers, scheduler, endpoints,
   HTTP, MCP, dashboard, CLI, and observability.
-- `integrations` contains the host-native Codex and Bub Python adapters and the
-  DeepSeek Harness TypeScript adapter. They communicate only with the Go
-  Server.
+- `integrations` contains host-native adapters for Codex, Claude Code, Bub,
+  DeepSeek Harness, Hermes, LangGraph, OpenClaw, OpenCode, and Pi. They
+  communicate only with the Go Server.
 - `test` contains conformance, differential, and process-level suites; `tools`
   contains generators and release tooling.
 - `benchmark/locomo` contains operator-facing LoCoMo configuration and result
@@ -44,7 +44,8 @@ directory map and dependency rules.
 
 ## Build and verify
 
-The standard build uses CGO for SQLite/Vec1 support:
+The standard build uses CGO and statically embeds the same sqlite-vec 0.1.9
+`vec0` implementation as the Python runtime:
 
 ```sh
 make check

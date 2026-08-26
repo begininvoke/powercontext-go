@@ -118,6 +118,72 @@ func TestCodexProviderRequiresUniqueStableRootIDs(t *testing.T) {
 	}
 }
 
+func TestAgentProviderDiscoversCodexAndClaudeCodeTargets(t *testing.T) {
+	codexRoot := filepath.Join(t.TempDir(), ".agents", "skills")
+	claudeRoot := filepath.Join(t.TempDir(), ".claude", "skills")
+	writeSkill(t, codexRoot, "codex-review")
+	claudePackage := filepath.Join(claudeRoot, "claude-review")
+	if err := os.MkdirAll(claudePackage, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(claudePackage, "SKILL.md"),
+		[]byte("---\ndescription: Review a change with Claude Code.\n---\n\nReview the change.\n"),
+		0o600,
+	); err != nil {
+		t.Fatal(err)
+	}
+	codexTarget, err := skill.NewAgentSkillTarget(
+		"codex-project", skill.CodexAgent, skill.ProjectScope, codexRoot, false,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claudeTarget, err := skill.NewAgentSkillTarget(
+		"claude-project", skill.ClaudeCodeAgent, skill.ProjectScope, claudeRoot, true,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	provider, err := skill.NewAgentSkillProvider(
+		"workstation-1", []skill.AgentSkillTarget{codexTarget, claudeTarget},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	scan, err := provider.Scan(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	registrations := scan.Registrations()
+	if scan.Skipped() != 0 || len(registrations) != 2 {
+		t.Fatalf("scan = %d registrations/%d skipped", len(registrations), scan.Skipped())
+	}
+	wantIDs := []string{
+		"codex:project:codex-project/codex-review",
+		"claude_code:project:claude-project/claude-review",
+	}
+	gotIDs := []string{registrations[0].ExternalSkillID(), registrations[1].ExternalSkillID()}
+	if !slices.Equal(gotIDs, wantIDs) {
+		t.Fatalf("registration IDs = %v, want %v", gotIDs, wantIDs)
+	}
+	claude := registrations[1]
+	if claude.Name() != "claude-review" || claude.Provider() != "claude_code" ||
+		!claudeTarget.AllowManagedPublish() {
+		t.Fatalf("Claude Code registration/target = %#v / %#v", claude, claudeTarget)
+	}
+	resolved, err := provider.Resolve(context.Background(), claude)
+	wantPackage, pathErr := filepath.EvalSymlinks(claudePackage)
+	if pathErr != nil {
+		t.Fatal(pathErr)
+	}
+	if err != nil || resolved.Status != skill.Available ||
+		resolved.Entrypoint != filepath.Join(wantPackage, "SKILL.md") {
+		t.Fatalf("Claude Code resolution = %#v, %v", resolved, err)
+	}
+}
+
 func TestSkillContentRequiresCompletePortableInstructions(t *testing.T) {
 	content, err := skill.NewContent(
 		"powercontext-openapi-change",
@@ -208,7 +274,7 @@ func TestRegistryRefreshesProjectionAndChecksLiveAvailability(t *testing.T) {
 
 type registrationStore struct{ values map[string]skill.Registration }
 
-func (s *registrationStore) Replace(_ context.Context, _, _ string, values []skill.Registration) ([]skill.Registration, error) {
+func (s *registrationStore) Replace(_ context.Context, _ []string, _ string, values []skill.Registration) ([]skill.Registration, error) {
 	s.values = make(map[string]skill.Registration, len(values))
 	for _, value := range values {
 		s.values[value.ExternalSkillID()] = value

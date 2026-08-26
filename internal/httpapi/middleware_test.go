@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -169,6 +170,192 @@ func TestOgenIngressSpanOwnsRequestIDIncludingDecodeFailures(t *testing.T) {
 	}
 	if envelope.Error.Code != "invalid_request" {
 		t.Fatalf("error = %#v", envelope.Error)
+	}
+	wantDetails := map[string]any{
+		"errors": []any{
+			map[string]any{
+				"type": "missing",
+				"loc":  []any{"body", "scope_id"},
+				"msg":  "Field required",
+			},
+			map[string]any{
+				"type": "missing",
+				"loc":  []any{"body", "query"},
+				"msg":  "Field required",
+			},
+		},
+	}
+	if !reflect.DeepEqual(envelope.Error.Details, wantDetails) {
+		t.Fatalf("validation details = %#v, want %#v", envelope.Error.Details, wantDetails)
+	}
+}
+
+func TestOgenValidationDetailsMatchFrozenPythonContract(t *testing.T) {
+	t.Parallel()
+	handler := &healthHandler{}
+	security, err := NewSecurity("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, err := v1.NewServer(handler, security, v1.WithErrorHandler(ErrorHandler(nil)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sourceRefs := "[" + strings.TrimSuffix(strings.Repeat(
+		`{"name":"content","source_id":"source"},`,
+		33,
+	), ",") + "]"
+
+	tests := []struct {
+		name, method, target, body string
+		contentType                bool
+		issue                      map[string]any
+	}{
+		{
+			name: "required body", method: http.MethodPost, target: "/v1/context/prepare",
+			issue: map[string]any{"type": "missing", "loc": []any{"body"}, "msg": "Field required"},
+		},
+		{
+			name: "string type", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body:  `{"scope_id":7,"query":"query"}`,
+			issue: map[string]any{"type": "string_type", "loc": []any{"body", "scope_id"}, "msg": "Input should be a valid string"},
+		},
+		{
+			name: "string minimum", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body: `{"scope_id":"","query":"query"}`,
+			issue: map[string]any{
+				"type": "string_too_short", "loc": []any{"body", "scope_id"},
+				"msg": "String should have at least 1 character", "ctx": map[string]any{"min_length": float64(1)},
+			},
+		},
+		{
+			name: "string pattern", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body: `{"scope_id":"scope","query":" "}`,
+			issue: map[string]any{
+				"type": "string_pattern_mismatch", "loc": []any{"body", "query"},
+				"msg": "String should match pattern '.*\\S.*'", "ctx": map[string]any{"pattern": `.*\S.*`},
+			},
+		},
+		{
+			name: "extra field", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body:  `{"scope_id":"scope","query":"query","extra":1}`,
+			issue: map[string]any{"type": "extra_forbidden", "loc": []any{"body", "extra"}, "msg": "Extra inputs are not permitted"},
+		},
+		{
+			name: "integer minimum", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body: `{"scope_id":"scope","query":"query","max_bytes":1}`,
+			issue: map[string]any{
+				"type": "greater_than_equal", "loc": []any{"body", "max_bytes"},
+				"msg": "Input should be greater than or equal to 512", "ctx": map[string]any{"ge": float64(512)},
+			},
+		},
+		{
+			name: "integer type", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body:  `{"scope_id":"scope","query":"query","max_bytes":1.5}`,
+			issue: map[string]any{"type": "int_type", "loc": []any{"body", "max_bytes"}, "msg": "Input should be a valid integer"},
+		},
+		{
+			name: "string maximum", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body: `{"scope_id":"` + strings.Repeat("s", 257) + `","query":"query"}`,
+			issue: map[string]any{
+				"type": "string_too_long", "loc": []any{"body", "scope_id"},
+				"msg": "String should have at most 256 characters", "ctx": map[string]any{"max_length": float64(256)},
+			},
+		},
+		{
+			name: "integer maximum", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body: `{"scope_id":"scope","query":"query","max_bytes":32769}`,
+			issue: map[string]any{
+				"type": "less_than_equal", "loc": []any{"body", "max_bytes"},
+				"msg": "Input should be less than or equal to 32768", "ctx": map[string]any{"le": float64(32768)},
+			},
+		},
+		{
+			name: "non-nullable null", method: http.MethodPost, target: "/v1/context/prepare", contentType: true,
+			body:  `{"scope_id":null,"query":"query"}`,
+			issue: map[string]any{"type": "string_type", "loc": []any{"body", "scope_id"}, "msg": "Input should be a valid string"},
+		},
+		{
+			name: "nested model type", method: http.MethodPost, target: "/v1/experience/propose", contentType: true,
+			body: `{"scope_id":"scope","proposal":"invalid","source_refs":[],"artifact_refs":[]}`,
+			issue: map[string]any{
+				"type": "model_attributes_type", "loc": []any{"body", "proposal"},
+				"msg": "Input should be a valid dictionary or object to extract fields from",
+			},
+		},
+		{
+			name: "array type", method: http.MethodPost, target: "/v1/experience/propose", contentType: true,
+			body:  `{"scope_id":"scope","proposal":{"situation":"s","action":"a","outcome":"o","lesson":"l"},"source_refs":"invalid","artifact_refs":[]}`,
+			issue: map[string]any{"type": "list_type", "loc": []any{"body", "source_refs"}, "msg": "Input should be a valid list"},
+		},
+		{
+			name: "array maximum", method: http.MethodPost, target: "/v1/experience/propose", contentType: true,
+			body: `{"scope_id":"scope","proposal":{"situation":"s","action":"a","outcome":"o","lesson":"l"},"source_refs":` + sourceRefs + `,"artifact_refs":[]}`,
+			issue: map[string]any{
+				"type": "too_long", "loc": []any{"body", "source_refs"},
+				"msg": "List should have at most 32 items after validation, not 33",
+				"ctx": map[string]any{"field_type": "List", "max_length": float64(32), "actual_length": float64(33)},
+			},
+		},
+		{
+			name: "body enum", method: http.MethodPost, target: "/v1/memory/search", contentType: true,
+			body: `{"scope_id":"scope","query":"query","mode":"invalid"}`,
+			issue: map[string]any{
+				"type": "enum", "loc": []any{"body", "mode"},
+				"msg": "Input should be 'auto', 'fts', 'vector' or 'hybrid'",
+				"ctx": map[string]any{"expected": "'auto', 'fts', 'vector' or 'hybrid'"},
+			},
+		},
+		{
+			name: "boolean type", method: http.MethodPost, target: "/v1/handoff-reports/get", contentType: true,
+			body:  `{"scope_id":"scope","include_evidence_checks":"invalid"}`,
+			issue: map[string]any{"type": "bool_type", "loc": []any{"body", "include_evidence_checks"}, "msg": "Input should be a valid boolean"},
+		},
+		{
+			name: "required query", method: http.MethodGet, target: "/v1/stats",
+			issue: map[string]any{"type": "missing", "loc": []any{"query", "scope_id"}, "msg": "Field required"},
+		},
+		{
+			name: "query enum", method: http.MethodGet, target: "/v1/stats?scope_id=scope&period=all",
+			issue: map[string]any{
+				"type": "enum", "loc": []any{"query", "period"},
+				"msg": "Input should be 'today', '7d' or '30d'", "ctx": map[string]any{"expected": "'today', '7d' or '30d'"},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(test.method, test.target, strings.NewReader(test.body))
+			if test.contentType {
+				request.Header.Set("Content-Type", "application/json")
+			}
+			response := httptest.NewRecorder()
+			server.ServeHTTP(response, request)
+			if response.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("status = %d: %s", response.Code, response.Body.String())
+			}
+			var envelope errorEnvelope
+			if err := json.Unmarshal(response.Body.Bytes(), &envelope); err != nil {
+				t.Fatal(err)
+			}
+			want := map[string]any{"errors": []any{test.issue}}
+			if !reflect.DeepEqual(envelope.Error.Details, want) {
+				t.Fatalf("details = %#v, want %#v", envelope.Error.Details, want)
+			}
+		})
+	}
+}
+
+func TestSemanticRequestContractFailureMatchesFrozenPythonEnvelope(t *testing.T) {
+	t.Parallel()
+	status, detail, ok := mapTransportError(&requestContractError{
+		cause: &v1.CombinedEvidenceLimitError{SourceReferences: 20, ArtifactReferences: 13},
+	})
+	if !ok || status != http.StatusInternalServerError {
+		t.Fatalf("mapping = (%d, %#v, %t)", status, detail, ok)
+	}
+	if detail.Code != "internal_error" || detail.Message != "The Server failed." || detail.Details != nil {
+		t.Fatalf("detail = %#v", detail)
 	}
 }
 

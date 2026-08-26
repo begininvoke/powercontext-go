@@ -93,42 +93,56 @@ func NewServer(handler v1.Handler, options Options) (*mcp.Server, error) {
 			OutputSchema: schema.Output,
 			Annotations:  annotations(toolName),
 		}, func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-			ctx = ensureRequestID(ctx)
-			ctx, span := requesttrace.StartOperation(
-				ctx,
-				options.TracerProvider,
-				"powercontext "+toolName,
-				toolName,
-				"application",
-				trace.SpanKindInternal,
-				"",
-			)
-			started := time.Now()
-			payload, err := dispatch(ctx, handler, toolName, request.Params.Arguments)
-			if err != nil {
-				outcome := "failure"
-				if errors.Is(ctx.Err(), context.Canceled) {
-					outcome = "cancelled"
-				}
-				mapped := endpoint.MapError(err)
-				serverlogging.LogApplicationCompletion(ctx, options.ApplicationLogger, serverlogging.ApplicationObservation{
-					Operation: toolName, Outcome: outcome, Duration: time.Since(started),
-					StatusCode: mapped.StatusCode, ErrorCode: mapped.Code,
-				})
-				span.Finish(outcome, err)
-				if options.ApplicationObserver != nil {
-					options.ApplicationObserver.ObserveApplication(toolName, "failure", started)
-				}
-				return errorResult(err), nil
-			}
-			span.Finish("success", nil)
-			if options.ApplicationObserver != nil {
-				options.ApplicationObserver.ObserveApplication(toolName, "success", started)
-			}
-			return successResult(payload)
+			return runTool(ctx, options, toolName, func(ctx context.Context) (any, error) {
+				return dispatch(ctx, handler, toolName, request.Params.Arguments)
+			})
 		})
 	}
+	if options.HandoffReportEnabled {
+		registerHandoffWorkstreamPicker(server, handler, options)
+	}
 	return server, nil
+}
+
+func runTool(
+	ctx context.Context,
+	options Options,
+	toolName string,
+	operation func(context.Context) (any, error),
+) (*mcp.CallToolResult, error) {
+	ctx = ensureRequestID(ctx)
+	ctx, span := requesttrace.StartOperation(
+		ctx,
+		options.TracerProvider,
+		"powercontext "+toolName,
+		toolName,
+		"application",
+		trace.SpanKindInternal,
+		"",
+	)
+	started := time.Now()
+	payload, err := operation(ctx)
+	if err != nil {
+		outcome := "failure"
+		if errors.Is(ctx.Err(), context.Canceled) {
+			outcome = "cancelled"
+		}
+		mapped := endpoint.MapError(err)
+		serverlogging.LogApplicationCompletion(ctx, options.ApplicationLogger, serverlogging.ApplicationObservation{
+			Operation: toolName, Outcome: outcome, Duration: time.Since(started),
+			StatusCode: mapped.StatusCode, ErrorCode: mapped.Code,
+		})
+		span.Finish(outcome, err)
+		if options.ApplicationObserver != nil {
+			options.ApplicationObserver.ObserveApplication(toolName, "failure", started)
+		}
+		return errorResult(err), nil
+	}
+	span.Finish("success", nil)
+	if options.ApplicationObserver != nil {
+		options.ApplicationObserver.ObserveApplication(toolName, "success", started)
+	}
+	return successResult(payload)
 }
 
 // NewHTTPHandler exposes a server through MCP Streamable HTTP. Go's standard
@@ -177,6 +191,12 @@ func decodeRequest(raw json.RawMessage, target validatableRequest) error {
 
 func dispatch(ctx context.Context, handler v1.Handler, name string, raw json.RawMessage) (any, error) {
 	switch name {
+	case "acknowledge_handoff":
+		request := new(v1.AcknowledgeHandoffRequest)
+		if err := decodeRequest(raw, request); err != nil {
+			return nil, err
+		}
+		return endpointPayload(handler.AcknowledgeHandoff(ctx, request))
 	case "activate_handoff":
 		request := new(v1.ActivateHandoffRequest)
 		if err := decodeRequest(raw, request); err != nil {
@@ -207,6 +227,12 @@ func dispatch(ctx context.Context, handler v1.Handler, name string, raw json.Raw
 			return nil, err
 		}
 		return endpointPayload(handler.ContinueHandoff(ctx, request))
+	case "create_work_contract":
+		request := new(v1.CreateWorkContractRequest)
+		if err := decodeRequest(raw, request); err != nil {
+			return nil, err
+		}
+		return endpointPayload(handler.CreateWorkContract(ctx, request))
 	case "finalize_handoff":
 		request := new(v1.FinalizeHandoffRequest)
 		if err := decodeRequest(raw, request); err != nil {
@@ -237,6 +263,12 @@ func dispatch(ctx context.Context, handler v1.Handler, name string, raw json.Raw
 			return nil, err
 		}
 		return endpointPayload(handler.GetMemoryEntry(ctx, request))
+	case "handoff_current_work":
+		request := new(v1.HandoffCurrentWorkRequest)
+		if err := decodeRequest(raw, request); err != nil {
+			return nil, err
+		}
+		return endpointPayload(handler.HandoffCurrentWork(ctx, request))
 	case "list_artifact_candidates":
 		request := new(v1.ListArtifactCandidatesRequest)
 		if err := decodeRequest(raw, request); err != nil {
@@ -249,6 +281,18 @@ func dispatch(ctx context.Context, handler v1.Handler, name string, raw json.Raw
 			return nil, err
 		}
 		return endpointPayload(handler.ListMemoryEntries(ctx, request))
+	case "list_handoff_report_known_scopes":
+		request := new(v1.ListHandoffReportKnownScopesRequest)
+		if err := decodeRequest(raw, request); err != nil {
+			return nil, err
+		}
+		return endpointPayload(handler.ListHandoffReportKnownScopes(ctx, request))
+	case "record_task_outcome":
+		request := new(v1.RecordTaskOutcomeRequest)
+		if err := decodeRequest(raw, request); err != nil {
+			return nil, err
+		}
+		return endpointPayload(handler.RecordTaskOutcome(ctx, request))
 	case "reject_artifact_candidate":
 		request := new(v1.RejectArtifactCandidateRequest)
 		if err := decodeRequest(raw, request); err != nil {
@@ -310,6 +354,12 @@ func endpointPayload(response any, err error) (any, error) {
 		return value.Response, nil
 	case *v1.HandoffResolutionHeaders:
 		return value.Response, nil
+	case *v1.WorkSourceReceiptHeaders:
+		return value.Response, nil
+	case *v1.PreparedWorkHandoffHeaders:
+		return value.Response, nil
+	case *v1.HandoffAcknowledgementHeaders:
+		return value.Response, nil
 	case *v1.SearchMemoryResponseHeaders:
 		return value.Response, nil
 	case *v1.ListMemoryEntriesResponseHeaders:
@@ -323,6 +373,8 @@ func endpointPayload(response any, err error) (any, error) {
 	case *v1.ArtifactCandidateHeaders:
 		return value.Response, nil
 	case *v1.HandoffReportWorkspaceBindingHeaders:
+		return value.Response, nil
+	case *v1.KnownHandoffScopePageHeaders:
 		return value.Response, nil
 	case *v1.HandoffReportResponseHeaders:
 		return value.Response, nil
@@ -423,8 +475,18 @@ func annotations(name string) *mcp.ToolAnnotations {
 	value := &mcp.ToolAnnotations{OpenWorldHint: &closedWorld}
 	switch name {
 	case "get_artifact_candidate", "get_handoff_report", "get_handoff_report_workspace",
-		"get_memory_entry", "list_artifact_candidates", "list_memory_entries", "search_memory":
+		"get_memory_entry", "list_artifact_candidates", "list_handoff_report_known_scopes", "list_memory_entries",
+		"search_memory", "select_handoff_workstream":
 		value.ReadOnlyHint = true
+		nondestructive := false
+		value.DestructiveHint = &nondestructive
+		if name == "select_handoff_workstream" {
+			value.IdempotentHint = true
+		}
+	case "handoff_current_work":
+		nondestructive := false
+		value.DestructiveHint = &nondestructive
+		value.IdempotentHint = false
 	case "capture_content_source", "commit_handoff":
 		additive := false
 		value.DestructiveHint = &additive

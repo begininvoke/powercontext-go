@@ -2,14 +2,18 @@ package webui
 
 import (
 	"bytes"
+	"context"
 	"embed"
 	"encoding/json"
 	"errors"
 	"html/template"
 	"io/fs"
 	"net/http"
-	"slices"
 	"strconv"
+
+	"github.com/ob-labs/powercontext-go/artifact"
+	"github.com/ob-labs/powercontext-go/artifact/skill"
+	"github.com/ob-labs/powercontext-go/review"
 )
 
 const pageCSP = "default-src 'none'; style-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'"
@@ -26,24 +30,44 @@ type Scope struct {
 }
 
 type Options struct {
-	Scopes               []Scope
-	HandoffReportEnabled bool
+	DashboardEnabled       bool
+	Scopes                 []Scope
+	HandoffReportEnabled   bool
+	AuthenticationRequired bool
+	AgentSkillTargets      []skill.AgentSkillTarget
+	SkillProjections       SkillProjectionOperations
+}
+
+type SkillProjectionOperations interface {
+	GetCandidate(context.Context, string, string) (review.Snapshot, error)
+	GetSkill(context.Context, string, artifact.Ref) (skill.Skill, error)
+	ListExternalSkills(context.Context, string, bool) ([]skill.Resolution, error)
+	ScanExternalSkills(context.Context, string) (skill.ProviderScan, error)
 }
 
 type pages struct {
-	dashboard *template.Template
-	handoff   *template.Template
-	scopes    []Scope
-	options   Options
-	static    http.Handler
+	dashboard         *template.Template
+	skills            *template.Template
+	review            *template.Template
+	handoff           *template.Template
+	scopes            []Scope
+	options           Options
+	static            http.Handler
+	projectionTargets []skill.AgentSkillTarget
+	projections       SkillProjectionOperations
 }
 
 type pageData struct {
-	Title                string
-	ActivePage           string
-	StatusTitleKey       string
-	StatusTitle          string
-	HandoffReportEnabled bool
+	Title                  string
+	ActivePage             string
+	StatusTitleKey         string
+	StatusTitle            string
+	HandoffReportEnabled   bool
+	DashboardEnabled       bool
+	SkillsEnabled          bool
+	ReviewEnabled          bool
+	AuthenticationRequired bool
+	HomeRoute              string
 }
 
 // Mount registers only the frozen Dashboard surface on mux. The caller keeps
@@ -52,12 +76,27 @@ func Mount(mux *http.ServeMux, options Options) error {
 	if mux == nil {
 		return errors.New("webui: mux must not be nil")
 	}
-	if len(options.Scopes) == 0 {
-		return errors.New("webui: Dashboard requires at least one scope")
+	if !options.DashboardEnabled && !options.HandoffReportEnabled {
+		return errors.New("webui: at least one Web UI feature must be enabled")
 	}
-	dashboard, err := parsePage("dashboard.html")
-	if err != nil {
-		return err
+	var dashboard *template.Template
+	var err error
+	if options.DashboardEnabled {
+		dashboard, err = parsePage("dashboard.html")
+		if err != nil {
+			return err
+		}
+	}
+	var skillsPage, reviewPage *template.Template
+	if options.DashboardEnabled {
+		skillsPage, err = parsePage("skills.html")
+		if err != nil {
+			return err
+		}
+		reviewPage, err = parsePage("review.html")
+		if err != nil {
+			return err
+		}
 	}
 	var handoff *template.Template
 	if options.HandoffReportEnabled {
@@ -72,13 +111,27 @@ func Mount(mux *http.ServeMux, options Options) error {
 	}
 	owner := &pages{
 		dashboard: dashboard,
+		skills:    skillsPage,
+		review:    reviewPage,
 		handoff:   handoff,
-		scopes:    slices.Clone(options.Scopes),
+		scopes:    append([]Scope{}, options.Scopes...),
 		options:   options,
 		static:    http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))),
 	}
-	mux.HandleFunc("GET /{$}", owner.dashboardPage)
-	mux.HandleFunc("GET /dashboard/scopes", owner.dashboardScopes)
+	owner.projections = options.SkillProjections
+	for _, target := range options.AgentSkillTargets {
+		if target.AllowManagedPublish() {
+			owner.projectionTargets = append(owner.projectionTargets, target)
+		}
+	}
+	if dashboard != nil {
+		mux.HandleFunc("GET /{$}", owner.dashboardPage)
+		mux.HandleFunc("GET /dashboard/scopes", owner.dashboardScopes)
+		mux.HandleFunc("GET /skills", owner.skillsPage)
+		mux.HandleFunc("GET /reviews", owner.reviewPage)
+		mux.HandleFunc("POST /dashboard/skill-projections/status", owner.skillProjectionStatus)
+		mux.HandleFunc("POST /dashboard/skill-projections/publish", owner.skillProjectionPublish)
+	}
 	mux.Handle("GET /static/", owner.static)
 	if handoff != nil {
 		mux.HandleFunc("GET /handoff-reports", owner.handoffPage)
@@ -87,22 +140,57 @@ func Mount(mux *http.ServeMux, options Options) error {
 }
 
 func parsePage(name string) (*template.Template, error) {
-	return template.New(name).ParseFS(assets, "templates/components.tmpl", "templates/"+name)
+	return template.New(name).ParseFS(
+		assets,
+		"templates/components.tmpl",
+		"templates/activity_heatmap.html",
+		"templates/recall_trend.html",
+		"templates/"+name,
+	)
 }
 
 func (p *pages) dashboardPage(writer http.ResponseWriter, _ *http.Request) {
 	p.writePage(writer, p.dashboard, pageData{
 		Title: "PowerContext Dashboard", ActivePage: "dashboard",
 		StatusTitleKey: "dashboardTitle", StatusTitle: "Dashboard",
-		HandoffReportEnabled: p.options.HandoffReportEnabled,
+		HandoffReportEnabled: p.options.HandoffReportEnabled, DashboardEnabled: true,
+		SkillsEnabled: true, ReviewEnabled: true,
+		AuthenticationRequired: p.options.AuthenticationRequired, HomeRoute: "/",
+	})
+}
+
+func (p *pages) skillsPage(writer http.ResponseWriter, _ *http.Request) {
+	p.writePage(writer, p.skills, pageData{
+		Title: "PowerContext Skills Library", ActivePage: "skills",
+		StatusTitleKey: "skillsTitle", StatusTitle: "Skills",
+		HandoffReportEnabled: p.options.HandoffReportEnabled, DashboardEnabled: true,
+		SkillsEnabled: true, ReviewEnabled: true,
+		AuthenticationRequired: p.options.AuthenticationRequired, HomeRoute: "/",
+	})
+}
+
+func (p *pages) reviewPage(writer http.ResponseWriter, _ *http.Request) {
+	p.writePage(writer, p.review, pageData{
+		Title: "PowerContext Review", ActivePage: "review",
+		StatusTitleKey: "reviewTitle", StatusTitle: "Review",
+		HandoffReportEnabled: p.options.HandoffReportEnabled, DashboardEnabled: true,
+		SkillsEnabled: true, ReviewEnabled: true,
+		AuthenticationRequired: p.options.AuthenticationRequired, HomeRoute: "/",
 	})
 }
 
 func (p *pages) handoffPage(writer http.ResponseWriter, _ *http.Request) {
+	homeRoute := "/handoff-reports"
+	if p.options.DashboardEnabled {
+		homeRoute = "/"
+	}
 	p.writePage(writer, p.handoff, pageData{
 		Title: "PowerContext Handoff Report", ActivePage: "handoff_report",
 		StatusTitleKey: "handoffReportTitle", StatusTitle: "Handoff Report",
-		HandoffReportEnabled: true,
+		HandoffReportEnabled: true, DashboardEnabled: p.options.DashboardEnabled,
+		SkillsEnabled: p.options.DashboardEnabled, ReviewEnabled: p.options.DashboardEnabled,
+		AuthenticationRequired: p.options.AuthenticationRequired,
+		HomeRoute:              homeRoute,
 	})
 }
 

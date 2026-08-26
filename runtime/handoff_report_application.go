@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"sort"
 	"strings"
 	"time"
 
@@ -76,7 +78,7 @@ type HandoffReportPeriod struct {
 	CompareToPreviousPeriod bool
 }
 type GetHandoffReport struct {
-	ProjectID             string
+	ScopeID               string
 	Locale                *handoffreport.Locale
 	IncludeEvidenceChecks bool
 	Format                handoffreport.Format
@@ -84,15 +86,31 @@ type GetHandoffReport struct {
 	Period                *HandoffReportPeriod
 }
 
+type KnownHandoffScopePage struct {
+	Items      []string
+	NextCursor *string
+}
+
+type HandoffScopeIDs func(context.Context) ([]string, error)
+
 type HandoffReportApplication struct {
 	runtime *Runtime
 	backend HandoffReportBackend
 	reports *handoffreport.Service
 	clock   Clock
 	ids     HandoffReportIDFactory
+	scopes  HandoffScopeIDs
 }
 
-func NewHandoffReportApplication(runtime *Runtime, backend HandoffReportBackend, reader handoffreport.HandoffReader, clock Clock, ids HandoffReportIDFactory) (*HandoffReportApplication, error) {
+func NewHandoffReportApplication(
+	runtime *Runtime,
+	backend HandoffReportBackend,
+	reader handoffreport.HandoffReader,
+	continuity handoffreport.WorkContinuityReader,
+	clock Clock,
+	ids HandoffReportIDFactory,
+	scopeProviders ...HandoffScopeIDs,
+) (*HandoffReportApplication, error) {
 	if runtime == nil || backend == nil || reader == nil {
 		return nil, errors.New("runtime: Handoff Report dependencies must not be nil")
 	}
@@ -102,11 +120,58 @@ func NewHandoffReportApplication(runtime *Runtime, backend HandoffReportBackend,
 	if ids == nil {
 		ids = defaultHandoffReportID
 	}
-	reports, err := handoffreport.NewService(reader)
+	var reports *handoffreport.Service
+	var err error
+	if continuity == nil {
+		reports, err = handoffreport.NewService(reader)
+	} else {
+		reports, err = handoffreport.NewService(reader, continuity)
+	}
 	if err != nil {
 		return nil, err
 	}
-	return &HandoffReportApplication{runtime: runtime, backend: backend, reports: reports, clock: clock, ids: ids}, nil
+	var scopes HandoffScopeIDs
+	if len(scopeProviders) > 1 {
+		return nil, errors.New("runtime: at most one Handoff scope provider may be configured")
+	}
+	if len(scopeProviders) == 1 {
+		scopes = scopeProviders[0]
+	}
+	return &HandoffReportApplication{runtime: runtime, backend: backend, reports: reports, clock: clock, ids: ids, scopes: scopes}, nil
+}
+
+func (a *HandoffReportApplication) ListKnownScopes(ctx context.Context, cursor *string, limit int) (KnownHandoffScopePage, error) {
+	var result KnownHandoffScopePage
+	err := a.runtime.Operation(ctx, func(ctx context.Context) error {
+		if limit < 1 || limit > 100 {
+			return &handoffreport.CatalogArgumentError{Field: "limit", Detail: "must be between 1 and 100"}
+		}
+		if cursor != nil && (strings.TrimSpace(*cursor) == "" || strings.TrimSpace(*cursor) != *cursor) {
+			return &handoffreport.CatalogArgumentError{Field: "cursor", Detail: "must be non-empty trimmed text"}
+		}
+		var scopes []string
+		if a.scopes != nil {
+			values, err := a.scopes(ctx)
+			if err != nil {
+				return err
+			}
+			scopes = slices.Clone(values)
+		}
+		sort.Strings(scopes)
+		scopes = slices.Compact(scopes)
+		start := 0
+		if cursor != nil {
+			start = sort.Search(len(scopes), func(index int) bool { return scopes[index] > *cursor })
+		}
+		end := min(start+limit, len(scopes))
+		result.Items = slices.Clone(scopes[start:end])
+		if end < len(scopes) && len(result.Items) > 0 {
+			next := result.Items[len(result.Items)-1]
+			result.NextCursor = &next
+		}
+		return nil
+	})
+	return result, err
 }
 
 func (a *HandoffReportApplication) CreateProject(ctx context.Context, input CreateHandoffReportProject) (handoffreport.ProjectDescriptor, error) {
@@ -259,36 +324,33 @@ func (a *HandoffReportApplication) DetachWorkspaceBinding(ctx context.Context, i
 
 func (a *HandoffReportApplication) GetReport(ctx context.Context, input GetHandoffReport) (handoffreport.Report, error) {
 	var result handoffreport.Report
-	err := a.runtime.Operation(ctx, func(ctx context.Context) error {
-		start, end, previousStart, previousEnd, normalized, comparison, err := normalizeHandoffReportPeriod(input.Period)
+	err := a.runtime.ScopedRead(ctx, input.ScopeID, func(ctx context.Context, scope string) error {
+		_, _, _, _, normalized, _, err := normalizeHandoffReportPeriod(input.Period)
 		if err != nil {
 			return err
 		}
-		project, workstreams, activities, cursor, previousCount, err := a.backend.ReadHandoffReportInputs(ctx, input.ProjectID, input.IncludeArchived, start, end, previousStart, previousEnd)
+		if normalized != nil && input.Period.Timezone == nil {
+			normalized["timezone"] = "UTC"
+		}
+		project, err := handoffreport.NewProjectDescriptor(
+			"unused", "unused", scope, nil, handoffreport.LocaleChinese, "UTC", handoffreport.CatalogIncluded, 1,
+		)
 		if err != nil {
 			return err
 		}
-		if input.Period != nil && input.Period.Timezone == nil {
-			normalized["timezone"] = project.Timezone()
-		}
-		if comparison != nil {
-			value, makeErr := handoffreport.NewPeriodComparison(*previousStart, *previousEnd, len(activities), previousCount)
-			if makeErr != nil {
-				return makeErr
-			}
-			comparison = &value
-		}
-		coverage := handoffreport.ActivityNotConfigured
-		if len(activities) > 0 || cursor > 0 {
-			coverage = handoffreport.ActivityCaptured
+		workstream, err := handoffreport.NewWorkstreamDescriptor(
+			scope, "unused", nil, scope, handoffreport.WorkstreamOther, handoffreport.CatalogIncluded, nil, nil, 1,
+		)
+		if err != nil {
+			return err
 		}
 		includeEvidenceChecks := input.IncludeEvidenceChecks
-		result, err = a.reports.Generate(ctx, handoffreport.GenerateInput{Project: project, Workstreams: workstreams, Locale: input.Locale, IncludeEvidenceChecks: &includeEvidenceChecks, Activities: activities, ActivityCursor: cursor, ActivityCoverage: coverage, GeneratedAt: a.clock().UTC(), Format: input.Format, ReportKind: func() handoffreport.ReportKind {
+		result, err = a.reports.Generate(ctx, handoffreport.GenerateInput{Project: project, Workstreams: []handoffreport.WorkstreamDescriptor{workstream}, Locale: input.Locale, IncludeEvidenceChecks: &includeEvidenceChecks, Activities: nil, ActivityCursor: 0, ActivityCoverage: handoffreport.ActivityNotConfigured, GeneratedAt: a.clock().UTC(), Format: input.Format, ReportKind: func() handoffreport.ReportKind {
 			if input.Period == nil {
 				return handoffreport.ReportHandoff
 			}
 			return handoffreport.ReportPeriodic
-		}(), NormalizedFilters: map[string]any{}, NormalizedPeriod: normalized, PeriodComparison: comparison})
+		}(), NormalizedFilters: map[string]any{}, NormalizedPeriod: normalized, PeriodComparison: nil})
 		return err
 	})
 	return result, err

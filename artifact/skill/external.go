@@ -39,6 +39,17 @@ const (
 	PluginScope  InstallationScope = "plugin"
 )
 
+type AgentKind string
+
+const (
+	CodexAgent      AgentKind = "codex"
+	ClaudeCodeAgent AgentKind = "claude_code"
+)
+
+func validAgentKind(value string) bool {
+	return value == string(CodexAgent) || value == string(ClaudeCodeAgent)
+}
+
 type ResolutionStatus string
 
 const (
@@ -96,6 +107,12 @@ func NewRegistration(
 	}
 	if installationScope != UserScope && installationScope != ProjectScope && installationScope != PluginScope {
 		return Registration{}, fmt.Errorf("invalid external Skill installation scope %q", installationScope)
+	}
+	if !validAgentKind(provider) {
+		return Registration{}, fmt.Errorf("invalid external Skill provider %q", provider)
+	}
+	if !validAgentKind(agentKind) {
+		return Registration{}, fmt.Errorf("invalid external Skill agent kind %q", agentKind)
 	}
 	if !lowerHexFingerprint.MatchString(fingerprint) {
 		return Registration{}, fmt.Errorf("external Skill fingerprint must be 64 lowercase hexadecimal characters")
@@ -159,65 +176,121 @@ type ExternalProvider interface {
 	Name() string
 	AgentKind() string
 	HostID() string
+	ProviderNames() []string
 	Scan(context.Context) (ProviderScan, error)
 	Resolve(context.Context, Registration) (Resolution, error)
 }
 
-type CodexRoot struct {
-	rootID            string
-	installationScope InstallationScope
-	path              string
+type AgentSkillTarget struct {
+	targetID            string
+	agentKind           AgentKind
+	installationScope   InstallationScope
+	path                string
+	allowManagedPublish bool
 }
 
-func NewCodexRoot(rootID string, scope InstallationScope, path string) (CodexRoot, error) {
-	if len(rootID) < 1 || len(rootID) > 64 || !rootIDPattern.MatchString(rootID) {
-		return CodexRoot{}, fmt.Errorf("Codex Skill root ID is invalid")
+func NewAgentSkillTarget(
+	targetID string,
+	agentKind AgentKind,
+	scope InstallationScope,
+	path string,
+	allowManagedPublish bool,
+) (AgentSkillTarget, error) {
+	if len(targetID) < 1 || len(targetID) > 64 || !rootIDPattern.MatchString(targetID) {
+		return AgentSkillTarget{}, fmt.Errorf("Agent Skill target ID is invalid")
+	}
+	if !validAgentKind(string(agentKind)) {
+		return AgentSkillTarget{}, fmt.Errorf("invalid Agent Skill kind %q", agentKind)
 	}
 	if scope != UserScope && scope != ProjectScope && scope != PluginScope {
-		return CodexRoot{}, fmt.Errorf("invalid external Skill installation scope %q", scope)
+		return AgentSkillTarget{}, fmt.Errorf("invalid external Skill installation scope %q", scope)
 	}
 	resolved, err := resolveLoose(path)
 	if err != nil {
+		return AgentSkillTarget{}, err
+	}
+	return AgentSkillTarget{
+		targetID: targetID, agentKind: agentKind, installationScope: scope,
+		path: resolved, allowManagedPublish: allowManagedPublish,
+	}, nil
+}
+
+func (t AgentSkillTarget) ID() string                           { return t.targetID }
+func (t AgentSkillTarget) AgentKind() AgentKind                 { return t.agentKind }
+func (t AgentSkillTarget) InstallationScope() InstallationScope { return t.installationScope }
+func (t AgentSkillTarget) Path() string                         { return t.path }
+func (t AgentSkillTarget) AllowManagedPublish() bool            { return t.allowManagedPublish }
+
+type CodexRoot struct{ target AgentSkillTarget }
+
+func NewCodexRoot(rootID string, scope InstallationScope, path string) (CodexRoot, error) {
+	return NewCodexRootWithPublish(rootID, scope, path, false)
+}
+
+func NewCodexRootWithPublish(
+	rootID string,
+	scope InstallationScope,
+	path string,
+	allowManagedPublish bool,
+) (CodexRoot, error) {
+	target, err := NewAgentSkillTarget(rootID, CodexAgent, scope, path, allowManagedPublish)
+	if err != nil {
 		return CodexRoot{}, err
 	}
-	return CodexRoot{rootID: rootID, installationScope: scope, path: resolved}, nil
+	return CodexRoot{target: target}, nil
 }
 
-func (r CodexRoot) ID() string                           { return r.rootID }
-func (r CodexRoot) InstallationScope() InstallationScope { return r.installationScope }
-func (r CodexRoot) Path() string                         { return r.path }
+func (r CodexRoot) ID() string                           { return r.target.ID() }
+func (r CodexRoot) InstallationScope() InstallationScope { return r.target.InstallationScope() }
+func (r CodexRoot) Path() string                         { return r.target.Path() }
+func (r CodexRoot) AllowManagedPublish() bool            { return r.target.AllowManagedPublish() }
+func (r CodexRoot) AgentTarget() AgentSkillTarget        { return r.target }
 
-type CodexProvider struct {
-	hostID string
-	roots  []CodexRoot
+type AgentSkillProvider struct {
+	hostID        string
+	targets       []AgentSkillTarget
+	providerNames []string
 }
 
-func NewCodexProvider(hostID string, roots []CodexRoot) (*CodexProvider, error) {
+func NewAgentSkillProvider(hostID string, targets []AgentSkillTarget) (*AgentSkillProvider, error) {
+	return newAgentSkillProvider(hostID, targets, []string{string(CodexAgent), string(ClaudeCodeAgent)})
+}
+
+func newAgentSkillProvider(
+	hostID string,
+	targets []AgentSkillTarget,
+	providerNames []string,
+) (*AgentSkillProvider, error) {
 	if err := externalText("host_id", hostID, MaxExternalHostIDLength); err != nil {
 		return nil, err
 	}
-	seen := make(map[string]struct{}, len(roots))
-	for _, root := range roots {
-		if _, exists := seen[root.rootID]; exists {
-			return nil, fmt.Errorf("Codex Skill root IDs must be unique")
+	seen := make(map[string]struct{}, len(targets))
+	for _, target := range targets {
+		if _, exists := seen[target.targetID]; exists {
+			return nil, fmt.Errorf("Agent Skill target IDs must be unique")
 		}
-		seen[root.rootID] = struct{}{}
+		seen[target.targetID] = struct{}{}
 	}
-	return &CodexProvider{hostID: hostID, roots: slices.Clone(roots)}, nil
+	return &AgentSkillProvider{
+		hostID:        hostID,
+		targets:       slices.Clone(targets),
+		providerNames: slices.Clone(providerNames),
+	}, nil
 }
 
-func (*CodexProvider) Name() string      { return "codex" }
-func (*CodexProvider) AgentKind() string { return "codex" }
-func (p *CodexProvider) HostID() string  { return p.hostID }
+func (*AgentSkillProvider) Name() string              { return "agent-targets" }
+func (*AgentSkillProvider) AgentKind() string         { return "multi" }
+func (p *AgentSkillProvider) HostID() string          { return p.hostID }
+func (p *AgentSkillProvider) ProviderNames() []string { return slices.Clone(p.providerNames) }
 
-func (p *CodexProvider) Scan(ctx context.Context) (ProviderScan, error) {
+func (p *AgentSkillProvider) Scan(ctx context.Context) (ProviderScan, error) {
 	var registrations []Registration
 	skipped := 0
-	for _, root := range p.roots {
+	for _, target := range p.targets {
 		if err := ctx.Err(); err != nil {
 			return ProviderScan{}, err
 		}
-		entries, err := os.ReadDir(root.path)
+		entries, err := os.ReadDir(target.path)
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
@@ -232,7 +305,7 @@ func (p *CodexProvider) Scan(ctx context.Context) (ProviderScan, error) {
 			if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 				continue
 			}
-			registration, err := p.registration(root, filepath.Join(root.path, entry.Name()))
+			registration, err := p.registration(target, filepath.Join(target.path, entry.Name()))
 			if err != nil {
 				skipped++
 				continue
@@ -243,14 +316,15 @@ func (p *CodexProvider) Scan(ctx context.Context) (ProviderScan, error) {
 	return NewProviderScan(registrations, skipped)
 }
 
-func (p *CodexProvider) Resolve(ctx context.Context, registration Registration) (Resolution, error) {
+func (p *AgentSkillProvider) Resolve(ctx context.Context, registration Registration) (Resolution, error) {
 	if err := ctx.Err(); err != nil {
 		return Resolution{}, err
 	}
-	if registration.provider != p.Name() || registration.agentKind != p.AgentKind() || registration.hostID != p.hostID {
+	if !slices.Contains(p.providerNames, registration.provider) ||
+		registration.agentKind != registration.provider || registration.hostID != p.hostID {
 		return unavailable(registration), nil
 	}
-	root, ok := p.rootFor(registration)
+	target, ok := p.targetFor(registration)
 	if !ok {
 		return unavailable(registration), nil
 	}
@@ -259,40 +333,43 @@ func (p *CodexProvider) Resolve(ctx context.Context, registration Registration) 
 		return unavailable(registration), nil
 	}
 	resolved, err = filepath.Abs(resolved)
-	if err != nil || filepath.Dir(resolved) != root.path {
+	if err != nil || filepath.Dir(resolved) != target.path {
 		return unavailable(registration), nil
 	}
 	info, err := os.Lstat(resolved)
 	if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 		return unavailable(registration), nil
 	}
-	current, err := p.registration(root, resolved)
+	current, err := p.registration(target, resolved)
 	if err != nil || current.externalSkillID != registration.externalSkillID || current.fingerprint != registration.fingerprint {
 		return unavailable(registration), nil
 	}
 	return Resolution{Registration: registration, Status: Available, Entrypoint: filepath.Join(resolved, "SKILL.md")}, nil
 }
 
-func (p *CodexProvider) rootFor(registration Registration) (CodexRoot, bool) {
-	prefix := "codex:" + string(registration.installationScope) + ":"
+func (p *AgentSkillProvider) targetFor(registration Registration) (AgentSkillTarget, bool) {
+	prefix := registration.agentKind + ":" + string(registration.installationScope) + ":"
 	if !strings.HasPrefix(registration.externalSkillID, prefix) {
-		return CodexRoot{}, false
+		return AgentSkillTarget{}, false
 	}
 	remainder := strings.TrimPrefix(registration.externalSkillID, prefix)
-	rootID := strings.SplitN(remainder, "/", 2)[0]
-	for _, root := range p.roots {
-		if root.rootID == rootID && root.installationScope == registration.installationScope {
-			return root, true
+	targetID := strings.SplitN(remainder, "/", 2)[0]
+	for _, target := range p.targets {
+		if target.targetID == targetID && string(target.agentKind) == registration.agentKind &&
+			target.installationScope == registration.installationScope {
+			return target, true
 		}
 	}
-	return CodexRoot{}, false
+	return AgentSkillTarget{}, false
 }
 
-func (p *CodexProvider) registration(root CodexRoot, packagePath string) (Registration, error) {
-	if filepath.Dir(packagePath) != root.path {
-		return Registration{}, fmt.Errorf("Codex Skill package must be an immediate child of its configured root")
+func (p *AgentSkillProvider) registration(target AgentSkillTarget, packagePath string) (Registration, error) {
+	if filepath.Dir(packagePath) != target.path {
+		return Registration{}, fmt.Errorf("Agent Skill package must be an immediate child of its configured target")
 	}
-	name, description, err := skillMetadata(filepath.Join(packagePath, "SKILL.md"))
+	name, description, err := skillMetadata(
+		filepath.Join(packagePath, "SKILL.md"), filepath.Base(packagePath), target.agentKind,
+	)
 	if err != nil {
 		return Registration{}, err
 	}
@@ -300,11 +377,38 @@ func (p *CodexProvider) registration(root CodexRoot, packagePath string) (Regist
 	if err != nil {
 		return Registration{}, err
 	}
-	externalID := fmt.Sprintf("codex:%s:%s/%s", root.installationScope, root.rootID, filepath.Base(packagePath))
+	externalID := fmt.Sprintf(
+		"%s:%s:%s/%s", target.agentKind, target.installationScope, target.targetID, filepath.Base(packagePath),
+	)
 	return NewRegistration(
-		externalID, p.Name(), p.AgentKind(), p.hostID, root.installationScope,
+		externalID, string(target.agentKind), string(target.agentKind), p.hostID, target.installationScope,
 		packagePath, fingerprint, name, description,
 	)
+}
+
+type CodexProvider struct{ provider *AgentSkillProvider }
+
+func NewCodexProvider(hostID string, roots []CodexRoot) (*CodexProvider, error) {
+	targets := make([]AgentSkillTarget, len(roots))
+	for index, root := range roots {
+		targets[index] = root.AgentTarget()
+	}
+	provider, err := newAgentSkillProvider(hostID, targets, []string{string(CodexAgent)})
+	if err != nil {
+		return nil, err
+	}
+	return &CodexProvider{provider: provider}, nil
+}
+
+func (*CodexProvider) Name() string              { return "codex" }
+func (*CodexProvider) AgentKind() string         { return "codex" }
+func (p *CodexProvider) HostID() string          { return p.provider.HostID() }
+func (p *CodexProvider) ProviderNames() []string { return []string{string(CodexAgent)} }
+func (p *CodexProvider) Scan(ctx context.Context) (ProviderScan, error) {
+	return p.provider.Scan(ctx)
+}
+func (p *CodexProvider) Resolve(ctx context.Context, registration Registration) (Resolution, error) {
+	return p.provider.Resolve(ctx, registration)
 }
 
 func CaptureSnapshot(ctx context.Context, provider ExternalProvider, registration Registration) (Snapshot, error) {
@@ -333,21 +437,29 @@ func unavailable(registration Registration) Resolution {
 	return Resolution{Registration: registration, Status: Unavailable}
 }
 
-func skillMetadata(manifest string) (string, string, error) {
+func skillMetadata(manifest, packageName string, agentKind AgentKind) (string, string, error) {
 	info, err := os.Lstat(manifest)
 	if err != nil || info.Mode()&os.ModeSymlink != 0 || !info.Mode().IsRegular() {
-		return "", "", fmt.Errorf("Codex Skill manifest must be a regular non-symlink file")
+		return "", "", fmt.Errorf("Agent Skill manifest must be a regular non-symlink file")
 	}
 	contents, err := readBounded(manifest, MaxExternalManifestBytes)
 	if err != nil {
 		return "", "", err
 	}
+	return parseSkillMetadata(contents, packageName, agentKind)
+}
+
+func parseSkillMetadata(contents []byte, packageName string, agentKind AgentKind) (string, string, error) {
 	if !utf8.Valid(contents) {
-		return "", "", fmt.Errorf("Codex Skill manifest must be UTF-8")
+		return "", "", fmt.Errorf("Agent Skill manifest must be UTF-8")
+	}
+	if !utf8.ValidString(packageName) {
+		return "", "", fmt.Errorf("Agent Skill package name must be UTF-8")
 	}
 	scanner := bufio.NewScanner(strings.NewReader(string(contents)))
+	scanner.Buffer(make([]byte, 0, 4*1024), MaxExternalManifestBytes+1)
 	if !scanner.Scan() || trimPythonWhitespace(scanner.Text()) != "---" {
-		return "", "", fmt.Errorf("Codex Skill manifest is missing frontmatter")
+		return "", "", fmt.Errorf("Agent Skill manifest is missing frontmatter")
 	}
 	metadata := make(map[string]string)
 	terminated := false
@@ -370,32 +482,40 @@ func skillMetadata(manifest string) (string, string, error) {
 		return "", "", err
 	}
 	if !terminated {
-		return "", "", fmt.Errorf("Codex Skill frontmatter is not terminated")
+		return "", "", fmt.Errorf("Agent Skill frontmatter is not terminated")
 	}
 	name, hasName := metadata["name"]
 	description, hasDescription := metadata["description"]
+	if agentKind == ClaudeCodeAgent && !hasName {
+		name, hasName = packageName, true
+	}
 	if !hasName || !hasDescription {
-		return "", "", fmt.Errorf("Codex Skill frontmatter requires name and description")
+		required := "name and description"
+		if agentKind == ClaudeCodeAgent {
+			required = "description"
+		}
+		return "", "", fmt.Errorf("%s Skill frontmatter requires %s", agentKind, required)
 	}
 	return name, description, nil
 }
 
 func frontmatterScalar(value string) (string, error) {
 	if value == "" {
-		return "", fmt.Errorf("Codex Skill frontmatter values must not be empty")
+		return "", fmt.Errorf("Agent Skill frontmatter values must not be empty")
 	}
 	if value[0] == '"' {
 		var parsed string
 		if err := json.Unmarshal([]byte(value), &parsed); err != nil {
-			return "", fmt.Errorf("Codex Skill frontmatter contains an invalid scalar")
+			return "", fmt.Errorf("Agent Skill frontmatter contains an invalid scalar")
 		}
 		return parsed, nil
 	}
 	if value[0] == '\'' {
-		if len(value) < 2 || value[len(value)-1] != '\'' {
-			return "", fmt.Errorf("Codex Skill frontmatter contains an invalid scalar")
+		runes := []rune(value)
+		if len(runes) == 1 {
+			return "", nil
 		}
-		return value[1 : len(value)-1], nil
+		return string(runes[1 : len(runes)-1]), nil
 	}
 	return value, nil
 }
@@ -504,7 +624,7 @@ func readBounded(path string, maximum int) ([]byte, error) {
 
 func externalText(label, value string, maximum int) error {
 	trimmed := trimPythonWhitespace(value)
-	if trimmed == "" || value != trimmed {
+	if !utf8.ValidString(value) || trimmed == "" || value != trimmed {
 		return fmt.Errorf("external Skill %s must be non-empty and trimmed", label)
 	}
 	if utf8.RuneCountInString(value) > maximum {
@@ -518,6 +638,7 @@ func resolveLoose(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	absolute = filepath.Clean(absolute)
 	resolved, err := filepath.EvalSymlinks(absolute)
 	if err == nil {
 		return filepath.Clean(resolved), nil
@@ -525,5 +646,30 @@ func resolveLoose(path string) (string, error) {
 	if !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
-	return filepath.Clean(absolute), nil
+	// filepath.EvalSymlinks requires the full path to exist, while Python's
+	// Path.resolve(strict=False) resolves every existing ancestor. Preserve
+	// that behavior so a future target below /var and the same live path below
+	// /private/var cannot acquire two different identities on macOS.
+	ancestor := absolute
+	var suffix []string
+	for {
+		if _, statErr := os.Lstat(ancestor); statErr == nil {
+			resolvedAncestor, resolveErr := filepath.EvalSymlinks(ancestor)
+			if resolveErr != nil {
+				return "", resolveErr
+			}
+			for index := len(suffix) - 1; index >= 0; index-- {
+				resolvedAncestor = filepath.Join(resolvedAncestor, suffix[index])
+			}
+			return filepath.Clean(resolvedAncestor), nil
+		} else if !errors.Is(statErr, os.ErrNotExist) {
+			return "", statErr
+		}
+		parent := filepath.Dir(ancestor)
+		if parent == ancestor {
+			return absolute, nil
+		}
+		suffix = append(suffix, filepath.Base(ancestor))
+		ancestor = parent
+	}
 }

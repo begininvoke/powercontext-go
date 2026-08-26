@@ -14,12 +14,12 @@ import (
 )
 
 const (
-	authoritySHA256 = "ac9b78b07b84097c51cbe2a08258a03e9e1c9ec57786fb2a50e2c2570ced715e"
+	authoritySHA256 = "6fbd885d4f38cfe2dca39029185db8277b5c764c6d10dfeb8e0bb01d72e129c6"
 	oracleScope     = "project:python-oracle"
 )
 
 func TestPythonSQLiteAuthorityCanBeReadAndExtendedByGo(t *testing.T) {
-	fixture := filepath.Join("testdata", "python-v0.0.1", "authority.db")
+	fixture := filepath.Join("testdata", "python-v0.0.2", "authority.db")
 	contents, err := os.ReadFile(fixture)
 	if err != nil {
 		t.Fatal(err)

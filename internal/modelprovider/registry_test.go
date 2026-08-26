@@ -18,7 +18,7 @@ type frozenProviderMatrix struct {
 }
 
 func TestRegistryMatchesFrozenPydanticAIOracle(t *testing.T) {
-	encoded, err := os.ReadFile("../../test/conformance/testdata/python-v0.0.1/provider-matrix.json")
+	encoded, err := os.ReadFile("../../test/conformance/testdata/python-v0.0.2/provider-matrix.json")
 	if err != nil {
 		t.Fatal(err)
 	}

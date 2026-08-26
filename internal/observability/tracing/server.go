@@ -135,6 +135,36 @@ func (o *Operation) Finish(outcome string, err error) {
 	o.span.End()
 }
 
+// SetAttributes records only scalar PowerContext attributes and silently
+// drops everything else. Stage call sites are fixed in the Runtime; this
+// guard keeps a future domain value from becoming telemetry by accident.
+func (o *Operation) SetAttributes(values map[string]any) {
+	if o == nil || o.span == nil || o.done.Load() {
+		return
+	}
+	attributes := make([]attribute.KeyValue, 0, len(values))
+	for key, value := range values {
+		if !strings.HasPrefix(key, "powercontext.") || key == "powercontext.operation.outcome" {
+			continue
+		}
+		switch typed := value.(type) {
+		case string:
+			attributes = append(attributes, attribute.String(key, typed))
+		case bool:
+			attributes = append(attributes, attribute.Bool(key, typed))
+		case int:
+			attributes = append(attributes, attribute.Int(key, typed))
+		case int64:
+			attributes = append(attributes, attribute.Int64(key, typed))
+		case float64:
+			attributes = append(attributes, attribute.Float64(key, typed))
+		}
+	}
+	if len(attributes) > 0 {
+		o.span.SetAttributes(attributes...)
+	}
+}
+
 // MCPMiddleware records logical MCP protocol requests, not Streamable HTTP
 // frames. The HTTP boundary extracts W3C context before the SDK sees a request.
 func MCPMiddleware(provider trace.TracerProvider) mcp.Middleware {

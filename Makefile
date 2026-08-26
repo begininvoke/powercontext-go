@@ -70,17 +70,15 @@ smoke-full: build-full
 	$(GO) run ./tools/process-smoke -binary bin/powercontext-full -version "$(VERSION)"
 
 package-standard: build
-	@test -f "$(VEC1_EXTENSION)" || { echo 'VEC1_EXTENSION must name the compiled Vec1 library' >&2; exit 2; }
 	$(GO) run ./tools/release package \
-		-binary bin/powercontext -vec1 "$(VEC1_EXTENSION)" -edition standard \
+		-binary bin/powercontext -edition standard \
 		-version "$(VERSION)" -commit "$(COMMIT)" -build-date "$(BUILD_DATE)" \
 		-output dist -syft "$(SYFT)"
 
 package-full: build-full
-	@test -f "$(VEC1_EXTENSION)" || { echo 'VEC1_EXTENSION must name the compiled Vec1 library' >&2; exit 2; }
 	@test -d "$(ONNXRUNTIME_LIB_DIR)" || { echo 'ONNXRUNTIME_LIB_DIR must contain ONNX Runtime libraries' >&2; exit 2; }
 	$(GO) run ./tools/release package \
-		-binary bin/powercontext-full -vec1 "$(VEC1_EXTENSION)" \
+		-binary bin/powercontext-full \
 		-onnxruntime-dir "$(ONNXRUNTIME_LIB_DIR)" -edition full \
 		-version "$(VERSION)" -commit "$(COMMIT)" -build-date "$(BUILD_DATE)" \
 		-output dist -syft "$(SYFT)"

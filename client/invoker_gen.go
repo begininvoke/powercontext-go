@@ -12,6 +12,16 @@ type normalizedInvoker struct{ raw v1.Invoker }
 
 var _ v1.Invoker = normalizedInvoker{}
 
+func (i normalizedInvoker) AcknowledgeHandoff(ctx context.Context, request *v1.AcknowledgeHandoffRequest) (v1.AcknowledgeHandoffRes, error) {
+	if err := validateOperationRequest("/v1/work/handoffs/acknowledge", request); err != nil {
+		var zero v1.AcknowledgeHandoffRes
+		return zero, err
+	}
+	return invokeOperation(ctx, operationDescriptor{path: "/v1/work/handoffs/acknowledge", successStatus: 200}, func(ctx context.Context) (v1.AcknowledgeHandoffRes, error) {
+		return i.raw.AcknowledgeHandoff(ctx, request)
+	})
+}
+
 func (i normalizedInvoker) ActivateHandoff(ctx context.Context, request *v1.ActivateHandoffRequest) (v1.ActivateHandoffRes, error) {
 	if err := validateOperationRequest("/v1/handoff/activate", request); err != nil {
 		var zero v1.ActivateHandoffRes
@@ -79,6 +89,16 @@ func (i normalizedInvoker) CreateHandoffReportProject(ctx context.Context, reque
 	}
 	return invokeOperation(ctx, operationDescriptor{path: "/v1/handoff-reports/projects/create", successStatus: 201}, func(ctx context.Context) (v1.CreateHandoffReportProjectRes, error) {
 		return i.raw.CreateHandoffReportProject(ctx, request)
+	})
+}
+
+func (i normalizedInvoker) CreateWorkContract(ctx context.Context, request *v1.CreateWorkContractRequest) (v1.CreateWorkContractRes, error) {
+	if err := validateOperationRequest("/v1/work/contracts/create", request); err != nil {
+		var zero v1.CreateWorkContractRes
+		return zero, err
+	}
+	return invokeOperation(ctx, operationDescriptor{path: "/v1/work/contracts/create", successStatus: 202}, func(ctx context.Context) (v1.CreateWorkContractRes, error) {
+		return i.raw.CreateWorkContract(ctx, request)
 	})
 }
 
@@ -230,6 +250,16 @@ func (i normalizedInvoker) GetStats(ctx context.Context, params v1.GetStatsParam
 	})
 }
 
+func (i normalizedInvoker) HandoffCurrentWork(ctx context.Context, request *v1.HandoffCurrentWorkRequest) (v1.HandoffCurrentWorkRes, error) {
+	if err := validateOperationRequest("/v1/work/handoffs/prepare-current", request); err != nil {
+		var zero v1.HandoffCurrentWorkRes
+		return zero, err
+	}
+	return invokeOperation(ctx, operationDescriptor{path: "/v1/work/handoffs/prepare-current", successStatus: 200}, func(ctx context.Context) (v1.HandoffCurrentWorkRes, error) {
+		return i.raw.HandoffCurrentWork(ctx, request)
+	})
+}
+
 func (i normalizedInvoker) ImportExternalSkill(ctx context.Context, request *v1.ImportExternalSkillRequest) (v1.ImportExternalSkillRes, error) {
 	if err := validateOperationRequest("/v1/external-skills/import", request); err != nil {
 		var zero v1.ImportExternalSkillRes
@@ -267,6 +297,16 @@ func (i normalizedInvoker) ListHandoffReportActivities(ctx context.Context, requ
 	}
 	return invokeOperation(ctx, operationDescriptor{path: "/v1/handoff-reports/activities/list", successStatus: 200}, func(ctx context.Context) (v1.ListHandoffReportActivitiesRes, error) {
 		return i.raw.ListHandoffReportActivities(ctx, request)
+	})
+}
+
+func (i normalizedInvoker) ListHandoffReportKnownScopes(ctx context.Context, request *v1.ListHandoffReportKnownScopesRequest) (v1.ListHandoffReportKnownScopesRes, error) {
+	if err := validateOperationRequest("/v1/handoff-reports/scopes/list-known", request); err != nil {
+		var zero v1.ListHandoffReportKnownScopesRes
+		return zero, err
+	}
+	return invokeOperation(ctx, operationDescriptor{path: "/v1/handoff-reports/scopes/list-known", successStatus: 200}, func(ctx context.Context) (v1.ListHandoffReportKnownScopesRes, error) {
+		return i.raw.ListHandoffReportKnownScopes(ctx, request)
 	})
 }
 
@@ -367,6 +407,16 @@ func (i normalizedInvoker) RecordHandoffReportActivity(ctx context.Context, requ
 	}
 	return invokeOperation(ctx, operationDescriptor{path: "/v1/handoff-reports/activities/record", successStatus: 201}, func(ctx context.Context) (v1.RecordHandoffReportActivityRes, error) {
 		return i.raw.RecordHandoffReportActivity(ctx, request)
+	})
+}
+
+func (i normalizedInvoker) RecordTaskOutcome(ctx context.Context, request *v1.RecordTaskOutcomeRequest) (v1.RecordTaskOutcomeRes, error) {
+	if err := validateOperationRequest("/v1/work/outcomes/record", request); err != nil {
+		var zero v1.RecordTaskOutcomeRes
+		return zero, err
+	}
+	return invokeOperation(ctx, operationDescriptor{path: "/v1/work/outcomes/record", successStatus: 202}, func(ctx context.Context) (v1.RecordTaskOutcomeRes, error) {
+		return i.raw.RecordTaskOutcome(ctx, request)
 	})
 }
 

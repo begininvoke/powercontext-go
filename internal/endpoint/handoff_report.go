@@ -16,6 +16,7 @@ import (
 // surface. It keeps the generated HTTP contract out of Runtime and allows the
 // same operations to be called directly by MCP without loopback HTTP.
 type HandoffReportOperations interface {
+	ListKnownScopes(context.Context, *string, int) (runtime.KnownHandoffScopePage, error)
 	CreateProject(context.Context, runtime.CreateHandoffReportProject) (handoffreport.ProjectDescriptor, error)
 	GetProject(context.Context, string) (handoffreport.ProjectDescriptor, error)
 	UpdateProject(context.Context, handoffreport.ProjectDescriptor, int) (handoffreport.ProjectDescriptor, error)
@@ -30,6 +31,26 @@ type HandoffReportOperations interface {
 	AttachWorkspaceBinding(context.Context, string, string, handoffreport.RepositoryRef, *int) (handoffreport.WorkspaceBinding, error)
 	DetachWorkspaceBinding(context.Context, string, int) (handoffreport.WorkspaceBinding, error)
 	GetReport(context.Context, runtime.GetHandoffReport) (handoffreport.Report, error)
+}
+
+func (h *Handler) ListHandoffReportKnownScopes(ctx context.Context, req *v1.ListHandoffReportKnownScopesRequest) (v1.ListHandoffReportKnownScopesRes, error) {
+	if h.handoffReport == nil {
+		return nil, &RuntimeNotReadyError{}
+	}
+	page, err := h.handoffReport.ListKnownScopes(
+		ctx, optionalString(req.Cursor), req.Limit.Or(handoffreport.DefaultCatalogPageSize),
+	)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]v1.KnownHandoffScope, len(page.Items))
+	for index, scope := range page.Items {
+		items[index] = v1.KnownHandoffScope{ScopeID: scope}
+	}
+	return &v1.KnownHandoffScopePageHeaders{
+		XPowerContextRequestID: requestID(ctx),
+		Response:               v1.KnownHandoffScopePage{Items: items, NextCursor: optionalNullableString(page.NextCursor)},
+	}, nil
 }
 
 func (h *Handler) CreateHandoffReportProject(ctx context.Context, req *v1.CreateHandoffReportProjectRequest) (v1.CreateHandoffReportProjectRes, error) {
@@ -302,7 +323,7 @@ func (h *Handler) GetHandoffReport(ctx context.Context, req *v1.GetHandoffReport
 	}
 	format := handoffreport.Format(req.Format.Or(v1.ReportFormatMarkdown))
 	report, err := h.handoffReport.GetReport(ctx, runtime.GetHandoffReport{
-		ProjectID:             req.ProjectID,
+		ScopeID:               req.ScopeID,
 		Locale:                locale,
 		IncludeEvidenceChecks: req.IncludeEvidenceChecks.Or(true),
 		Format:                format,

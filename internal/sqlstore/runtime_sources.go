@@ -48,6 +48,28 @@ func (b *RuntimeSourceBackend) Capture(
 	return stored.Ref, stored.JournalPosition, nil
 }
 
+// Entries returns a stable decoded snapshot of one scoped Source journal.
+func (b *RuntimeSourceBackend) Entries(ctx context.Context, scopeID string) ([]source.JournalEntry, error) {
+	var stored []StoredSource
+	err := b.database.Transaction(ctx, func(tx DBTX) error {
+		var listErr error
+		stored, listErr = b.repository.List(ctx, tx, scopeID, 0, nil)
+		return listErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]source.JournalEntry, len(stored))
+	for index, value := range stored {
+		entry, entryErr := source.NewJournalEntry(value.Ref, value.Value, value.JournalPosition)
+		if entryErr != nil {
+			return nil, entryErr
+		}
+		result[index] = entry
+	}
+	return result, nil
+}
+
 // ScopeIDs returns only partitions that own a Source journal, in deterministic
 // database byte order. It intentionally does not infer Scopes from Artifacts
 // or configuration.

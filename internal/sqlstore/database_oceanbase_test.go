@@ -71,8 +71,39 @@ func TestMySQLSchemaUsesPythonPayloadVariants(t *testing.T) {
 	if !strings.Contains(joined, "payload MEDIUMBLOB NOT NULL") ||
 		!strings.Contains(joined, "`cursor` MEDIUMBLOB NOT NULL") ||
 		!strings.Contains(joined, "searchable_text MEDIUMTEXT") ||
+		!strings.Contains(joined, "scope_id VARCHAR(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL") ||
+		!strings.Contains(joined, "source_id VARCHAR(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL") ||
+		!strings.Contains(joined, "source_type VARCHAR(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL") ||
 		strings.Contains(joined, " payload BLOB") {
 		t.Fatalf("unexpected MySQL schema:\n%s", joined)
+	}
+}
+
+func TestEveryCoreMySQLVarcharUsesBinaryIdentityCollation(t *testing.T) {
+	recorder := &recordingDBTX{}
+	if err := EnsureBuiltinSchemaForDialect(t.Context(), recorder, MySQLDialect); err != nil {
+		t.Fatal(err)
+	}
+	assertEveryMySQLVarcharIsBinary(t, recorder.statements)
+}
+
+func TestEveryHandoffReportMySQLVarcharUsesBinaryIdentityCollation(t *testing.T) {
+	statements := make([]string, len(handoffReportSchema))
+	for index, statement := range handoffReportSchema {
+		statements[index] = mysqlIdentityColumns(statement)
+	}
+	assertEveryMySQLVarcharIsBinary(t, statements)
+}
+
+func assertEveryMySQLVarcharIsBinary(t *testing.T, statements []string) {
+	t.Helper()
+	for _, statement := range statements {
+		for _, line := range strings.Split(statement, "\n") {
+			if strings.Contains(line, "VARCHAR(") &&
+				!strings.Contains(line, " CHARACTER SET utf8mb4 COLLATE utf8mb4_bin") {
+				t.Errorf("MySQL identity column lacks binary collation: %s", strings.TrimSpace(line))
+			}
+		}
 	}
 }
 

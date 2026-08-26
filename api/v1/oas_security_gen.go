@@ -35,6 +35,7 @@ func findAuthorization(h http.Header, prefix string) (string, bool) {
 
 // operationRolesBearerAuth is a private map storing roles per operation.
 var operationRolesBearerAuth = map[string][]string{
+	AcknowledgeHandoffOperation:              []string{},
 	ActivateHandoffOperation:                 []string{},
 	ApproveArtifactCandidateOperation:        []string{},
 	AttachHandoffReportWorkspaceOperation:    []string{},
@@ -42,6 +43,7 @@ var operationRolesBearerAuth = map[string][]string{
 	CommitHandoffOperation:                   []string{},
 	ContinueHandoffOperation:                 []string{},
 	CreateHandoffReportProjectOperation:      []string{},
+	CreateWorkContractOperation:              []string{},
 	DetachHandoffReportWorkspaceOperation:    []string{},
 	FinalizeHandoffOperation:                 []string{},
 	FlushMemoryOperation:                     []string{},
@@ -56,10 +58,12 @@ var operationRolesBearerAuth = map[string][]string{
 	GetMemoryEntryOperation:                  []string{},
 	GetSkillOperation:                        []string{},
 	GetStatsOperation:                        []string{},
+	HandoffCurrentWorkOperation:              []string{},
 	ImportExternalSkillOperation:             []string{},
 	ListArtifactCandidatesOperation:          []string{},
 	ListExternalSkillsOperation:              []string{},
 	ListHandoffReportActivitiesOperation:     []string{},
+	ListHandoffReportKnownScopesOperation:    []string{},
 	ListHandoffReportProjectsOperation:       []string{},
 	ListHandoffReportWorkstreamsOperation:    []string{},
 	ListMemoryChangesOperation:               []string{},
@@ -70,6 +74,7 @@ var operationRolesBearerAuth = map[string][]string{
 	ProposeSkillOperation:                    []string{},
 	PurgeHandoffReportActivitiesOperation:    []string{},
 	RecordHandoffReportActivityOperation:     []string{},
+	RecordTaskOutcomeOperation:               []string{},
 	RegisterHandoffReportWorkstreamOperation: []string{},
 	RejectArtifactCandidateOperation:         []string{},
 	RememberMemoryOperation:                  []string{},

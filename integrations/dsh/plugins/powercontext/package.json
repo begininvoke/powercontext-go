@@ -3,7 +3,6 @@
   "version": "0.0.2",
   "description": "DeepSeek Harness plugin that connects to a PowerContext Server over HTTP for recall, memory, handoff, experience, and skills.",
   "license": "Apache-2.0",
-  "packageManager": "pnpm@10.34.5",
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -37,7 +36,7 @@
     "gen:check": "node scripts/gen-operations.mjs --check",
     "build": "node scripts/gen-operations.mjs && tsdown",
     "prepare": "node scripts/prepare.mjs",
-    "test": "vitest run --exclude tests/e2e/**",
+    "test": "vitest run --exclude=tests/e2e/**",
     "test:e2e": "vitest run tests/e2e",
     "test:all": "vitest run",
     "pack:release": "pnpm build && node scripts/pack-release.mjs"

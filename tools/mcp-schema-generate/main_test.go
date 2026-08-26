@@ -47,8 +47,8 @@ func TestCollectedSchemasAreObjectSchemas(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(definitions) != 18 {
-		t.Fatalf("definitions = %d, want 18", len(definitions))
+	if len(definitions) != 23 {
+		t.Fatalf("definitions = %d, want 23", len(definitions))
 	}
 	reportCount := 0
 	for _, definition := range definitions {
@@ -65,8 +65,8 @@ func TestCollectedSchemasAreObjectSchemas(t *testing.T) {
 			reportCount++
 		}
 	}
-	if reportCount != 2 {
-		t.Fatalf("Handoff Report schemas = %d, want 2", reportCount)
+	if reportCount != 3 {
+		t.Fatalf("Handoff Report schemas = %d, want 3", reportCount)
 	}
 }
 

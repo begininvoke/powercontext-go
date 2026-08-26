@@ -8,12 +8,24 @@ import (
 )
 
 var cursorIdentifierPattern = regexp.MustCompile(`\bcursor\b`)
+var varcharIdentityPattern = regexp.MustCompile(`\bVARCHAR\(([0-9]+)\)`)
 
 // quoteCursorIdentifier preserves the frozen column name while making SQL
 // valid on OceanBase, where CURSOR is reserved. Backtick identifiers are also
 // accepted by SQLite, so repositories can use one statement on both profiles.
 func quoteCursorIdentifier(statement string) string {
 	return cursorIdentifierPattern.ReplaceAllString(statement, "`cursor`")
+}
+
+// MySQLIdentityType is the byte-exact string type used for opaque identities
+// by the Python MySQL/OceanBase schema. A database default such as
+// utf8mb4_general_ci would otherwise collapse case- and accent-distinct keys.
+func MySQLIdentityType(length int) string {
+	return fmt.Sprintf("VARCHAR(%d) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin", length)
+}
+
+func mysqlIdentityColumns(statement string) string {
+	return varcharIdentityPattern.ReplaceAllString(statement, "$0 CHARACTER SET utf8mb4 COLLATE utf8mb4_bin")
 }
 
 // builtinSchema is deliberately explicit. These names, columns, constraints,
@@ -260,6 +272,7 @@ func EnsureBuiltinSchemaForDialect(ctx context.Context, db DBTX, dialect Dialect
 		if dialect == MySQLDialect {
 			statement = strings.ReplaceAll(statement, " BLOB", " MEDIUMBLOB")
 			statement = strings.ReplaceAll(statement, " TEXT", " MEDIUMTEXT")
+			statement = mysqlIdentityColumns(statement)
 			statement = quoteCursorIdentifier(statement)
 		}
 		if _, err := db.ExecContext(ctx, statement); err != nil {

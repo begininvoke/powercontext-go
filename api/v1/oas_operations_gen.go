@@ -6,6 +6,7 @@ package v1
 type OperationName = string
 
 const (
+	AcknowledgeHandoffOperation              OperationName = "AcknowledgeHandoff"
 	ActivateHandoffOperation                 OperationName = "ActivateHandoff"
 	ApproveArtifactCandidateOperation        OperationName = "ApproveArtifactCandidate"
 	AttachHandoffReportWorkspaceOperation    OperationName = "AttachHandoffReportWorkspace"
@@ -13,6 +14,7 @@ const (
 	CommitHandoffOperation                   OperationName = "CommitHandoff"
 	ContinueHandoffOperation                 OperationName = "ContinueHandoff"
 	CreateHandoffReportProjectOperation      OperationName = "CreateHandoffReportProject"
+	CreateWorkContractOperation              OperationName = "CreateWorkContract"
 	DetachHandoffReportWorkspaceOperation    OperationName = "DetachHandoffReportWorkspace"
 	FinalizeHandoffOperation                 OperationName = "FinalizeHandoff"
 	FlushMemoryOperation                     OperationName = "FlushMemory"
@@ -29,10 +31,12 @@ const (
 	GetReadinessOperation                    OperationName = "GetReadiness"
 	GetSkillOperation                        OperationName = "GetSkill"
 	GetStatsOperation                        OperationName = "GetStats"
+	HandoffCurrentWorkOperation              OperationName = "HandoffCurrentWork"
 	ImportExternalSkillOperation             OperationName = "ImportExternalSkill"
 	ListArtifactCandidatesOperation          OperationName = "ListArtifactCandidates"
 	ListExternalSkillsOperation              OperationName = "ListExternalSkills"
 	ListHandoffReportActivitiesOperation     OperationName = "ListHandoffReportActivities"
+	ListHandoffReportKnownScopesOperation    OperationName = "ListHandoffReportKnownScopes"
 	ListHandoffReportProjectsOperation       OperationName = "ListHandoffReportProjects"
 	ListHandoffReportWorkstreamsOperation    OperationName = "ListHandoffReportWorkstreams"
 	ListMemoryChangesOperation               OperationName = "ListMemoryChanges"
@@ -43,6 +47,7 @@ const (
 	ProposeSkillOperation                    OperationName = "ProposeSkill"
 	PurgeHandoffReportActivitiesOperation    OperationName = "PurgeHandoffReportActivities"
 	RecordHandoffReportActivityOperation     OperationName = "RecordHandoffReportActivity"
+	RecordTaskOutcomeOperation               OperationName = "RecordTaskOutcome"
 	RegisterHandoffReportWorkstreamOperation OperationName = "RegisterHandoffReportWorkstream"
 	RejectArtifactCandidateOperation         OperationName = "RejectArtifactCandidate"
 	RememberMemoryOperation                  OperationName = "RememberMemory"

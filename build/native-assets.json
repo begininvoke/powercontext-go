@@ -1,9 +1,9 @@
 {
-  "schema_version": 1,
-  "vec1": {
-    "version": "0.7",
-    "source_url": "https://sqlite.org/vec1/raw/vec1.c?ci=version-0.7",
-    "sha256": "8571bb4f77f9547d11ad11e2f72e0de7d3b2ab44e7930151998bce9377ed4b86"
+  "schema_version": 2,
+  "sqlite_vec": {
+    "version": "v0.1.9",
+    "source_url": "https://github.com/asg017/sqlite-vec/releases/download/v0.1.9/sqlite-vec-0.1.9-amalgamation.tar.gz",
+    "sha256": "3acd67cb4aff080c7050926fd3cf8227905fe5b7ee3829d8ee5024ab1283cf61"
   },
   "tokenizers": {
     "version": "1.26.0",

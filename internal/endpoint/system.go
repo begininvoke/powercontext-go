@@ -20,6 +20,7 @@ type HandlerOptions struct {
 	Generation    GenerationOperations
 	External      ExternalSkillOperations
 	Handoff       HandoffOperations
+	Work          WorkOperations
 	HandoffReport HandoffReportOperations
 	Statistics    StatisticsOperations
 }
@@ -38,6 +39,7 @@ type Handler struct {
 	generation    GenerationOperations
 	external      ExternalSkillOperations
 	handoff       HandoffOperations
+	work          WorkOperations
 	handoffReport HandoffReportOperations
 	statistics    StatisticsOperations
 }
@@ -55,6 +57,7 @@ func NewHandler(options HandlerOptions) *Handler {
 		generation:    options.Generation,
 		external:      options.External,
 		handoff:       options.Handoff,
+		work:          options.Work,
 		handoffReport: options.HandoffReport,
 		statistics:    options.Statistics,
 	}

@@ -21,23 +21,36 @@ type ExternalSkillRepository struct{}
 func (ExternalSkillRepository) Replace(
 	ctx context.Context,
 	db DBTX,
-	scopeID, provider, hostID string,
+	scopeID string,
+	providers []string,
+	hostID string,
 	registrations []skill.Registration,
 ) ([]skill.Registration, error) {
 	if err := requireScope(scopeID); err != nil {
 		return nil, err
 	}
-	if err := requireRepositoryText("provider", provider, 128); err != nil {
-		return nil, err
+	if len(providers) == 0 {
+		return nil, &InvalidRepositoryArgumentError{Field: "providers", Detail: "must not be empty"}
+	}
+	providerSet := make(map[string]struct{}, len(providers))
+	for _, provider := range providers {
+		if err := requireRepositoryText("provider", provider, 128); err != nil {
+			return nil, err
+		}
+		if _, duplicate := providerSet[provider]; duplicate {
+			return nil, &InvalidRepositoryArgumentError{Field: "providers", Detail: "must be unique"}
+		}
+		providerSet[provider] = struct{}{}
 	}
 	if err := requireRepositoryText("host_id", hostID, skill.MaxExternalHostIDLength); err != nil {
 		return nil, err
 	}
 	seen := make(map[string]struct{}, len(registrations))
 	for _, registration := range registrations {
-		if registration.Provider() != provider || registration.HostID() != hostID {
+		_, knownProvider := providerSet[registration.Provider()]
+		if !knownProvider || registration.HostID() != hostID {
 			return nil, &InvalidRepositoryArgumentError{
-				Field: "registrations", Detail: "must belong to the replaced provider and host",
+				Field: "registrations", Detail: "must belong to a replaced provider and host",
 			}
 		}
 		if _, exists := seen[registration.ExternalSkillID()]; exists {
@@ -47,9 +60,11 @@ func (ExternalSkillRepository) Replace(
 		}
 		seen[registration.ExternalSkillID()] = struct{}{}
 	}
-	if _, err := db.ExecContext(ctx, `DELETE FROM pc_external_skill_registrations
+	for _, provider := range providers {
+		if _, err := db.ExecContext(ctx, `DELETE FROM pc_external_skill_registrations
         WHERE scope_id = ? AND provider = ? AND host_id = ?`, scopeID, provider, hostID); err != nil {
-		return nil, err
+			return nil, err
+		}
 	}
 	for _, registration := range registrations {
 		locatorHash := fmt.Sprintf("%x", sha256.Sum256([]byte(registration.Locator())))
@@ -159,13 +174,14 @@ func NewExternalSkillStore(database *Database, scopeID string) (*ExternalSkillSt
 
 func (s *ExternalSkillStore) Replace(
 	ctx context.Context,
-	provider, hostID string,
+	providers []string,
+	hostID string,
 	registrations []skill.Registration,
 ) ([]skill.Registration, error) {
 	var result []skill.Registration
 	err := s.database.Transaction(ctx, func(tx DBTX) error {
 		var err error
-		result, err = s.repository.Replace(ctx, tx, s.scopeID, provider, hostID, registrations)
+		result, err = s.repository.Replace(ctx, tx, s.scopeID, providers, hostID, registrations)
 		return err
 	})
 	return result, err

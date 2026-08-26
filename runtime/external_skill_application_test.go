@@ -80,9 +80,10 @@ func TestExternalSkillImportRequiresGenerationBeforeSnapshot(t *testing.T) {
 
 type externalApplicationProvider struct{ registration skill.Registration }
 
-func (externalApplicationProvider) Name() string      { return "codex" }
-func (externalApplicationProvider) AgentKind() string { return "codex" }
-func (externalApplicationProvider) HostID() string    { return "workstation-1" }
+func (externalApplicationProvider) Name() string            { return "codex" }
+func (externalApplicationProvider) AgentKind() string       { return "codex" }
+func (externalApplicationProvider) HostID() string          { return "workstation-1" }
+func (externalApplicationProvider) ProviderNames() []string { return []string{"codex"} }
 func (p externalApplicationProvider) Scan(context.Context) (skill.ProviderScan, error) {
 	return skill.NewProviderScan([]skill.Registration{p.registration}, 0)
 }
@@ -95,7 +96,7 @@ func (p externalApplicationProvider) Resolve(context.Context, skill.Registration
 type externalApplicationStore struct{ registrations []skill.Registration }
 
 func (s *externalApplicationStore) Replace(
-	_ context.Context, _, _ string, registrations []skill.Registration,
+	_ context.Context, _ []string, _ string, registrations []skill.Registration,
 ) ([]skill.Registration, error) {
 	s.registrations = slices.Clone(registrations)
 	return slices.Clone(registrations), nil

@@ -10,6 +10,20 @@ import (
 	ht "github.com/ogen-go/ogen/http"
 )
 
+func encodeAcknowledgeHandoffRequest(
+	req *AcknowledgeHandoffRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeActivateHandoffRequest(
 	req *ActivateHandoffRequest,
 	r *http.Request,
@@ -96,6 +110,20 @@ func encodeContinueHandoffRequest(
 
 func encodeCreateHandoffReportProjectRequest(
 	req *CreateHandoffReportProjectRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeCreateWorkContractRequest(
+	req *CreateWorkContractRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -276,6 +304,20 @@ func encodeGetSkillRequest(
 	return nil
 }
 
+func encodeHandoffCurrentWorkRequest(
+	req *HandoffCurrentWorkRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
 func encodeImportExternalSkillRequest(
 	req *ImportExternalSkillRequest,
 	r *http.Request,
@@ -320,6 +362,20 @@ func encodeListExternalSkillsRequest(
 
 func encodeListHandoffReportActivitiesRequest(
 	req *ListHandoffReportActivitiesRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeListHandoffReportKnownScopesRequest(
+	req *ListHandoffReportKnownScopesRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"
@@ -460,6 +516,20 @@ func encodePurgeHandoffReportActivitiesRequest(
 
 func encodeRecordHandoffReportActivityRequest(
 	req *RecordHandoffReportActivityRequest,
+	r *http.Request,
+) error {
+	const contentType = "application/json"
+	e := new(jx.Encoder)
+	{
+		req.Encode(e)
+	}
+	encoded := e.Bytes()
+	ht.SetBody(r, bytes.NewReader(encoded), contentType)
+	return nil
+}
+
+func encodeRecordTaskOutcomeRequest(
+	req *RecordTaskOutcomeRequest,
 	r *http.Request,
 ) error {
 	const contentType = "application/json"

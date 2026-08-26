@@ -293,7 +293,7 @@ func TestStableSortHelpersUseNormalizedTitleScopeAndEffectiveTime(t *testing.T) 
 
 func TestRepositoryRefNormalizesSafeRemoteAndRelativeSubpath(t *testing.T) {
 	t.Parallel()
-	remote := "HTTPS://GitHub.com/oceanbase/powercontext.git/"
+	remote := "HTTPS://GitHub.com/ob-labs/powercontext-go.git/"
 	subpath := "./services/api"
 	value, err := handoffreport.NewRepositoryRef(
 		handoffreport.RepositoryGitHub,
@@ -304,7 +304,7 @@ func TestRepositoryRefNormalizesSafeRemoteAndRelativeSubpath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := value.NormalizedRemote(); got == nil || *got != "https://github.com/oceanbase/powercontext.git" {
+	if got := value.NormalizedRemote(); got == nil || *got != "https://github.com/ob-labs/powercontext-go.git" {
 		t.Fatalf("normalized remote = %#v", got)
 	}
 	if got := value.Subpath(); got == nil || *got != "services/api" {

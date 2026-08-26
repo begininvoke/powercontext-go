@@ -36,7 +36,7 @@ type frozenDomainContract struct {
 	MemoryCanonical frozenMemoryCanonical  `json:"memory_canonical"`
 }
 
-const oracleCommit = "9e23c336492c8bba16c6f26083298b6f484a91b0"
+const oracleCommit = "3a6cb0151670eaff7dc0293466edd673124e80da"
 
 type frozenError struct {
 	Status  int            `json:"status"`
@@ -231,7 +231,7 @@ func TestGoErrorTaxonomyMatchesFrozenPythonOracle(t *testing.T) {
 
 func readDomainContract(t *testing.T) frozenDomainContract {
 	t.Helper()
-	contents, err := os.ReadFile("testdata/python-v0.0.1/domain-contract.json")
+	contents, err := os.ReadFile("testdata/python-v0.0.2/domain-contract.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func readDomainContract(t *testing.T) frozenDomainContract {
 	if err := json.Unmarshal(contents, &result); err != nil {
 		t.Fatal(err)
 	}
-	if result.Schema != "powercontext.python-v0.0.1.domain-contract.v1" || result.OracleCommit != oracleCommit {
+	if result.Schema != "powercontext.python-v0.0.2.domain-contract.v1" || result.OracleCommit != oracleCommit {
 		t.Fatalf("unexpected frozen contract identity: %#v", result)
 	}
 	return result

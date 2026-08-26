@@ -1,19 +1,15 @@
 package cli
 
 import (
-	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
-	"regexp"
-	"strings"
 
 	v1 "github.com/ob-labs/powercontext-go/api/v1"
+	"github.com/ob-labs/powercontext-go/artifact"
+	artifactskill "github.com/ob-labs/powercontext-go/artifact/skill"
 	pcclient "github.com/ob-labs/powercontext-go/client"
 	"github.com/spf13/cobra"
 )
@@ -114,8 +110,8 @@ func newExportSkillCommand(state *commandState) *cobra.Command {
 	command := &cobra.Command{
 		Use: "export ARTIFACT_ID", Short: "Export one exact approved Revision for an Agent integration target.", Args: cobra.ExactArgs(1),
 		RunE: func(command *cobra.Command, args []string) error {
-			if target != "codex" {
-				return usageError(errors.New("--target must be codex"))
+			if target != string(artifactskill.CodexAgent) && target != string(artifactskill.ClaudeCodeAgent) {
+				return usageError(errors.New("--target must be codex or claude_code"))
 			}
 			if revision < 1 {
 				return usageError(errors.New("--revision must be at least 1"))
@@ -133,16 +129,16 @@ func newExportSkillCommand(state *commandState) *cobra.Command {
 			if !ok {
 				return fmt.Errorf("unexpected Skill response %T", body)
 			}
-			exported, err := projectCodexSkill(value, destination)
+			exported, err := projectAgentSkill(value, destination, artifactskill.AgentKind(target))
 			if err != nil {
-				return usageError(fmt.Errorf("cannot export managed Skill for codex: %w", err))
+				return usageError(fmt.Errorf("cannot export managed Skill for %s: %w", target, err))
 			}
-			_, err = fmt.Fprintf(state.stdout, "Exported %s@%d for codex to %s\n", value.Artifact.ArtifactID, value.Artifact.Revision, exported)
+			_, err = fmt.Fprintf(state.stdout, "Exported %s@%d for %s to %s\n", value.Artifact.ArtifactID, value.Artifact.Revision, target, exported)
 			return err
 		},
 	}
 	command.Flags().StringVar(&scopeID, "scope-id", "", "Application scope containing the managed Skill.")
-	command.Flags().StringVar(&target, "target", "", "Agent integration target: codex.")
+	command.Flags().StringVar(&target, "target", "", "Agent integration target: codex or claude_code.")
 	command.Flags().StringVar(&destination, "destination", "", "New target Skill directory; existing paths are never replaced.")
 	command.Flags().IntVar(&revision, "revision", 0, "Exact managed Skill Revision.")
 	for _, name := range []string{"scope-id", "target", "destination", "revision"} {
@@ -196,96 +192,61 @@ func validateSkillOrigin(
 	return nil
 }
 
-const codexProjectionSchema = "powercontext.codex-skill-projection.v1"
-
-var codexSkillName = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+const codexProjectionSchema = artifactskill.ProjectionSchema
 
 func projectCodexSkill(value v1.SkillArtifact, destination string) (string, error) {
+	return projectAgentSkill(value, destination, artifactskill.CodexAgent)
+}
+
+func projectAgentSkill(
+	value v1.SkillArtifact,
+	destination string,
+	agentKind artifactskill.AgentKind,
+) (string, error) {
 	if value.Artifact.Family != "skill" {
 		return "", errors.New("artifact must identify a managed Skill")
 	}
-	target, err := filepath.Abs(destination)
+	absolute, err := filepath.Abs(destination)
 	if err != nil {
 		return "", errors.New("destination is invalid")
 	}
-	content := value.Content
-	if len(content.Name) > 64 || !codexSkillName.MatchString(content.Name) {
-		return "", errors.New("managed Skill name must be at most 64 lowercase letters, digits, and single hyphens for Codex")
-	}
-	if filepath.Base(target) != content.Name {
-		return "", errors.New("Codex skill directory name must match the managed Skill name")
-	}
-	if len([]rune(content.Description)) > 1_024 || strings.ContainsAny(content.Description, "<>") {
-		return "", errors.New("managed Skill description must be at most 1024 characters and contain no angle brackets for Codex")
-	}
-	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
-		return "", errors.New("cannot create destination parent")
-	}
-	if err := os.Mkdir(target, 0o755); err != nil {
-		if errors.Is(err, os.ErrExist) {
-			return "", errors.New("destination already exists")
-		}
-		return "", errors.New("cannot create destination")
-	}
-	committed := false
-	defer func() {
-		if !committed {
-			_ = os.RemoveAll(target)
-		}
-	}()
-	markdown, err := codexSkillMarkdown(value)
+	absolute, err = resolvePath(absolute)
 	if err != nil {
-		return "", err
+		return "", errors.New("destination is invalid")
 	}
-	digest := sha256.Sum256([]byte(markdown))
-	manifest := struct {
-		Artifact    v1.ArtifactReference `json:"artifact"`
-		Schema      string               `json:"schema"`
-		SkillSHA256 string               `json:"skill_sha256"`
-	}{value.Artifact, codexProjectionSchema, hex.EncodeToString(digest[:])}
-	manifestBytes, err := json.MarshalIndent(manifest, "", "  ")
+	validation := make([]string, len(value.Content.Validation))
+	for index, item := range value.Content.Validation {
+		validation[index] = string(item)
+	}
+	content, err := artifactskill.NewContent(
+		value.Content.Name,
+		value.Content.Description,
+		value.Content.Instructions,
+		validation,
+	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("managed Skill content is invalid: %w", err)
 	}
-	manifestBytes = append(manifestBytes, '\n')
-	if err := os.WriteFile(filepath.Join(target, "SKILL.md"), []byte(markdown), 0o644); err != nil {
-		return "", errors.New("cannot write Skill projection")
-	}
-	if err := os.WriteFile(filepath.Join(target, "powercontext.json"), manifestBytes, 0o644); err != nil {
-		return "", errors.New("cannot write Skill projection manifest")
-	}
-	committed = true
-	return target, nil
-}
-
-func codexSkillMarkdown(value v1.SkillArtifact) (string, error) {
-	name, err := jsonString(value.Content.Name)
+	ref, err := artifact.NewRef(value.Artifact.Family, value.Artifact.ArtifactID, int64(value.Artifact.Revision))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("managed Skill Artifact reference is invalid: %w", err)
 	}
-	description, err := jsonString(value.Content.Description)
+	target, err := artifactskill.NewAgentSkillTarget(
+		"cli-export",
+		agentKind,
+		artifactskill.ProjectScope,
+		filepath.Dir(absolute),
+		false,
+	)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("destination is invalid: %w", err)
 	}
-	var validation strings.Builder
-	for _, item := range value.Content.Validation {
-		validation.WriteString("- ")
-		validation.WriteString(string(item))
-		validation.WriteByte('\n')
+	if filepath.Clean(filepath.Join(target.Path(), content.Name())) != filepath.Clean(absolute) {
+		return "", fmt.Errorf("%s Skill directory name must match the managed Skill name", agentKind)
 	}
-	return fmt.Sprintf(
-		"---\nname: %s\ndescription: %s\n---\n\n<!-- Generated from artifact:%s/%s@%d. The Artifact Revision remains authoritative. -->\n\n%s\n\n## Validation\n\n%s",
-		name, description, value.Artifact.Family, value.Artifact.ArtifactID, value.Artifact.Revision,
-		strings.TrimRight(value.Content.Instructions, " \t\r\n"), validation.String(),
-	), nil
-}
-
-func jsonString(value string) (string, error) {
-	var buffer bytes.Buffer
-	encoder := json.NewEncoder(&buffer)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(value); err != nil {
-		return "", err
+	exported, err := artifactskill.ProjectSkill(ref, content, target)
+	if errors.Is(err, fs.ErrExist) {
+		return "", errors.New("destination already exists")
 	}
-	return strings.TrimSuffix(buffer.String(), "\n"), nil
+	return exported, err
 }

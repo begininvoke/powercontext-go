@@ -16,7 +16,7 @@ func TestPythonSidecarCanBeRewrittenByGoAndRestoredByAPScheduler(t *testing.T) {
 	if python == "" {
 		t.Skip("set POWERCONTEXT_APSCHEDULER_PYTHON to an APScheduler 3.11.3 environment")
 	}
-	fixture := filepath.Join("..", "..", "test", "conformance", "testdata", "python-v0.0.1", "scheduler.db")
+	fixture := filepath.Join("..", "..", "test", "conformance", "testdata", "python-v0.0.2", "scheduler.db")
 	contents, err := os.ReadFile(fixture)
 	if err != nil {
 		t.Fatal(err)

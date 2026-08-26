@@ -80,34 +80,6 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
 
-      - name: Build and verify Vec1
-        env:
-          TARGET: ${{ steps.release.outputs.target }}
-        run: |
-          url="$(go run ./tools/release asset -component vec1 -field url)"
-          expected="$(go run ./tools/release asset -component vec1 -field sha256)"
-          mkdir -p "$RUNNER_TEMP/native"
-          curl --fail --location --retry 3 --output "$RUNNER_TEMP/native/vec1.c" "$url"
-          go run ./tools/release verify -sha256 "$expected" "$RUNNER_TEMP/native/vec1.c"
-          case "$RUNNER_OS" in
-            Linux)
-              extra=""
-              if [ "$TARGET" = linux-arm64 ]; then extra="-flax-vector-conversions"; fi
-              gcc -O2 -fPIC -shared $extra -o "$RUNNER_TEMP/native/vec1.so" "$RUNNER_TEMP/native/vec1.c" -lm
-              vec1="$RUNNER_TEMP/native/vec1.so"
-              ;;
-            macOS)
-              extra=""
-              if [ "$TARGET" = darwin-arm64 ]; then extra="-flax-vector-conversions"; fi
-              sdk="$(xcrun --show-sdk-path)"
-              clang -O2 -fPIC -dynamiclib -undefined dynamic_lookup $extra \
-                -I"$sdk/usr/include" -o "$RUNNER_TEMP/native/vec1.dylib" "$RUNNER_TEMP/native/vec1.c"
-              vec1="$RUNNER_TEMP/native/vec1.dylib"
-              ;;
-            *) echo "unsupported runner OS: $RUNNER_OS" >&2; exit 2 ;;
-          esac
-          echo "VEC1_EXTENSION=$vec1" >> "$GITHUB_ENV"
-
       - name: Download and verify the native tokenizer library
         env:
           TARGET: ${{ steps.release.outputs.target }}

@@ -3,8 +3,10 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -18,10 +20,12 @@ func TestLoadConfigMatchesFrozenServerEnvironment(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv(PowerContextHomeEnv, home)
 	t.Setenv("POWERCONTEXT_SERVER_EXTERNAL_SKILLS_HOST_ID", "")
+	t.Setenv("POWERCONTEXT_SERVER_EXTERNAL_SKILLS_TARGETS", "")
 	t.Setenv("POWERCONTEXT_SERVER_EXTERNAL_SKILLS_CODEX_ROOTS", "")
 	t.Setenv("POWERCONTEXT_SERVER_HTTP_HOST", "127.0.0.2")
 	t.Setenv("POWERCONTEXT_SERVER_HTTP_PORT", "9000")
 	t.Setenv("POWERCONTEXT_SERVER_DATABASE_URL", "sqlite+aiosqlite:////var/lib/powercontext/test.db")
+	t.Setenv("POWERCONTEXT_SERVER_RUNTIME_SCOPE_CACHE_SIZE", "64")
 	t.Setenv("POWERCONTEXT_SERVER_RUNTIME_SOURCE_WINDOW_LIMIT", "25")
 	t.Setenv("POWERCONTEXT_SERVER_RUNTIME_MEMORY_EXTRACTION_PROFILE", "conversation")
 	t.Setenv("POWERCONTEXT_SERVER_RUNTIME_MEMORY_RERANK_ENABLED", "true")
@@ -35,11 +39,18 @@ func TestLoadConfigMatchesFrozenServerEnvironment(t *testing.T) {
 	t.Setenv("POWERCONTEXT_SERVER_EXTERNAL_SKILLS", `{
 		"host_id":"workstation-1",
 		"future_compatible":true,
-		"codex_roots":[{
-			"root_id":"repository",
+		"targets":[{
+			"target_id":"codex-project",
+			"agent_kind":"codex",
 			"installation_scope":"project",
 			"path":"/srv/project/.agents/skills",
+			"allow_managed_publish":true,
 			"future_compatible":true
+		},{
+			"target_id":"claude-user",
+			"agent_kind":"claude_code",
+			"installation_scope":"user",
+			"path":"/home/example/.claude/skills"
 		}]
 	}`)
 
@@ -58,6 +69,7 @@ func TestLoadConfigMatchesFrozenServerEnvironment(t *testing.T) {
 		t.Fatalf("database config = %#v", config.Database)
 	}
 	if config.Runtime.SourceWindowLimit != 25 || config.Runtime.MemoryExtractionProfile != memory.ConversationProfile ||
+		config.Runtime.ScopeCacheSize != 64 ||
 		!config.Runtime.MemoryRerankEnabled || config.Runtime.MemoryRerankCandidateLimit != 40 ||
 		config.Runtime.ExperienceIncubationInterval == nil || *config.Runtime.ExperienceIncubationInterval != 45*time.Second {
 		t.Fatalf("Runtime config = %#v", config.Runtime)
@@ -69,15 +81,23 @@ func TestLoadConfigMatchesFrozenServerEnvironment(t *testing.T) {
 	if config.MCP.Enabled || config.MCP.Path != "/context" {
 		t.Fatalf("MCP config = %#v", config.MCP)
 	}
-	if config.ExternalSkills.HostID != "workstation-1" || len(config.ExternalSkills.Roots) != 1 {
+	if config.ExternalSkills.HostID != "workstation-1" || len(config.ExternalSkills.Targets) != 2 {
 		t.Fatalf("external Skill config = %#v", config.ExternalSkills)
 	}
-	root := config.ExternalSkills.Roots[0]
-	if root.RootID != "repository" || root.InstallationScope != "project" || root.Path != "/srv/project/.agents/skills" {
-		t.Fatalf("external Skill root = %#v", root)
+	target := config.ExternalSkills.Targets[0]
+	if target.TargetID != "codex-project" || target.AgentKind != "codex" || target.InstallationScope != "project" ||
+		target.Path != "/srv/project/.agents/skills" || !target.AllowManagedPublish {
+		t.Fatalf("external Skill target = %#v", target)
+	}
+	if config.ExternalSkills.Targets[1].AgentKind != "claude_code" ||
+		config.ExternalSkills.Targets[1].Path != "/home/example/.claude/skills" {
+		t.Fatalf("Claude Code target = %#v", config.ExternalSkills.Targets[1])
 	}
 	if config.SchedulerPath != filepath.Join(resolvedHome, "scheduler.db") {
 		t.Fatalf("scheduler path = %q", config.SchedulerPath)
+	}
+	if !config.Dashboard.Enabled || len(config.Dashboard.Scopes) != 0 || !config.HandoffReport.Enabled {
+		t.Fatalf("optional product defaults = Dashboard %#v, Handoff Report %#v", config.Dashboard, config.HandoffReport)
 	}
 }
 
@@ -113,6 +133,62 @@ func TestLoadConfigSelectsOceanBase(t *testing.T) {
 	}
 	if config.Database.Kind != "oceanbase" || config.Database.OceanBase.URL != databaseURL {
 		t.Fatalf("database config = %#v", config.Database)
+	}
+}
+
+func TestLoadConfigSelectsEmbeddedSeekDB(t *testing.T) {
+	dataDir := filepath.Join(t.TempDir(), "powercontext-data")
+	t.Setenv(PowerContextHomeEnv, dataDir)
+	t.Setenv("POWERCONTEXT_SERVER_DATABASE_KIND", "seekdb")
+
+	config, err := LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	resolvedDataDir, err := absoluteExpandedPath(dataDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Database.Kind != "seekdb" || config.Database.SeekDB.Path != filepath.Join(resolvedDataDir, "seekdb") ||
+		config.Database.SeekDB.Database != "test" {
+		t.Fatalf("embedded seekDB config = %#v", config.Database.SeekDB)
+	}
+	if _, err := os.Stat(dataDir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("configuration unexpectedly created the data directory: %v", err)
+	}
+}
+
+func TestLoadConfigDefaultsBlankAndAcceptsExplicitSeekDBPath(t *testing.T) {
+	for _, configured := range []string{"", "   ", filepath.Join(t.TempDir(), "custom-seekdb")} {
+		t.Run(fmt.Sprintf("path-%q", configured), func(t *testing.T) {
+			dataDir := filepath.Join(t.TempDir(), "powercontext-data")
+			t.Setenv(PowerContextHomeEnv, dataDir)
+			t.Setenv("POWERCONTEXT_SERVER_DATABASE_KIND", "seekdb")
+			t.Setenv("POWERCONTEXT_SERVER_DATABASE_PATH", configured)
+			config, err := LoadConfig()
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := configured
+			if strings.TrimSpace(want) == "" {
+				want, err = absoluteExpandedPath(filepath.Join(dataDir, "seekdb"))
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			if config.Database.SeekDB.Path != want {
+				t.Fatalf("seekDB path = %q, want %q", config.Database.SeekDB.Path, want)
+			}
+		})
+	}
+}
+
+func TestLoadConfigRejectsCustomSeekDBDatabase(t *testing.T) {
+	t.Setenv(PowerContextHomeEnv, t.TempDir())
+	t.Setenv("POWERCONTEXT_SERVER_DATABASE_KIND", "seekdb")
+	t.Setenv("POWERCONTEXT_SERVER_DATABASE_DATABASE", "custom")
+	if _, err := LoadConfig(); err == nil || !strings.Contains(err.Error(), "must be test") {
+		t.Fatalf("custom embedded seekDB database error = %v", err)
 	}
 }
 
@@ -253,9 +329,9 @@ func TestProcessConfigEnforcesTrustAndInferenceBoundariesWithoutSecrets(t *testi
 	}
 	config.Database.SQLite.URL = sqliteURL(filepath.Join(t.TempDir(), "powercontext.db"))
 	config.Dashboard.Enabled = true
-	config.Dashboard.Scopes = []DashboardScope{{ScopeID: "scope", DisplayName: "Scope"}}
-	if err := config.Validate(); err == nil {
-		t.Fatal("Dashboard without authentication was accepted")
+	config.Dashboard.Scopes = nil
+	if err := config.Validate(); err != nil {
+		t.Fatalf("default public Dashboard was rejected: %v", err)
 	}
 	config.Auth = AuthConfig{Enabled: true, Token: "secret"}
 	if err := config.Validate(); err != nil {

@@ -119,6 +119,14 @@ func (s *ListHandoffReportActivitiesRequest) setDefaults() {
 }
 
 // setDefaults set default value of fields.
+func (s *ListHandoffReportKnownScopesRequest) setDefaults() {
+	{
+		val := int(50)
+		s.Limit.SetTo(val)
+	}
+}
+
+// setDefaults set default value of fields.
 func (s *ListHandoffReportProjectsRequest) setDefaults() {
 	{
 		val := int(50)

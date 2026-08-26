@@ -12,7 +12,7 @@ func TestDashboardRoutesAndHeaders(t *testing.T) {
 	t.Parallel()
 
 	mux := http.NewServeMux()
-	if err := Mount(mux, Options{Scopes: []Scope{
+	if err := Mount(mux, Options{DashboardEnabled: true, AuthenticationRequired: true, Scopes: []Scope{
 		{ScopeID: "person:psiace", DisplayName: "PsiACE"},
 		{ScopeID: "project:powercontext", DisplayName: "PowerContext"},
 	}}); err != nil {
@@ -28,7 +28,8 @@ func TestDashboardRoutesAndHeaders(t *testing.T) {
 	}
 	for _, fragment := range []string{
 		`data-server-session="missing"`, `id="auth-shell"`, `id="page-status" hidden`,
-		`class="server-content" id="dashboard"`, `dashboard.js?v=state-races`,
+		`class="server-content" id="dashboard"`, `dashboard.js?v=default-startup-locale-v1`,
+		`href="/skills"`, `href="/reviews"`,
 	} {
 		if !strings.Contains(home.Body.String(), fragment) {
 			t.Errorf("home does not contain %q", fragment)
@@ -65,6 +66,7 @@ func TestHandoffReportPageFeatureGate(t *testing.T) {
 	for _, enabled := range []bool{false, true} {
 		mux := http.NewServeMux()
 		if err := Mount(mux, Options{
+			DashboardEnabled:     true,
 			Scopes:               []Scope{{ScopeID: "project:powercontext", DisplayName: "PowerContext"}},
 			HandoffReportEnabled: enabled,
 		}); err != nil {
@@ -82,8 +84,8 @@ func TestHandoffReportPageFeatureGate(t *testing.T) {
 		}
 		for _, fragment := range []string{
 			`class="server-content" id="handoff-report"`, `data-period-mode="day"`,
-			`data-period-mode="week"`, `data-period-mode="month"`, `id="project-select"`,
-			`<section class="report-overview"`, `handoff-report.js?v=state-races`,
+			`data-period-mode="week"`, `data-period-mode="month"`, `id="project-search"`,
+			`<section class="report-overview"`, `handoff-report.js?v=scope-report-v1`,
 		} {
 			if !strings.Contains(response.Body.String(), fragment) {
 				t.Errorf("handoff page does not contain %q", fragment)
@@ -92,10 +94,29 @@ func TestHandoffReportPageFeatureGate(t *testing.T) {
 	}
 }
 
-func TestMountRejectsMissingScopes(t *testing.T) {
+func TestMountAcceptsEnabledDashboardWithoutScopes(t *testing.T) {
 	t.Parallel()
-	if err := Mount(http.NewServeMux(), Options{}); err == nil {
-		t.Fatal("Mount() unexpectedly accepted no scopes")
+	mux := http.NewServeMux()
+	if err := Mount(mux, Options{DashboardEnabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	response := request(mux, http.MethodGet, "/dashboard/scopes")
+	if response.Code != http.StatusOK || response.Body.String() != "[]" {
+		t.Fatalf("empty scopes = %d %s", response.Code, response.Body.String())
+	}
+}
+
+func TestMountSupportsReportOnlyWebUI(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	if err := Mount(mux, Options{HandoffReportEnabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	if response := request(mux, http.MethodGet, "/"); response.Code != http.StatusNotFound {
+		t.Fatalf("report-only root = %d", response.Code)
+	}
+	if response := request(mux, http.MethodGet, "/handoff-reports"); response.Code != http.StatusOK {
+		t.Fatalf("report-only page = %d %s", response.Code, response.Body.String())
 	}
 }
 

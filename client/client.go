@@ -53,7 +53,7 @@ func (o Options) redactedString() string {
 	)
 }
 
-// Client exposes all 48 strongly typed operations from the authoritative ogen
+// Client exposes all 53 strongly typed operations from the authoritative ogen
 // contract. Embedding the generated invoker keeps new OpenAPI operations a
 // compile-time concern instead of a handwritten transport drift risk.
 type Client struct {

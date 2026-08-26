@@ -7,6 +7,7 @@ import (
 
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/work"
 )
 
 type HandoffReader interface {
@@ -14,6 +15,13 @@ type HandoffReader interface {
 	Get(context.Context, string, artifact.Ref) (handoff.Handoff, error)
 	Revisions(context.Context, string) ([]handoff.Handoff, error)
 	CheckEvidence(context.Context, string, artifact.Ref) ([]handoff.EvidenceCheck, error)
+}
+
+// WorkContinuityReader is the optional high-level Work projection consumed by
+// reports. It deliberately belongs to the report package: Runtime can satisfy
+// it directly without extending Work persistence contracts.
+type WorkContinuityReader interface {
+	Continuity(context.Context, string, *artifact.Ref) (work.Continuity, error)
 }
 
 func SelectOptimisticStable(

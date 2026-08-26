@@ -20,7 +20,7 @@ type oracleManifest struct {
 }
 
 func TestFrozenOracleManifestAndFixtureHashes(t *testing.T) {
-	root := filepath.Join("testdata", "python-v0.0.1")
+	root := filepath.Join("testdata", "python-v0.0.2")
 	contents, err := os.ReadFile(filepath.Join(root, "manifest.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -32,7 +32,7 @@ func TestFrozenOracleManifestAndFixtureHashes(t *testing.T) {
 	if manifest.SchemaVersion != 3 || manifest.OracleCommit != oracleCommit {
 		t.Fatalf("unexpected Oracle manifest identity: %#v", manifest)
 	}
-	if manifest.TestFileCount != 87 || manifest.TestCaseCount != 413 {
+	if manifest.TestFileCount != 109 || manifest.TestCaseCount != 622 {
 		t.Fatalf("frozen Python test inventory = %d files/%d cases", manifest.TestFileCount, manifest.TestCaseCount)
 	}
 	if len(manifest.FixtureSHA256) != 6 {
@@ -43,9 +43,9 @@ func TestFrozenOracleManifestAndFixtureHashes(t *testing.T) {
 			t.Errorf("%s SHA-256 = %s, want %s", name, got, expected)
 		}
 	}
-	if got := fileSHA256(t, filepath.Join("..", "..", "openapi", "powercontext.yaml")); got != manifest.OpenAPISHA256 {
-		t.Errorf("OpenAPI SHA-256 = %s, want %s", got, manifest.OpenAPISHA256)
-	}
+	// This directory is the active immutable v0.0.2 interoperability fixture.
+	// The active OpenAPI contract is pinned independently by openapi tests and
+	// must not be forced back to the historical fixture hash.
 	var authority struct {
 		SchemaSHA256 string `json:"schema_sha256"`
 	}

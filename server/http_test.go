@@ -96,7 +96,7 @@ func TestSystemHTTPVerticalSlice(t *testing.T) {
 	}
 }
 
-func TestHTTPRejectsCombinedCandidateEvidenceBeforeEndpointDispatch(t *testing.T) {
+func TestHTTPCombinedCandidateEvidenceFailureMatchesFrozenPythonEnvelope(t *testing.T) {
 	t.Parallel()
 	handler, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{})
 	if err != nil {
@@ -117,19 +117,21 @@ func TestHTTPRejectsCombinedCandidateEvidenceBeforeEndpointDispatch(t *testing.T
 		t.Fatal(err)
 	}
 	response := perform(handler, http.MethodPost, "/v1/experience/propose", string(payload))
-	if response.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("status = %d, want 422: %s", response.Code, response.Body.String())
+	if response.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500: %s", response.Code, response.Body.String())
 	}
 	var envelope struct {
 		Error struct {
-			Code string `json:"code"`
+			Code    string         `json:"code"`
+			Message string         `json:"message"`
+			Details map[string]any `json:"details"`
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(response.Body.Bytes(), &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if envelope.Error.Code != "invalid_request" {
-		t.Fatalf("error code = %q, want invalid_request", envelope.Error.Code)
+	if envelope.Error.Code != "internal_error" || envelope.Error.Message != "The Server failed." || envelope.Error.Details != nil {
+		t.Fatalf("error = %#v", envelope.Error)
 	}
 	assertRequestID(t, response)
 }
@@ -385,8 +387,8 @@ func TestOptionalMCPRouteUsesConfiguredPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(tools.Tools) != 16 {
-		t.Fatalf("tools = %d, want 16", len(tools.Tools))
+	if len(tools.Tools) != 20 {
+		t.Fatalf("tools = %d, want 20", len(tools.Tools))
 	}
 
 	disabled, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{})
@@ -430,7 +432,7 @@ func TestDashboardPageIsPublicButScopeInventoryIsAuthenticated(t *testing.T) {
 	t.Parallel()
 	handler, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{
 		BearerToken: "dashboard-secret",
-		Dashboard: &webui.Options{Scopes: []webui.Scope{
+		WebUI: &webui.Options{DashboardEnabled: true, AuthenticationRequired: true, Scopes: []webui.Scope{
 			{ScopeID: "project:powercontext", DisplayName: "PowerContext"},
 		}},
 	})
@@ -451,6 +453,22 @@ func TestDashboardPageIsPublicButScopeInventoryIsAuthenticated(t *testing.T) {
 	handler.ServeHTTP(accepted, request)
 	if accepted.Code != http.StatusOK || accepted.Body.String() != `[{"scope_id":"project:powercontext","display_name":"PowerContext"}]` {
 		t.Fatalf("accepted scopes = %d %s", accepted.Code, accepted.Body.String())
+	}
+}
+
+func TestWebUIMountFailureDoesNotPreventServerStartup(t *testing.T) {
+	t.Parallel()
+	handler, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{
+		WebUI: &webui.Options{},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response := perform(handler, http.MethodGet, "/health/live", ""); response.Code != http.StatusOK {
+		t.Fatalf("liveness after Web UI failure = %d %s", response.Code, response.Body.String())
+	}
+	if response := perform(handler, http.MethodGet, "/", ""); response.Code != http.StatusNotFound {
+		t.Fatalf("failed Web UI root = %d %s", response.Code, response.Body.String())
 	}
 }
 

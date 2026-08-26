@@ -13,6 +13,7 @@ import (
 	"github.com/ob-labs/powercontext-go/review"
 	"github.com/ob-labs/powercontext-go/runtime"
 	"github.com/ob-labs/powercontext-go/source"
+	"github.com/ob-labs/powercontext-go/work"
 )
 
 // ErrorMapping is the transport-neutral stable error contract emitted by an
@@ -290,10 +291,12 @@ func invalidDomainRequest(err error) bool {
 	var handoffRef *handoff.InvalidReferenceError
 	var sourceRef *source.InvalidReferenceError
 	var artifactRef *artifact.InvalidReferenceError
+	var invalidWork *work.InvalidError
+	var invalidWorkRequest *work.InvalidRequestError
 	return errors.As(err, &candidate) || errors.As(err, &evidence) || errors.As(err, &citation) ||
 		errors.As(err, &operation) || errors.As(err, &canonical) || errors.As(err, &scope) ||
 		errors.As(err, &handoffScope) || errors.As(err, &handoffRef) || errors.As(err, &sourceRef) ||
-		errors.As(err, &artifactRef)
+		errors.As(err, &artifactRef) || errors.As(err, &invalidWork) || errors.As(err, &invalidWorkRequest)
 }
 
 func invalidRequest() ErrorMapping {

@@ -10,7 +10,9 @@ node_modules/
 .venv/
 __pycache__/
 .pytest_cache/
+.ruff_cache/
 *.py[cod]
+/evaluation/web/dist/
 
 # Local runtime state
 *.db

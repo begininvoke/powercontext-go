@@ -48,7 +48,7 @@ func TestEveryFrozenPythonTestHasAuditableEvidenceLevel(t *testing.T) {
 		TestCaseCount int                `json:"test_case_count"`
 		Tests         []tracedPythonTest `json:"tests"`
 	}
-	decodeJSONFile(t, filepath.Join("testdata", "python-v0.0.1", "manifest.json"), &manifest)
+	decodeJSONFile(t, filepath.Join("testdata", "python-v0.0.2", "manifest.json"), &manifest)
 	var trace traceTable
 	decodeJSONFile(t, "traceability.json", &trace)
 	var rules struct {

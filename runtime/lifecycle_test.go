@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestScopedWriteSerializesExactScopeAndReclaimsGate(t *testing.T) {
+func TestScopedWriteSerializesExactScopeAndRetainsBoundedGate(t *testing.T) {
 	t.Parallel()
 	runtime := New()
 	entered := make(chan struct{})
@@ -49,8 +49,8 @@ func TestScopedWriteSerializesExactScopeAndReclaimsGate(t *testing.T) {
 	runtime.scopes.mu.Lock()
 	remaining := len(runtime.scopes.entries)
 	runtime.scopes.mu.Unlock()
-	if remaining != 0 {
-		t.Fatalf("idle keyed gates retained: %d", remaining)
+	if remaining != 1 {
+		t.Fatalf("cached Scope gates = %d, want 1", remaining)
 	}
 }
 
@@ -190,8 +190,124 @@ func TestCanceledCloseRestoresAdmissionAndCanceledWaiterIsReclaimed(t *testing.T
 	runtime.scopes.mu.Lock()
 	remaining := len(runtime.scopes.entries)
 	runtime.scopes.mu.Unlock()
-	if remaining != 0 {
-		t.Fatalf("canceled waiter retained keyed gate: %d", remaining)
+	if remaining != 2 {
+		t.Fatalf("cached Scope gates = %d, want two used Scopes without an extra waiter entry", remaining)
+	}
+}
+
+func TestScopeCacheNeverEvictsLockWithHolderOrWaiter(t *testing.T) {
+	t.Parallel()
+	var mu sync.Mutex
+	var evicted []string
+	runtime, err := NewConfigured(RuntimeOptions{
+		ScopeCacheSize: 1,
+		ScopeEvictor: func(scope string) {
+			mu.Lock()
+			evicted = append(evicted, scope)
+			mu.Unlock()
+		},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstEntered := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	firstDone := make(chan error, 1)
+	go func() {
+		firstDone <- runtime.ScopedWrite(t.Context(), "same", func(context.Context, string) error {
+			close(firstEntered)
+			<-releaseFirst
+			return nil
+		})
+	}()
+	<-firstEntered
+
+	secondStarted := make(chan struct{})
+	secondDone := make(chan error, 1)
+	go func() {
+		close(secondStarted)
+		secondDone <- runtime.ScopedWrite(t.Context(), "same", func(context.Context, string) error { return nil })
+	}()
+	<-secondStarted
+	waiterLeased := false
+	for index := 0; index < 100_000; index++ {
+		runtime.scopes.mu.Lock()
+		entry := runtime.scopes.entries["same"]
+		waiterLeased = entry != nil && entry.leases == 2
+		runtime.scopes.mu.Unlock()
+		if waiterLeased {
+			break
+		}
+		goruntime.Gosched()
+	}
+	if !waiterLeased {
+		t.Fatal("same-Scope waiter did not acquire a cache lease")
+	}
+	if err := runtime.ScopedWrite(t.Context(), "other", func(context.Context, string) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	gotEvicted := append([]string(nil), evicted...)
+	mu.Unlock()
+	if len(gotEvicted) != 1 || gotEvicted[0] != "other" {
+		t.Fatalf("evicted while same Scope active = %v, want [other]", gotEvicted)
+	}
+
+	close(releaseFirst)
+	if err := <-firstDone; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-secondDone; err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.ScopedRead(t.Context(), "replacement", func(context.Context, string) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	gotEvicted = append([]string(nil), evicted...)
+	mu.Unlock()
+	if len(gotEvicted) != 2 || gotEvicted[1] != "same" {
+		t.Fatalf("final evictions = %v, want [other same]", gotEvicted)
+	}
+}
+
+func TestScopeCacheObserverReportsDistinctActiveAndCachedScopes(t *testing.T) {
+	t.Parallel()
+	var mu sync.Mutex
+	var snapshots [][2]int
+	runtime, err := NewConfigured(RuntimeOptions{
+		ScopeCacheSize: 3,
+		ScopeObserver: func(cached, active int) {
+			mu.Lock()
+			snapshots = append(snapshots, [2]int{cached, active})
+			mu.Unlock()
+		},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.ScopedRead(t.Context(), "one", func(context.Context, string) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.ScopedRead(t.Context(), "two", func(context.Context, string) error { return nil }); err != nil {
+		t.Fatal(err)
+	}
+	if err := runtime.Close(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(snapshots) == 0 || snapshots[0] != [2]int{0, 0} || snapshots[len(snapshots)-1] != [2]int{0, 0} {
+		t.Fatalf("Scope observations = %v", snapshots)
+	}
+	foundCachedTwo := false
+	for _, snapshot := range snapshots {
+		if snapshot == [2]int{2, 0} {
+			foundCachedTwo = true
+		}
+	}
+	if !foundCachedTwo {
+		t.Fatalf("Scope observations never reported two cached Scopes: %v", snapshots)
 	}
 }
 

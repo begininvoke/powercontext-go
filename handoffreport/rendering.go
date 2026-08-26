@@ -10,10 +10,10 @@ import (
 
 var markdownLabels = map[Locale]map[string]string{
 	LocaleChinese: {
-		"title": "PowerContext 项目交接报告", "overview": "项目概览", "blockers": "阻塞事项", "workstreams": "Workstream 状态", "details": "Workstream 详情", "objective": "目标", "progress": "当前进度", "next": "下一步", "omissions": "缺失信息", "activities": "观察到的 Activity", "unassigned_activities": "未分配 Activity", "event": "事件", "schema": "Schema", "event_id": "事件 ID", "project_id": "Project ID", "source": "来源", "source_event_id": "来源事件 ID", "scope": "Scope", "time_basis": "时间依据", "occurred_at": "发生时间", "observed_at": "观察时间", "event_title": "标题", "event_summary": "摘要", "source_ref": "来源引用", "agent": "Agent", "session": "Session", "vcs": "VCS 上下文", "evidence": "证据引用", "evidence_checks": "Evidence 检查", "metadata": "报告元数据", "selection_digest": "Selection Digest", "report_digest": "Report Digest", "report_kind": "报告类型", "period": "报告周期", "period_comparison": "与前一周期对比", "current_activity_count": "本周期 Activity 数", "previous_activity_count": "前一周期 Activity 数", "activity_delta": "Activity 变化", "handoff_boundary_coverage": "Handoff 时间边界覆盖", "format": "格式", "trust": "信任标记", "none": "无", "activity_notice": "Activity Adapter 未配置；此处不能解释为没有活动。",
+		"title": "PowerContext 项目交接报告", "overview": "项目概览", "blockers": "阻塞事项", "workstreams": "Workstream 状态", "details": "Workstream 详情", "objective": "目标", "progress": "当前进度", "next": "下一步", "omissions": "缺失信息", "activities": "观察到的 Activity", "unassigned_activities": "未分配 Activity", "event": "事件", "schema": "Schema", "event_id": "事件 ID", "project_id": "Project ID", "source": "来源", "source_event_id": "来源事件 ID", "scope": "Scope", "time_basis": "时间依据", "occurred_at": "发生时间", "observed_at": "观察时间", "event_title": "标题", "event_summary": "摘要", "source_ref": "来源引用", "agent": "Agent", "session": "Session", "vcs": "VCS 上下文", "evidence": "证据引用", "evidence_checks": "Evidence 检查", "revision_history": "Handoff Revision 历史", "revision_history_summary": "共 %d 个 Revision，显示最近 %d 个。", "revision_state_count": "状态条目", "revision_omission_count": "缺失条目", "continuity": "连续性时间线", "transfer_state": "交接状态", "outcome_state": "结果状态", "journal_order_notice": "按 Source journal 的稳定位置排序；位置表示先后顺序，不代表时间戳。", "invalid_work_records": "无法读取的 Work 记录", "metadata": "报告元数据", "selection_digest": "Selection Digest", "report_digest": "Report Digest", "report_kind": "报告类型", "period": "报告周期", "period_comparison": "与前一周期对比", "current_activity_count": "本周期 Activity 数", "previous_activity_count": "前一周期 Activity 数", "activity_delta": "Activity 变化", "handoff_boundary_coverage": "Handoff 时间边界覆盖", "format": "格式", "trust": "信任标记", "none": "无", "activity_notice": "Activity Adapter 未配置；此处不能解释为没有活动。",
 	},
 	LocaleEnglish: {
-		"title": "PowerContext Project Handoff Report", "overview": "Project Overview", "blockers": "Blockers", "workstreams": "Workstream Status", "details": "Workstream Details", "objective": "Objective", "progress": "Current Progress", "next": "Next Action", "omissions": "Omissions", "activities": "Observed Activity", "unassigned_activities": "Unassigned Activity", "event": "Event", "schema": "Schema", "event_id": "Event ID", "project_id": "Project ID", "source": "Source", "source_event_id": "Source Event ID", "scope": "Scope", "time_basis": "Time Basis", "occurred_at": "Occurred At", "observed_at": "Observed At", "event_title": "Title", "event_summary": "Summary", "source_ref": "Source Reference", "agent": "Agent", "session": "Session", "vcs": "VCS Context", "evidence": "Evidence References", "evidence_checks": "Evidence Checks", "metadata": "Report Metadata", "selection_digest": "Selection Digest", "report_digest": "Report Digest", "report_kind": "Report Kind", "period": "Report Period", "period_comparison": "Previous Period Comparison", "current_activity_count": "Current Activity Count", "previous_activity_count": "Previous Activity Count", "activity_delta": "Activity Delta", "handoff_boundary_coverage": "Handoff Boundary Coverage", "format": "Format", "trust": "Trust", "none": "None", "activity_notice": "Activity adapters are not configured; this does not mean that no activity occurred.",
+		"title": "PowerContext Project Handoff Report", "overview": "Project Overview", "blockers": "Blockers", "workstreams": "Workstream Status", "details": "Workstream Details", "objective": "Objective", "progress": "Current Progress", "next": "Next Action", "omissions": "Omissions", "activities": "Observed Activity", "unassigned_activities": "Unassigned Activity", "event": "Event", "schema": "Schema", "event_id": "Event ID", "project_id": "Project ID", "source": "Source", "source_event_id": "Source Event ID", "scope": "Scope", "time_basis": "Time Basis", "occurred_at": "Occurred At", "observed_at": "Observed At", "event_title": "Title", "event_summary": "Summary", "source_ref": "Source Reference", "agent": "Agent", "session": "Session", "vcs": "VCS Context", "evidence": "Evidence References", "evidence_checks": "Evidence Checks", "revision_history": "Handoff Revision History", "revision_history_summary": "%d Revisions total. Showing the latest %d.", "revision_state_count": "State Items", "revision_omission_count": "Omissions", "continuity": "Continuity Timeline", "transfer_state": "Transfer State", "outcome_state": "Outcome State", "journal_order_notice": "Ordered by stable Source journal position; positions show sequence, not timestamps.", "invalid_work_records": "Unreadable Work Records", "metadata": "Report Metadata", "selection_digest": "Selection Digest", "report_digest": "Report Digest", "report_kind": "Report Kind", "period": "Report Period", "period_comparison": "Previous Period Comparison", "current_activity_count": "Current Activity Count", "previous_activity_count": "Previous Activity Count", "activity_delta": "Activity Delta", "handoff_boundary_coverage": "Handoff Boundary Coverage", "format": "Format", "trust": "Trust", "none": "None", "activity_notice": "Activity adapters are not configured; this does not mean that no activity occurred.",
 	},
 }
 
@@ -114,6 +114,8 @@ func renderWorkstream(item WorkstreamReport, labels map[string]string) []string 
 			lines = append(lines, "")
 		}
 	}
+	lines = append(lines, renderRevisionHistory(item, labels)...)
+	lines = append(lines, renderContinuity(item, labels)...)
 	lines = append(lines, "#### "+labels["activities"], "")
 	if len(item.activities) == 0 {
 		lines = append(lines, labels["none"], "")
@@ -123,6 +125,58 @@ func renderWorkstream(item WorkstreamReport, labels map[string]string) []string 
 		}
 	}
 	return lines
+}
+
+func renderRevisionHistory(item WorkstreamReport, labels map[string]string) []string {
+	lines := []string{"#### " + labels["revision_history"], ""}
+	if len(item.handoffHistory) == 0 {
+		return append(lines, labels["none"], "")
+	}
+	lines = append(lines, markdownText(fmt.Sprintf(
+		labels["revision_history_summary"], item.handoffRevisionCount, len(item.handoffHistory),
+	)), "")
+	for index := len(item.handoffHistory) - 1; index >= 0; index-- {
+		revision := item.handoffHistory[index]
+		lines = append(lines,
+			"- "+codeSpan(fmt.Sprintf("@%d", revision.reference.Revision()))+" "+
+				codeSpan(string(revision.disposition))+": "+markdownText(revision.objectiveExcerpt),
+			fmt.Sprintf("  - %s: %d; %s: %d", labels["revision_state_count"], revision.stateCount, labels["revision_omission_count"], revision.omissionCount),
+		)
+		if revision.nextActionExcerpt != nil {
+			lines = append(lines, "  - "+labels["next"]+": "+markdownText(*revision.nextActionExcerpt))
+		}
+	}
+	return append(lines, "")
+}
+
+func renderContinuity(item WorkstreamReport, labels map[string]string) []string {
+	continuity := item.continuity
+	coverage := continuity.Coverage()
+	lines := []string{
+		"#### " + labels["continuity"], "",
+		"- " + labels["transfer_state"] + ": " + codeSpan(string(coverage.TransferState())),
+		"- " + labels["outcome_state"] + ": " + codeSpan(string(coverage.OutcomeState())),
+		fmt.Sprintf("- %s: %d", labels["invalid_work_records"], continuity.InvalidRecordCount()),
+		"- " + markdownText(labels["journal_order_notice"]),
+	}
+	events := continuity.Events()
+	if len(events) == 0 {
+		lines = append(lines, labels["none"])
+	} else {
+		for _, event := range events {
+			detail := labels["none"]
+			if summary := event.Summary(); summary != nil {
+				detail = *summary
+			} else if actor := event.Actor(); actor != nil {
+				detail = *actor
+			}
+			lines = append(lines,
+				"- "+codeSpan(fmt.Sprintf("#%d", event.Position()))+" "+codeSpan(string(event.Kind()))+
+					" / "+codeSpan(string(event.Status()))+": "+markdownText(detail),
+			)
+		}
+	}
+	return append(lines, "")
 }
 
 func renderActivity(event ActivityEvent, labels map[string]string) []string {

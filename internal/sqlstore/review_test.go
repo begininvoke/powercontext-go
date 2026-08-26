@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -189,6 +190,68 @@ func TestSourceCursorRepositoryCASAndPythonPayload(t *testing.T) {
 	var conflict *sqlstore.GenerationConflictError
 	if !errors.As(err, &conflict) || conflict.Actual == nil || *conflict.Actual != 2 {
 		t.Fatalf("expected generation conflict, got %v", err)
+	}
+}
+
+func TestSourceCursorInitialCreateIsAtomicAcrossConnections(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "cursor-race.db")
+	first, err := sqlstore.OpenSQLite(ctx, sqlstore.DefaultSQLiteConfig(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := sqlstore.OpenSQLite(ctx, sqlstore.DefaultSQLiteConfig(path))
+	if err != nil {
+		_ = first.Close(ctx)
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = first.Close(context.Background())
+		_ = second.Close(context.Background())
+	})
+
+	type outcome struct {
+		stored sqlstore.StoredSourceCursor
+		err    error
+	}
+	start := make(chan struct{})
+	results := make(chan outcome, 2)
+	repository := sqlstore.SourceCursorRepository{}
+	for index, database := range []*sqlstore.Database{first, second} {
+		sequence := int64(index + 1)
+		go func() {
+			<-start
+			var stored sqlstore.StoredSourceCursor
+			err := database.Transaction(ctx, func(tx sqlstore.DBTX) error {
+				var saveErr error
+				stored, saveErr = repository.Save(
+					ctx, tx, "scope-a", "memory-source-window", source.NewCursor(sequence), nil,
+				)
+				return saveErr
+			})
+			results <- outcome{stored: stored, err: err}
+		}()
+	}
+	close(start)
+
+	created, conflicts := 0, 0
+	for range 2 {
+		result := <-results
+		if result.err == nil {
+			created++
+			if result.stored.Generation != 1 {
+				t.Fatalf("created cursor = %#v", result.stored)
+			}
+			continue
+		}
+		var conflict *sqlstore.GenerationConflictError
+		if !errors.As(result.err, &conflict) || conflict.Actual == nil || *conflict.Actual != 1 {
+			t.Fatalf("losing create error = %v", result.err)
+		}
+		conflicts++
+	}
+	if created != 1 || conflicts != 1 {
+		t.Fatalf("created = %d, conflicts = %d", created, conflicts)
 	}
 }
 

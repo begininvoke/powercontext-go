@@ -128,9 +128,9 @@ artificial `common`, `models`, `services`, or `repositories` packages.
 - Prompt files are embedded from each family's `prompts` directory and checked
   by frozen SHA-256 fixtures.
 - `test/conformance` freezes the Python commit, schemas, prompts, provider
-  matrix, SQLite/Vec1/scheduler fixtures, and exact digest behavior.
+  matrix, SQLite/sqlite-vec/scheduler fixtures, and exact digest behavior.
 - `tools/process-smoke` executes the built binary through CLI, HTTP, auth,
-  Dashboard, MCP 16+2, restart persistence, and graceful shutdown.
+  Dashboard, MCP 20+4, restart persistence, and graceful shutdown.
 - `tools/locomo` runs or resumes the real LoCoMo pipeline while benchmark
   schemas, metrics, prompts, and the frozen dataset remain under
   `internal/benchmark/locomo`.

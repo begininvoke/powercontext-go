@@ -17,24 +17,29 @@ import (
 )
 
 var selectedOperations = map[string]bool{
-	"activate_handoff":             true,
-	"approve_artifact_candidate":   true,
-	"capture_content_source":       true,
-	"commit_handoff":               true,
-	"continue_handoff":             true,
-	"finalize_handoff":             true,
-	"get_artifact_candidate":       true,
-	"get_memory_entry":             true,
-	"list_artifact_candidates":     true,
-	"list_memory_entries":          true,
-	"reject_artifact_candidate":    true,
-	"remember_memory":              true,
-	"retire_memory_entry":          true,
-	"revise_artifact_candidate":    true,
-	"revise_memory_entry":          true,
-	"search_memory":                true,
-	"get_handoff_report":           true,
-	"get_handoff_report_workspace": true,
+	"acknowledge_handoff":              true,
+	"activate_handoff":                 true,
+	"approve_artifact_candidate":       true,
+	"capture_content_source":           true,
+	"commit_handoff":                   true,
+	"continue_handoff":                 true,
+	"create_work_contract":             true,
+	"finalize_handoff":                 true,
+	"get_artifact_candidate":           true,
+	"get_memory_entry":                 true,
+	"handoff_current_work":             true,
+	"list_artifact_candidates":         true,
+	"list_memory_entries":              true,
+	"list_handoff_report_known_scopes": true,
+	"record_task_outcome":              true,
+	"reject_artifact_candidate":        true,
+	"remember_memory":                  true,
+	"retire_memory_entry":              true,
+	"revise_artifact_candidate":        true,
+	"revise_memory_entry":              true,
+	"search_memory":                    true,
+	"get_handoff_report":               true,
+	"get_handoff_report_workspace":     true,
 }
 
 type definition struct {
@@ -105,7 +110,7 @@ func collect(root map[string]any) ([]definition, error) {
 			}
 			result = append(result, definition{
 				name: name, description: strings.TrimSpace(description), input: input, output: output,
-				report: strings.HasPrefix(name, "get_handoff_report"),
+				report: strings.HasPrefix(name, "get_handoff_report") || name == "list_handoff_report_known_scopes",
 			})
 		}
 	}

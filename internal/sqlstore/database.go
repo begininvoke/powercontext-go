@@ -16,6 +16,8 @@ import (
 
 	mysql "github.com/go-sql-driver/mysql"
 	"github.com/mattn/go-sqlite3"
+	embeddedseekdb "github.com/ob-labs/powercontext-go/internal/seekdb"
+	"github.com/ob-labs/powercontext-go/internal/sqlitevec"
 )
 
 // DBTX is the smallest query surface shared by sql.DB and sql.Tx.
@@ -157,13 +159,12 @@ type SQLiteConfig struct {
 	BusyTimeout     time.Duration
 	JournalMode     string
 	ForeignKeys     bool
-	Vec1Extension   string
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
 }
 
-// DefaultSQLiteConfig returns the Python v0.0.1 profile defaults.
+// DefaultSQLiteConfig returns the current Python-compatible profile defaults.
 func DefaultSQLiteConfig(dsn string) SQLiteConfig {
 	return SQLiteConfig{
 		DSN:          dsn,
@@ -180,6 +181,9 @@ func OpenSQLite(ctx context.Context, config SQLiteConfig) (*Database, error) {
 	if err := validateSQLiteConfig(config); err != nil {
 		return nil, err
 	}
+	if err := sqlitevec.RegisterAuto(); err != nil {
+		return nil, err
+	}
 	if err := createSQLiteParent(config.DSN); err != nil {
 		return nil, err
 	}
@@ -188,7 +192,6 @@ func OpenSQLite(ctx context.Context, config SQLiteConfig) (*Database, error) {
 		dsn:           config.DSN,
 		busyTimeoutMS: config.BusyTimeout.Milliseconds(),
 		foreignKeys:   config.ForeignKeys,
-		vec1Extension: config.Vec1Extension,
 	}
 	pool := sql.OpenDB(connector)
 	maxOpen := config.MaxOpenConns
@@ -224,6 +227,93 @@ type OceanBaseConfig struct {
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
+}
+
+// SeekDBConfig configures one optional embedded seekDB process. libseekdb and
+// its sibling seekdb executable are loaded only when this profile is selected.
+type SeekDBConfig struct {
+	Path            string
+	Database        string
+	LibraryPath     string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime time.Duration
+}
+
+func OpenSeekDB(
+	ctx context.Context,
+	config SeekDBConfig,
+) (*Database, *embeddedseekdb.Instance, error) {
+	if config.Database != "test" {
+		return nil, nil, errors.New("sqlstore: embedded seekDB database must be test")
+	}
+	if config.MaxOpenConns < 1 || config.MaxIdleConns < 0 ||
+		config.MaxIdleConns > config.MaxOpenConns || config.ConnMaxLifetime < 0 {
+		return nil, nil, errors.New("sqlstore: invalid embedded seekDB connection pool limits")
+	}
+	instance, err := embeddedseekdb.Open(ctx, embeddedseekdb.Config{
+		Path: config.Path, LibraryPath: config.LibraryPath,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	driverConfig, err := seekDBDriverConfig(instance.ConnectionOptions(), config.Database)
+	if err != nil {
+		_ = instance.Close(context.Background())
+		return nil, nil, err
+	}
+	connector, err := mysql.NewConnector(driverConfig)
+	if err != nil {
+		_ = instance.Close(context.Background())
+		return nil, nil, errors.New("sqlstore: embedded seekDB connector could not be configured")
+	}
+	pool := sql.OpenDB(connector)
+	pool.SetMaxOpenConns(config.MaxOpenConns)
+	pool.SetMaxIdleConns(config.MaxIdleConns)
+	pool.SetConnMaxLifetime(config.ConnMaxLifetime)
+	owned := &Database{db: pool, owns: true}
+	cleanup := func(cause error) (*Database, *embeddedseekdb.Instance, error) {
+		_ = pool.Close()
+		_ = instance.Close(context.Background())
+		return nil, nil, cause
+	}
+	if err := owned.Transaction(ctx, func(tx DBTX) error {
+		return EnsureBuiltinSchemaForDialect(ctx, tx, MySQLDialect)
+	}); err != nil {
+		return cleanup(err)
+	}
+	return owned, instance, nil
+}
+
+func seekDBDriverConfig(options embeddedseekdb.ConnectionOptions, database string) (*mysql.Config, error) {
+	if options.User == "" || database != "test" {
+		return nil, errors.New("sqlstore: embedded seekDB connection options are invalid")
+	}
+	config := mysql.NewConfig()
+	if err := config.Apply(mysql.Charset("utf8mb4", "")); err != nil {
+		return nil, errors.New("sqlstore: embedded seekDB charset could not be configured")
+	}
+	config.User = options.User
+	config.DBName = database
+	config.ParseTime = true
+	config.Params = map[string]string{"autocommit": "0"}
+	switch options.Transport {
+	case "tcp":
+		if options.Port < 1 || options.Port > 65_535 {
+			return nil, errors.New("sqlstore: embedded seekDB TCP port is invalid")
+		}
+		config.Net = "tcp"
+		config.Addr = net.JoinHostPort("localhost", strconv.Itoa(int(options.Port)))
+	case "unix_socket":
+		if strings.TrimSpace(options.Endpoint) == "" {
+			return nil, errors.New("sqlstore: embedded seekDB Unix socket is invalid")
+		}
+		config.Net = "unix"
+		config.Addr = options.Endpoint
+	default:
+		return nil, fmt.Errorf("sqlstore: embedded seekDB transport %q is unsupported", options.Transport)
+	}
+	return config, nil
 }
 
 // UnsupportedOceanBaseTenantError reports an OceanBase tenant whose
@@ -344,7 +434,6 @@ type sqliteConnector struct {
 	dsn           string
 	busyTimeoutMS int64
 	foreignKeys   bool
-	vec1Extension string
 }
 
 func (c *sqliteConnector) Driver() driver.Driver { return c.driver }
@@ -365,13 +454,6 @@ func (c *sqliteConnector) Connect(ctx context.Context) (driver.Conn, error) {
 	closeWith := func(err error) (driver.Conn, error) {
 		_ = conn.Close()
 		return nil, err
-	}
-	if c.vec1Extension != "" {
-		// go-sqlite3 treats an empty entry string as an explicit empty symbol,
-		// rather than asking SQLite to derive the conventional entry point.
-		if err := conn.LoadExtension(c.vec1Extension, "sqlite3_extension_init"); err != nil {
-			return closeWith(fmt.Errorf("load Vec1 extension: %w", err))
-		}
 	}
 	if _, err := conn.Exec(fmt.Sprintf("PRAGMA busy_timeout = %d", c.busyTimeoutMS), nil); err != nil {
 		return closeWith(err)

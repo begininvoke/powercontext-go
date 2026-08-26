@@ -31,7 +31,7 @@ import (
 
 const (
 	assetsPath       = "build/native-assets.json"
-	oraclePath       = "test/conformance/testdata/python-v0.0.1/manifest.json"
+	oraclePath       = "test/conformance/testdata/python-v0.0.2/manifest.json"
 	modulePath       = "github.com/ob-labs/powercontext-go"
 	maxLicenseBytes  = 2 << 20
 	maxMetadataBytes = 16 << 20
@@ -49,11 +49,11 @@ var (
 
 type nativeAssets struct {
 	SchemaVersion int `json:"schema_version"`
-	Vec1          struct {
+	SQLiteVec     struct {
 		Version   string `json:"version"`
 		SourceURL string `json:"source_url"`
 		SHA256    string `json:"sha256"`
-	} `json:"vec1"`
+	} `json:"sqlite_vec"`
 	Tokenizers struct {
 		Version string                 `json:"version"`
 		Assets  map[string]nativeAsset `json:"assets"`
@@ -81,7 +81,6 @@ type oracleManifest struct {
 
 type packageOptions struct {
 	Binary         string
-	Vec1           string
 	ONNXRuntimeDir string
 	Edition        string
 	Version        string
@@ -191,7 +190,7 @@ func runAsset(arguments []string, output io.Writer) error {
 	flags.SetOutput(io.Discard)
 	var repository, component, target, field string
 	flags.StringVar(&repository, "repository", ".", "repository root")
-	flags.StringVar(&component, "component", "", "vec1, tokenizers, onnxruntime, or syft")
+	flags.StringVar(&component, "component", "", "sqlite-vec, tokenizers, onnxruntime, or syft")
 	flags.StringVar(&target, "target", "", "GOOS-GOARCH target")
 	flags.StringVar(&field, "field", "", "version, url, sha256, commit, name, or build-from-source")
 	if err := flags.Parse(arguments); err != nil {
@@ -211,14 +210,14 @@ func runAsset(arguments []string, output io.Writer) error {
 
 func assetValue(assets nativeAssets, component, target, field string) (string, error) {
 	switch component {
-	case "vec1":
+	case "sqlite-vec":
 		switch field {
 		case "version":
-			return assets.Vec1.Version, nil
+			return assets.SQLiteVec.Version, nil
 		case "url":
-			return assets.Vec1.SourceURL, nil
+			return assets.SQLiteVec.SourceURL, nil
 		case "sha256":
-			return assets.Vec1.SHA256, nil
+			return assets.SQLiteVec.SHA256, nil
 		}
 	case "syft":
 		if field == "version" {
@@ -293,7 +292,6 @@ func runPackage(arguments []string, output io.Writer) error {
 func bindPackageFlags(flags *flag.FlagSet) *packageOptions {
 	options := new(packageOptions)
 	flags.StringVar(&options.Binary, "binary", "", "built powercontext binary")
-	flags.StringVar(&options.Vec1, "vec1", "", "compiled Vec1 extension")
 	flags.StringVar(&options.ONNXRuntimeDir, "onnxruntime-dir", "", "ONNX Runtime library directory")
 	flags.StringVar(&options.Edition, "edition", "standard", "standard or full")
 	flags.StringVar(&options.Version, "version", "", "release version")
@@ -366,12 +364,11 @@ func packageRelease(options packageOptions) (packageResult, error) {
 		return packageResult{}, err
 	}
 
-	vecPayload := filepath.Join(root, "lib", "powercontext", "vec1"+filepath.Ext(options.Vec1))
 	onnxPayload := ""
 	if options.Edition == "full" {
 		onnxPayload = filepath.Join(root, "lib", "onnxruntime")
 	}
-	nativeRecords, err := describeNativeAssets(vecPayload, onnxPayload, options.Edition, facts, assets)
+	nativeRecords, err := describeNativeAssets(onnxPayload, options.Edition, facts, assets)
 	if err != nil {
 		return packageResult{}, err
 	}
@@ -478,9 +475,7 @@ func writeImageMetadata(options packageOptions) error {
 	if len(entries) != 0 {
 		return errors.New("metadata output directory must be empty")
 	}
-	nativeRecords, err := describeNativeAssets(
-		options.Vec1, options.ONNXRuntimeDir, options.Edition, facts, assets,
-	)
+	nativeRecords, err := describeNativeAssets(options.ONNXRuntimeDir, options.Edition, facts, assets)
 	if err != nil {
 		return err
 	}
@@ -520,8 +515,8 @@ func newBuildManifest(
 }
 
 func validatePackageOptions(options packageOptions) (time.Time, error) {
-	if options.Binary == "" || options.Vec1 == "" || options.Version == "" || options.Commit == "" || options.BuildDate == "" {
-		return time.Time{}, errors.New("binary, vec1, version, commit, and build-date are required")
+	if options.Binary == "" || options.Version == "" || options.Commit == "" || options.BuildDate == "" {
+		return time.Time{}, errors.New("binary, version, commit, and build-date are required")
 	}
 	if options.Edition != "standard" && options.Edition != "full" {
 		return time.Time{}, errors.New("edition must be standard or full")
@@ -593,7 +588,7 @@ func splitBuildTags(value string) []string {
 
 func stageRelease(repository, root string, options packageOptions, facts binaryFacts) error {
 	for _, directory := range []string{
-		filepath.Join(root, "bin"), filepath.Join(root, "lib", "powercontext"),
+		filepath.Join(root, "bin"), filepath.Join(root, "lib"),
 		filepath.Join(root, "openapi"), filepath.Join(root, "docs"),
 	} {
 		if err := os.MkdirAll(directory, 0o755); err != nil {
@@ -601,13 +596,6 @@ func stageRelease(repository, root string, options packageOptions, facts binaryF
 		}
 	}
 	if err := copyRegularFile(options.Binary, filepath.Join(root, "bin", "powercontext"), 0o755); err != nil {
-		return err
-	}
-	vecExtension := filepath.Ext(options.Vec1)
-	if vecExtension != ".so" && vecExtension != ".dylib" {
-		return errors.New("Vec1 extension must end in .so or .dylib")
-	}
-	if err := copyRegularFile(options.Vec1, filepath.Join(root, "lib", "powercontext", "vec1"+vecExtension), 0o755); err != nil {
 		return err
 	}
 	for _, pair := range [][2]string{
@@ -667,17 +655,13 @@ func stageRelease(repository, root string, options packageOptions, facts binaryF
 }
 
 func describeNativeAssets(
-	vecPath, onnxDirectory, edition string,
+	onnxDirectory, edition string,
 	facts binaryFacts,
 	assets nativeAssets,
 ) ([]nativeAssetRecord, error) {
-	vecHash, _, err := hashFile(vecPath)
-	if err != nil {
-		return nil, err
-	}
 	records := []nativeAssetRecord{{
-		Name: "SQLite Vec1", Version: assets.Vec1.Version, Source: assets.Vec1.SourceURL,
-		SourceDigest: assets.Vec1.SHA256, PayloadHash: vecHash,
+		Name: "sqlite-vec (statically embedded)", Version: assets.SQLiteVec.Version, Source: assets.SQLiteVec.SourceURL,
+		SourceDigest: assets.SQLiteVec.SHA256, PayloadHash: facts.BinaryHash,
 	}}
 	if edition != "full" {
 		return records, nil
@@ -753,7 +737,7 @@ func collectLicenses(
 		version string
 		file    string
 	}{
-		{path: "sqlite.org/vec1", version: assets.Vec1.Version, file: "licenses/vec1.txt"},
+		{path: "github.com/asg017/sqlite-vec", version: assets.SQLiteVec.Version, file: "licenses/sqlite-vec.txt"},
 	}
 	if edition == "full" {
 		nativeNames = append(nativeNames,
@@ -1401,7 +1385,7 @@ func readAssets(repository string) (nativeAssets, error) {
 }
 
 func validateAssets(assets nativeAssets) error {
-	if assets.SchemaVersion != 1 || assets.Vec1.Version == "" || assets.Tokenizers.Version == "" ||
+	if assets.SchemaVersion != 2 || assets.SQLiteVec.Version == "" || assets.Tokenizers.Version == "" ||
 		assets.ONNXRuntime.Version == "" || assets.Syft.Version == "" || !commitHash.MatchString(assets.ONNXRuntime.Commit) {
 		return errors.New("native asset manifest is incomplete")
 	}
@@ -1419,8 +1403,8 @@ func validateAssets(assets nativeAssets) error {
 			return fmt.Errorf("ONNX Runtime asset is incomplete for %s", target)
 		}
 	}
-	if !validSHA256(assets.Vec1.SHA256) {
-		return errors.New("Vec1 source digest is invalid")
+	if !validSHA256(assets.SQLiteVec.SHA256) {
+		return errors.New("sqlite-vec source digest is invalid")
 	}
 	return nil
 }

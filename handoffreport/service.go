@@ -5,9 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
+	"unicode"
 
+	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/work"
 )
 
 type GenerateInput struct {
@@ -27,13 +31,26 @@ type GenerateInput struct {
 	PeriodComparison      *PeriodComparison
 }
 
-type Service struct{ reader HandoffReader }
+type Service struct {
+	reader     HandoffReader
+	continuity WorkContinuityReader
+}
 
-func NewService(reader HandoffReader) (*Service, error) {
+func NewService(reader HandoffReader, continuityReaders ...WorkContinuityReader) (*Service, error) {
 	if reader == nil {
 		return nil, errors.New("handoffreport: Handoff reader must not be nil")
 	}
-	return &Service{reader: reader}, nil
+	if len(continuityReaders) > 1 {
+		return nil, errors.New("handoffreport: at most one Work continuity reader may be configured")
+	}
+	var continuity WorkContinuityReader
+	if len(continuityReaders) == 1 {
+		if continuityReaders[0] == nil {
+			return nil, errors.New("handoffreport: Work continuity reader must not be nil")
+		}
+		continuity = continuityReaders[0]
+	}
+	return &Service{reader: reader, continuity: continuity}, nil
 }
 
 func (s *Service) Generate(ctx context.Context, input GenerateInput) (Report, error) {
@@ -58,13 +75,17 @@ func (s *Service) Generate(ctx context.Context, input GenerateInput) (Report, er
 	for index, descriptor := range ordered {
 		entry := selection[index]
 		activities := activitiesByScope[descriptor.ScopeID()]
+		continuity, err := s.readContinuity(ctx, descriptor.ScopeID(), entry.HandoffRef())
+		if err != nil {
+			return Report{}, err
+		}
 		if entry.HandoffRef() == nil {
 			status := ActivityNone
 			if len(activities) > 0 {
 				status = ActivityWithoutHandoff
 			}
 			projected = append(projected, WorkstreamReport{
-				workstream: descriptor, activities: slices.Clone(activities), workStatus: WorkNoHandoff,
+				workstream: descriptor, continuity: continuity, activities: slices.Clone(activities), workStatus: WorkNoHandoff,
 				reportingStatus: ReportingNoHandoff, activityStatus: status, observedActivityCount: len(activities),
 			})
 			continue
@@ -78,6 +99,10 @@ func (s *Service) Generate(ctx context.Context, input GenerateInput) (Report, er
 			return Report{}, &InconsistentError{ScopeID: descriptor.ScopeID()}
 		}
 		content := selected.Content()
+		revisionCount, revisionHistory, err := s.revisionHistory(ctx, descriptor.ScopeID(), *ref)
+		if err != nil {
+			return Report{}, err
+		}
 		checks := []handoff.EvidenceCheck(nil)
 		checked, evidenceUnavailable := false, false
 		if includeEvidenceChecks {
@@ -98,7 +123,9 @@ func (s *Service) Generate(ctx context.Context, input GenerateInput) (Report, er
 			relation = &value
 		}
 		projected = append(projected, WorkstreamReport{
-			workstream: descriptor, handoffRef: ref, content: &content,
+			workstream: descriptor, continuity: continuity, handoffRef: ref, content: &content,
+			handoffRevisionCount: revisionCount, handoffHistoryTruncated: revisionCount > len(revisionHistory),
+			handoffHistory: slices.Clone(revisionHistory),
 			evidenceChecks: cloneEvidenceChecks(checks), evidenceChecked: checked,
 			evidenceUnavailable: evidenceUnavailable, activities: slices.Clone(activities),
 			workStatus:      WorkStatus(content.Disposition()),
@@ -153,6 +180,75 @@ func (s *Service) Generate(ctx context.Context, input GenerateInput) (Report, er
 		return Report{}, err
 	}
 	return FinalizeDigests(report)
+}
+
+func (s *Service) readContinuity(ctx context.Context, scope string, selected *artifact.Ref) (work.Continuity, error) {
+	if s.continuity != nil {
+		return s.continuity.Continuity(ctx, scope, selected)
+	}
+	// This is the same explicit empty projection used by Python when no Work
+	// adapter is configured. It does not infer history from Handoff revisions.
+	return work.ProjectContinuity(scope, nil, nil)
+}
+
+func (s *Service) revisionHistory(
+	ctx context.Context,
+	scope string,
+	selected artifact.Ref,
+) (int, []HandoffRevisionSummary, error) {
+	revisions, err := s.reader.Revisions(ctx, scope)
+	if err != nil {
+		return 0, nil, err
+	}
+	lifecycle := make([]handoff.Handoff, 0, len(revisions))
+	selectedIndex := -1
+	var previous int64
+	for _, revision := range revisions {
+		ref := revision.Ref()
+		if ref.Family() != selected.Family() || ref.ID() != selected.ID() {
+			continue
+		}
+		if ref.Revision() <= previous {
+			return 0, nil, &InconsistentError{ScopeID: scope}
+		}
+		previous = ref.Revision()
+		lifecycle = append(lifecycle, revision)
+		if ref == selected {
+			selectedIndex = len(lifecycle) - 1
+		}
+	}
+	if selectedIndex < 0 {
+		return 0, nil, &InconsistentError{ScopeID: scope}
+	}
+	selectedHistory := lifecycle[:selectedIndex+1]
+	recent := selectedHistory
+	if len(recent) > MaxReportHandoffHistory {
+		recent = recent[len(recent)-MaxReportHandoffHistory:]
+	}
+	result := make([]HandoffRevisionSummary, len(recent))
+	for index, revision := range recent {
+		content := revision.Content()
+		var nextExcerpt *string
+		if next := content.NextAction(); next != nil {
+			value := historyExcerpt(next.Text())
+			nextExcerpt = &value
+		}
+		result[index] = HandoffRevisionSummary{
+			reference: revision.Ref(), objectiveExcerpt: historyExcerpt(content.Objective()),
+			disposition: content.Disposition(), nextActionExcerpt: nextExcerpt,
+			stateCount: len(content.State()), omissionCount: len(content.Omissions()),
+		}
+	}
+	return len(selectedHistory), result, nil
+}
+
+func historyExcerpt(value string) string {
+	compact := strings.Join(strings.Fields(value), " ")
+	runes := []rune(compact)
+	if len(runes) <= MaxReportHistoryExcerptLength {
+		return compact
+	}
+	return strings.TrimRightFunc(string(runes[:MaxReportHistoryExcerptLength-1]), unicode.IsSpace) + "…"
 }
 
 func validateGenerateInput(input GenerateInput) ([]WorkstreamDescriptor, error) {

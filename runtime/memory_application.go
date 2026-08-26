@@ -15,6 +15,7 @@ import (
 const (
 	DefaultMemoryArtifactID  = "memory"
 	DefaultSourceWindowLimit = int64(100)
+	memorySearchAttempts     = 3
 )
 
 type MemoryServiceFactory func(string) (*memory.Service, error)
@@ -272,22 +273,73 @@ func (a *MemoryApplication) search(
 	if err != nil {
 		return MemorySearchPage{}, err
 	}
-	current, err := a.headOrNone(ctx, service)
-	if err != nil || current == nil {
-		return MemorySearchPage{}, err
+	var page MemorySearchPage
+	err = a.runtime.runStage(ctx, "memory.search", map[string]TraceAttribute{
+		"powercontext.memory.search.requested_mode": string(mode),
+		"powercontext.memory.search.limit":          limit,
+	}, func(stageContext context.Context, span StageSpan) error {
+		var searchErr error
+		page, searchErr = a.searchWithService(stageContext, service, query, limit, mode)
+		if searchErr == nil {
+			attributes := map[string]TraceAttribute{
+				"powercontext.memory.search.memory_present": page.MemoryRef != nil,
+				"powercontext.memory.search.result_count":   len(page.Hits),
+			}
+			if page.Mode != nil {
+				attributes["powercontext.memory.search.mode"] = string(*page.Mode)
+			}
+			setStageAttributes(span, attributes)
+		}
+		return searchErr
+	})
+	return page, err
+}
+
+func (a *MemoryApplication) searchWithService(
+	ctx context.Context,
+	service *memory.Service,
+	query string,
+	limit int,
+	mode memory.SearchMode,
+) (MemorySearchPage, error) {
+	for attempt := 1; ; attempt++ {
+		current, err := a.headOrNone(ctx, service)
+		if err != nil || current == nil {
+			return MemorySearchPage{}, err
+		}
+		search, err := service.Search(ctx, query, []memory.Memory{*current}, limit, mode)
+		if err == nil {
+			ref := current.Ref()
+			usedMode := search.Mode
+			return MemorySearchPage{
+				MemoryRef: &ref,
+				Mode:      &usedMode,
+				Hits:      cloneHits(search.Hits),
+				Rerank:    cloneRerankTrace(search.Rerank),
+			}, nil
+		}
+		latest, latestErr := a.headOrNone(ctx, service)
+		if latestErr != nil {
+			return MemorySearchPage{}, latestErr
+		}
+		if !isStaleMemorySearch(err) || latest == nil || latest.Ref() == current.Ref() {
+			return MemorySearchPage{}, err
+		}
+		if attempt == memorySearchAttempts {
+			return MemorySearchPage{}, &artifact.RevisionConflictError{
+				Requested: current.Ref(), Current: latest.Ref(),
+			}
+		}
 	}
-	search, err := service.Search(ctx, query, []memory.Memory{*current}, limit, mode)
-	if err != nil {
-		return MemorySearchPage{}, err
+}
+
+func isStaleMemorySearch(err error) bool {
+	var capability *memory.CapabilityNotSupportedError
+	if errors.As(err, &capability) && capability.Capability == "head" {
+		return true
 	}
-	ref := current.Ref()
-	usedMode := search.Mode
-	return MemorySearchPage{
-		MemoryRef: &ref,
-		Mode:      &usedMode,
-		Hits:      cloneHits(search.Hits),
-		Rerank:    cloneRerankTrace(search.Rerank),
-	}, nil
+	var citation *memory.InvalidCitationError
+	return errors.As(err, &citation) && citation.Code == "memory-mismatch"
 }
 
 func (a *MemoryApplication) List(

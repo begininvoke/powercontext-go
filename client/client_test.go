@@ -337,7 +337,7 @@ func TestClientRendersAndDownloadsHandoffReportWithoutMutatingRequest(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	request := v1.GetHandoffReportRequest{ProjectID: "project-1"}
+	request := v1.GetHandoffReportRequest{ScopeID: "scope-1"}
 	rendered, err := client.RenderHandoffReport(context.Background(), request)
 	if err != nil {
 		t.Fatal(err)
@@ -370,7 +370,7 @@ func TestClientDownloadPreservesCanonicalJSONBytes(t *testing.T) {
 		t.Fatal(err)
 	}
 	content, err := client.DownloadHandoffReport(context.Background(), v1.GetHandoffReportRequest{
-		ProjectID: "project-1", Format: v1.NewOptReportFormat(v1.ReportFormatJSON),
+		ScopeID: "scope-1", Format: v1.NewOptReportFormat(v1.ReportFormatJSON),
 	})
 	if err != nil {
 		t.Fatal(err)

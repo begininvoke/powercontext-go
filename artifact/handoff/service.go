@@ -151,6 +151,21 @@ func (s *Service) Revisions(ctx context.Context) ([]Handoff, error) {
 	return s.backend.Revisions(ctx, s.artifactID)
 }
 
+// ValidateEvidence verifies exact same-scope evidence for a higher-level Work
+// record without manufacturing a Handoff Content value. It intentionally has
+// no batch-size policy; the owning Work schema supplies those bounds.
+func (s *Service) ValidateEvidence(ctx context.Context, citations []Citation) error {
+	for _, citation := range citations {
+		if err := validateCitation(citation); err != nil {
+			return err
+		}
+		if err := s.resolver.Validate(ctx, citation); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Service) ContinueFromPrepared(ctx context.Context, prepared Prepared) (Resolution, error) {
 	if err := prepared.Validate(); err != nil {
 		return Resolution{}, err

@@ -1,4 +1,4 @@
-"""Freeze public domain constants and HTTP error mappings from Python v0.0.1."""
+"""Freeze public domain constants and HTTP error mappings from Python v0.0.2."""
 
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ from powercontext.errors import (
 )
 from powercontext.server.app import _RuntimeNotReadyError, _map_error
 
-ORACLE_COMMIT = "9e23c336492c8bba16c6f26083298b6f484a91b0"
+ORACLE_COMMIT = "3a6cb0151670eaff7dc0293466edd673124e80da"
 
 CONSTANTS: dict[str, tuple[str, ...]] = {
     "powercontext.limits": (
@@ -356,7 +356,7 @@ def main() -> None:
     parser.add_argument("output", type=Path)
     arguments = parser.parse_args()
     fixture = {
-        "schema": "powercontext.python-v0.0.1.domain-contract.v1",
+        "schema": "powercontext.python-v0.0.2.domain-contract.v1",
         "oracle_commit": ORACLE_COMMIT,
         "constants": constants(),
         "error_mappings": error_mappings(),

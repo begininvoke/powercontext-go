@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	defaultMarketplaceSource = "oceanbase/powercontext"
-	defaultMarketplaceRef    = "master"
+	defaultMarketplaceSource = "ob-labs/powercontext-go"
+	defaultMarketplaceRef    = "main"
 	powerContextPlugin       = "powercontext"
 	dshPluginName            = "powercontext-dsh"
 	maximumCommandOutput     = 1 << 20
@@ -37,6 +37,8 @@ const (
 type systemCommandExecutor interface {
 	LookPath(string) (string, error)
 	Run(context.Context, string, ...string) ([]byte, error)
+	RunEnv(context.Context, map[string]string, string, ...string) ([]byte, error)
+	RunTimeout(context.Context, time.Duration, string, ...string) ([]byte, error)
 }
 
 type processCommandExecutor struct{}
@@ -44,7 +46,25 @@ type processCommandExecutor struct{}
 func (processCommandExecutor) LookPath(name string) (string, error) { return exec.LookPath(name) }
 
 func (processCommandExecutor) Run(ctx context.Context, executable string, arguments ...string) ([]byte, error) {
-	return runProcessCommand(ctx, executable, arguments...)
+	return runProcessCommandWithEnvironment(ctx, nil, executable, arguments...)
+}
+
+func (processCommandExecutor) RunEnv(
+	ctx context.Context,
+	environment map[string]string,
+	executable string,
+	arguments ...string,
+) ([]byte, error) {
+	return runProcessCommandWithEnvironment(ctx, environment, executable, arguments...)
+}
+
+func (processCommandExecutor) RunTimeout(
+	ctx context.Context,
+	timeout time.Duration,
+	executable string,
+	arguments ...string,
+) ([]byte, error) {
+	return runProcessCommandWithOptions(ctx, timeout, nil, executable, arguments...)
 }
 
 type diagnostic struct {
@@ -56,7 +76,15 @@ type diagnostic struct {
 
 func newSetupCommand(state *commandState) *cobra.Command {
 	command := &cobra.Command{Use: "setup", Short: "Install and configure PowerContext integrations."}
-	command.AddCommand(newSetupCodexCommand(state), newSetupDSHCommand(state))
+	command.AddCommand(
+		newSetupCodexCommand(state),
+		newSetupClaudeCodeCommand(state),
+		newSetupDSHCommand(state),
+		newSetupPiCommand(state),
+		newSetupOpenCodeCommand(state),
+		newSetupHermesCommand(state),
+		newSetupOpenClawCommand(state),
+	)
 	return command
 }
 
@@ -206,6 +234,7 @@ func newDoctorCommand(state *commandState) *cobra.Command {
 				return nil
 			},
 		},
+		newDoctorClaudeCodeCommand(state),
 		&cobra.Command{
 			Use: "dsh", Short: "Check the optional DeepSeek Harness CLI and PowerContext plugin.", Args: cobra.NoArgs,
 			RunE: func(command *cobra.Command, _ []string) error {
@@ -219,6 +248,10 @@ func newDoctorCommand(state *commandState) *cobra.Command {
 				return nil
 			},
 		},
+		newDoctorPiCommand(state),
+		newDoctorOpenCodeCommand(state),
+		newDoctorHermesCommand(state),
+		newDoctorOpenClawCommand(state),
 	)
 	return command
 }
@@ -406,7 +439,10 @@ func writeDiagnostics(state *commandState, values map[string]diagnostic) error {
 			"ok": diagnosticsStatus(values) == "ok", "status": diagnosticsStatus(values), "checks": values,
 		})
 	}
-	order := []string{"package", "server_liveness", "server_readiness", "codex", "dsh", "plugin"}
+	order := []string{
+		"package", "server_liveness", "server_readiness", "codex", "claude_code", "dsh", "pi", "opencode",
+		"hermes", "openclaw", "plugin", "skill", "activation", "version",
+	}
 	for _, name := range order {
 		value, ok := values[name]
 		if !ok {
@@ -645,9 +681,45 @@ func runJSONCommand(
 }
 
 func runProcessCommand(parent context.Context, executable string, arguments ...string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(parent, 120*time.Second)
+	return runProcessCommandWithEnvironment(parent, nil, executable, arguments...)
+}
+
+func runProcessCommandWithEnvironment(
+	parent context.Context,
+	environment map[string]string,
+	executable string,
+	arguments ...string,
+) ([]byte, error) {
+	return runProcessCommandWithOptions(parent, 120*time.Second, environment, executable, arguments...)
+}
+
+func runProcessCommandWithOptions(
+	parent context.Context,
+	timeout time.Duration,
+	environment map[string]string,
+	executable string,
+	arguments ...string,
+) ([]byte, error) {
+	if timeout <= 0 {
+		return nil, errors.New("external command timeout must be positive")
+	}
+	ctx, cancel := context.WithTimeout(parent, timeout)
 	defer cancel()
 	command := exec.CommandContext(ctx, executable, arguments...)
+	if len(environment) > 0 {
+		keys := make([]string, 0, len(environment))
+		for key := range environment {
+			keys = append(keys, key)
+		}
+		slices.Sort(keys)
+		command.Env = os.Environ()
+		for _, key := range keys {
+			if key == "" || strings.ContainsAny(key, "=\x00") || strings.ContainsRune(environment[key], '\x00') {
+				return nil, errors.New("invalid external command environment")
+			}
+			command.Env = append(command.Env, key+"="+environment[key])
+		}
+	}
 	var stdout, stderr boundedBuffer
 	command.Stdout, command.Stderr = &stdout, &stderr
 	runErr := command.Run()

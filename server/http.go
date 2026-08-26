@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -30,7 +31,7 @@ type HTTPOptions struct {
 	Logger              *slog.Logger
 	AccessLog           bool
 	MCP                 MCPOptions
-	Dashboard           *webui.Options
+	WebUI               *webui.Options
 }
 
 // MCPOptions controls the optional MCP Streamable HTTP route. Path defaults to
@@ -97,14 +98,17 @@ func NewHTTPHandler(handler v1.Handler, options HTTPOptions) (http.Handler, erro
 	}
 	var application http.Handler = generated
 	var mux *http.ServeMux
-	if options.MCP.Enabled || options.Metrics != nil || options.Dashboard != nil {
+	if options.MCP.Enabled || options.Metrics != nil || options.WebUI != nil {
 		mux = http.NewServeMux()
 		mux.Handle("/", generated)
 		application = mux
 	}
-	if options.Dashboard != nil {
-		if err := webui.Mount(mux, *options.Dashboard); err != nil {
-			return nil, err
+	if options.WebUI != nil {
+		if err := webui.Mount(mux, *options.WebUI); err != nil {
+			serverlogging.LogSafely(context.Background(), applicationLogger, slog.LevelWarn,
+				"PowerContext Web UI failed to start",
+				slog.String("event", "web_ui.start_failed"), slog.String("unit", "web_ui"),
+			)
 		}
 	}
 	if options.Metrics != nil {

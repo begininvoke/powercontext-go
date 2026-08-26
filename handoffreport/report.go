@@ -6,9 +6,11 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/handoff"
+	"github.com/ob-labs/powercontext-go/work"
 )
 
 type Format string
@@ -96,6 +98,42 @@ type PeriodComparison struct {
 	ActivityDelta         int
 }
 
+type HandoffRevisionSummary struct {
+	reference         artifact.Ref
+	objectiveExcerpt  string
+	disposition       handoff.Disposition
+	nextActionExcerpt *string
+	stateCount        int
+	omissionCount     int
+}
+
+func (v HandoffRevisionSummary) Reference() artifact.Ref          { return v.reference }
+func (v HandoffRevisionSummary) ObjectiveExcerpt() string         { return v.objectiveExcerpt }
+func (v HandoffRevisionSummary) Disposition() handoff.Disposition { return v.disposition }
+func (v HandoffRevisionSummary) NextActionExcerpt() *string {
+	return cloneString(v.nextActionExcerpt)
+}
+func (v HandoffRevisionSummary) StateCount() int    { return v.stateCount }
+func (v HandoffRevisionSummary) OmissionCount() int { return v.omissionCount }
+func (v HandoffRevisionSummary) Validate() error {
+	if err := v.reference.Validate(); err != nil {
+		return err
+	}
+	if strings.TrimSpace(v.objectiveExcerpt) == "" || utf8.RuneCountInString(v.objectiveExcerpt) > MaxReportHistoryExcerptLength {
+		return fieldError("objective_excerpt", "must be non-empty and within the Handoff history excerpt limit")
+	}
+	if v.disposition != handoff.Continuable && v.disposition != handoff.Blocked && v.disposition != handoff.Complete {
+		return fieldError("disposition", "has an unsupported value")
+	}
+	if v.nextActionExcerpt != nil && utf8.RuneCountInString(*v.nextActionExcerpt) > MaxReportHistoryExcerptLength {
+		return fieldError("next_action_excerpt", "exceeds the Handoff history excerpt limit")
+	}
+	if v.stateCount < 1 || v.omissionCount < 0 {
+		return fieldError("handoff_history", "contains invalid item counts")
+	}
+	return nil
+}
+
 func NewPeriodComparison(previousStart, previousEnd time.Time, current, previous int) (PeriodComparison, error) {
 	value := PeriodComparison{
 		PreviousStart: previousStart.UTC(), PreviousEnd: previousEnd.UTC(),
@@ -123,8 +161,12 @@ func (v PeriodComparison) Validate() error {
 
 type WorkstreamReport struct {
 	workstream              WorkstreamDescriptor
+	continuity              work.Continuity
 	handoffRef              *artifact.Ref
 	content                 *handoff.Content
+	handoffRevisionCount    int
+	handoffHistoryTruncated bool
+	handoffHistory          []HandoffRevisionSummary
 	evidenceChecks          []handoff.EvidenceCheck
 	evidenceChecked         bool
 	evidenceUnavailable     bool
@@ -137,6 +179,7 @@ type WorkstreamReport struct {
 }
 
 func (v WorkstreamReport) Workstream() WorkstreamDescriptor { return v.workstream }
+func (v WorkstreamReport) Continuity() work.Continuity      { return v.continuity }
 func (v WorkstreamReport) HandoffRef() *artifact.Ref        { return cloneArtifactRef(v.handoffRef) }
 func (v WorkstreamReport) Content() *handoff.Content {
 	if v.content == nil {
@@ -144,6 +187,11 @@ func (v WorkstreamReport) Content() *handoff.Content {
 	}
 	copy := *v.content
 	return &copy
+}
+func (v WorkstreamReport) HandoffRevisionCount() int     { return v.handoffRevisionCount }
+func (v WorkstreamReport) HandoffHistoryTruncated() bool { return v.handoffHistoryTruncated }
+func (v WorkstreamReport) HandoffHistory() []HandoffRevisionSummary {
+	return slices.Clone(v.handoffHistory)
 }
 func (v WorkstreamReport) EvidenceChecks() ([]handoff.EvidenceCheck, bool) {
 	if !v.evidenceChecked {
@@ -168,6 +216,20 @@ func (v WorkstreamReport) ObservedActivityCount() int { return v.observedActivit
 func (v WorkstreamReport) Validate() error {
 	if err := v.workstream.Validate(); err != nil {
 		return err
+	}
+	if err := v.continuity.Validate(); err != nil {
+		return err
+	}
+	if v.continuity.ScopeID() != v.workstream.ScopeID() {
+		return fieldError("continuity.scope_id", "must match its Workstream")
+	}
+	if v.handoffRevisionCount < 0 || len(v.handoffHistory) > MaxReportHandoffHistory {
+		return fieldError("handoff_history", "contains invalid Revision counts")
+	}
+	for _, summary := range v.handoffHistory {
+		if err := summary.Validate(); err != nil {
+			return err
+		}
 	}
 	if len(v.activities) > MaxReportActivities {
 		return fieldError("activities", fmt.Sprintf("must not exceed %d items", MaxReportActivities))
@@ -196,6 +258,9 @@ func (v WorkstreamReport) Validate() error {
 		}
 		if v.workStatus != WorkNoHandoff || v.reportingStatus != ReportingNoHandoff {
 			return fieldError("work_status", "a Workstream without Handoff must report no_handoff state")
+		}
+		if v.handoffRevisionCount != 0 || len(v.handoffHistory) != 0 || v.handoffHistoryTruncated {
+			return fieldError("handoff_history", "a Workstream without Handoff cannot contain Handoff Revision history")
 		}
 		return nil
 	}
@@ -226,6 +291,23 @@ func (v WorkstreamReport) Validate() error {
 	}
 	if v.reportingStatus == ReportingNoHandoff {
 		return fieldError("reporting_status", "an exact Handoff selection cannot report missing Handoff state")
+	}
+	if len(v.handoffHistory) == 0 || v.handoffHistory[len(v.handoffHistory)-1].reference != *v.handoffRef {
+		return fieldError("handoff_history", "Handoff reference history must end at the exact selected Handoff")
+	}
+	if v.handoffRevisionCount < len(v.handoffHistory) || v.handoffHistoryTruncated != (v.handoffRevisionCount > len(v.handoffHistory)) {
+		return fieldError("handoff_history", "Revision count and truncation must match the projected history")
+	}
+	var previous int64
+	for _, summary := range v.handoffHistory {
+		ref := summary.reference
+		if ref.Family() != v.handoffRef.Family() || ref.ID() != v.handoffRef.ID() {
+			return fieldError("handoff_history", "must belong to the selected Artifact lifecycle")
+		}
+		if ref.Revision() <= previous {
+			return fieldError("handoff_history", "must be unique and ascending")
+		}
+		previous = ref.Revision()
 	}
 	return nil
 }

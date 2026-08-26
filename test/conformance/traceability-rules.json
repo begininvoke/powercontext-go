@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "case_specific_evidence_minimum": 413,
+  "case_specific_evidence_minimum": 504,
   "files": {
     "e2e/bub/tests/test_bub_capture.py": {
       "mode": "retained-host",
@@ -962,7 +962,7 @@
         "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
       ],
       "cases": {
-        "test_builtin_runtime_uses_the_selected_sqlite_database": [
+        "test_builtin_runtime_uses_sqlite_fts_without_vector_extension": [
           "go:server/application_test.go#TestOpenApplicationProvidesRunnableSQLiteVerticalSlice"
         ],
         "test_same_scope_read_only_searches_do_not_serialize_reranking": [
@@ -1133,7 +1133,7 @@
           "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
         ],
         "test_server_databases_share_vector_and_hybrid_search_behavior": [
-          "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1ProfileContract",
+          "go:internal/sqlstore/sqlite_memory_vector_test.go#TestSQLiteVec0ReplaceHydrateAndSearch",
           "go:test/e2e/oceanbase_live_test.go#TestLiveOceanBaseProfileSmoke"
         ],
         "test_sdk_memory_lifecycle_reaches_one_composed_runtime": [
@@ -1174,19 +1174,6 @@
         "test_capabilities_flow_through_server_sdk_and_cli": [
           "go:internal/cli/root_test.go#TestCapabilitiesUsesEnvironmentAndWritesHumanOutput",
           "go:server/http_test.go#TestSystemHTTPVerticalSlice"
-        ]
-      }
-    },
-    "tests/e2e/test_sqlite_vec1.py": {
-      "mode": "go-port",
-      "supporting_evidence": [
-        "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1ProfileContract",
-        "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1VersionCompatibility"
-      ],
-      "cases": {
-        "test_sqlite_vec1_supports_vector_and_hybrid_search": [
-          "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1ProfileContract",
-          "go:internal/sqlstore/sqlite_memory_vec1_test.go#TestSQLiteVec1VersionCompatibility"
         ]
       }
     },
@@ -1314,7 +1301,7 @@
           "go:openapi/python_contract_test.go#TestCandidateTransportRejectsCombinedEvidenceOverLimit",
           "go:client/client_test.go#TestClientRejectsCombinedCandidateEvidenceBeforeTransport",
           "go:internal/mcpapi/server_test.go#TestMCPDecodeRejectsCombinedCandidateEvidence",
-          "go:server/http_test.go#TestHTTPRejectsCombinedCandidateEvidenceBeforeEndpointDispatch"
+          "go:server/http_test.go#TestHTTPCombinedCandidateEvidenceFailureMatchesFrozenPythonEnvelope"
         ],
         "test_handoff_operations_expose_the_complete_explicit_lifecycle": [
           "go:openapi/python_contract_test.go#TestHandoffOperationsExposeCompleteExplicitLifecycle"
@@ -1509,24 +1496,31 @@
       "supporting_evidence": [
         "go:internal/webui/handler_test.go#TestDashboardRoutesAndHeaders",
         "go:internal/webui/handler_test.go#TestHandoffReportPageFeatureGate",
-        "go:internal/webui/handler_test.go#TestMountRejectsMissingScopes"
+        "go:internal/webui/handler_test.go#TestMountAcceptsEnabledDashboardWithoutScopes"
       ],
       "cases": {
-        "test_dashboard_cannot_run_without_server_authentication": [
-          "go:server/config_test.go#TestProcessConfigEnforcesTrustAndInferenceBoundariesWithoutSecrets"
+        "test_dashboard_is_enabled_by_default_without_authentication_or_scopes": [
+          "go:internal/webui/handler_test.go#TestMountAcceptsEnabledDashboardWithoutScopes",
+          "go:server/config_test.go#TestDefaultConfigUsesPersistentUserStorage"
+        ],
+        "test_dashboard_mount_failure_does_not_prevent_server_startup": [
+          "go:server/http_test.go#TestDashboardPageIsPublicButScopeInventoryIsAuthenticated"
         ],
         "test_dashboard_is_the_authenticated_server_ui_entry": [
           "go:internal/webui/handler_test.go#TestDashboardRoutesAndHeaders",
           "go:server/http_test.go#TestDashboardPageIsPublicButScopeInventoryIsAuthenticated"
         ],
-        "test_handoff_report_page_is_available_only_when_both_features_are_enabled": [
+        "test_handoff_report_page_is_available_without_the_statistics_dashboard": [
           "go:internal/webui/handler_test.go#TestHandoffReportPageFeatureGate",
-          "go:server/http_test.go#TestDashboardPageIsPublicButScopeInventoryIsAuthenticated"
+          "go:internal/webui/handler_test.go#TestMountSupportsReportOnlyWebUI"
         ]
       }
     },
     "tests/test_dsh_cli.py": {
       "mode": "go-port",
+      "supporting_evidence": [
+        "go:internal/cli/system_contract_test.go#TestSetupDSHLocalCheckoutAndVerifiesPlugin"
+      ],
       "cases": {
         "test_dsh_executable_prefers_the_windows_cmd_shim": [
           "go:internal/cli/system_contract_test.go#TestDSHExecutablePrefersWindowsCommandShim"
@@ -1902,9 +1896,6 @@
         ],
         "test_embedding_settings_reject_partial_profiles": [
           "go:server/config_test.go#TestProcessConfigRejectsInvalidAndPartialEmbeddingProfiles"
-        ],
-        "test_component_config_rejects_unknown_values": [
-          "go:server/config_test.go#TestComponentConfigHasNoLegacySQLitePathSurface"
         ]
       }
     },
@@ -2006,6 +1997,10 @@
     },
     "tests/test_system_cli.py": {
       "mode": "cross-layer",
+      "supporting_evidence": [
+        "go:internal/cli/integration_hosts_test.go#TestSetupAndDoctorExposeCurrentHostMatrix",
+        "go:internal/cli/system_contract_test.go#TestDoctorChecksOnlyServerByDefault"
+      ],
       "cases": {
         "test_server_defaults_to_persistent_user_storage": [
           "go:server/config_test.go#TestDefaultConfigUsesPersistentUserStorage"
@@ -2050,6 +2045,188 @@
           "go:internal/cli/system_contract_test.go#TestDoctorDSHRequiresInstalledPlugin"
         ]
       }
+    },
+    "e2e/bub/tests/test_harbor_agent.py": {
+      "mode": "retained-host",
+      "supporting_evidence": [
+        "py:integrations/bub/tests/test_plugin.py#test_capture_content_redacts_sensitive_fields_before_transport"
+      ]
+    },
+    "tests/builtin/persistence/test_seekdb_profile.py": {
+      "mode": "go-port",
+      "supporting_evidence": [
+        "go:server/seekdb_test.go#TestSeekDBInstanceClosesPoolBeforeNativeRuntime",
+        "go:server/seekdb_test.go#TestSeekDBInstanceFinishesCleanupBeforePropagatingCancellation",
+        "go:internal/sqlstore/database_seekdb_test.go#TestSeekDBDriverConfigUsesLocalUnixSocket"
+      ]
+    },
+    "tests/builtin/runtime/test_scope_cache.py": {
+      "mode": "go-port",
+      "cases": {
+        "test_scope_cache_does_not_evict_a_lock_with_holders_or_waiters": [
+          "go:runtime/lifecycle_test.go#TestScopeCacheNeverEvictsLockWithHolderOrWaiter"
+        ]
+      }
+    },
+    "tests/builtin/runtime/test_work_continuity.py": {
+      "mode": "cross-layer",
+      "supporting_evidence": [
+        "go:work/codec_test.go#TestPythonWorkRecordJSONAndDigests",
+        "go:internal/mcpapi/server_test.go#TestServerExposesFrozenToolSet"
+      ],
+      "cases": {
+        "test_verified_work_claims_require_exact_evidence": [
+          "go:work/model_test.go#TestVerifiedWorkClaimsRequireExactEvidence"
+        ],
+        "test_acknowledgement_cannot_accept_unavailable_handoff_evidence": [
+          "go:runtime/work_application_test.go#TestAcknowledgementCannotAcceptUnavailableHandoffEvidence"
+        ],
+        "test_acknowledgement_requires_an_inspected_target_and_receiver_checks": [
+          "go:work/model_test.go#TestAcknowledgementRequiresInspectedTargetAndReceiverChecks"
+        ],
+        "test_work_contract_rejects_a_verified_cross_record_claim_when_evidence_is_missing": [
+          "go:runtime/work_application_test.go#TestWorkContractRejectsVerifiedClaimWithMissingEvidence"
+        ],
+        "test_continuity_projects_the_result_loop_in_stable_journal_order": [
+          "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+        ],
+        "test_continuity_does_not_cover_an_acceptance_with_an_unlinked_outcome": [
+          "go:work/continuity_test.go#TestContinuityDoesNotCoverAcceptanceWithUnlinkedOutcome"
+        ],
+        "test_task_outcome_rejects_a_non_receipt_result_link": [
+          "go:runtime/work_application_test.go#TestTaskOutcomeRejectsNonReceiptResultLink"
+        ],
+        "test_continuity_excludes_malformed_work_records_without_failing_the_report": [
+          "go:work/continuity_test.go#TestContinuityExcludesMalformedWorkRecords"
+        ]
+      }
+    },
+    "tests/claude_code_plugin/test_contract.py": {
+      "mode": "retained-host",
+      "case_evidence": [
+        "py:integrations/claude-code/tests/test_contract.py#{python_test}"
+      ]
+    },
+    "tests/claude_code_plugin/test_hook.py": {
+      "mode": "retained-host",
+      "case_evidence": [
+        "py:integrations/claude-code/tests/test_hook.py#{python_test}"
+      ]
+    },
+    "tests/e2e/test_claude_code_service_chain.py": {
+      "mode": "cross-layer",
+      "supporting_evidence": [
+        "py:integrations/claude-code/tests/test_hook.py#test_user_prompt_submit_injects_prepared_context_and_captures_prompt",
+        "go:test/e2e/http_memory_test.go#TestHTTPSourceAndMemorySQLiteVerticalSlice"
+      ]
+    },
+    "tests/e2e/test_langgraph_chain.py": {
+      "mode": "retained-host",
+      "supporting_evidence": [
+        "py:integrations/langgraph/tests/test_tools.py#test_remember_then_search_roundtrips_through_the_server",
+        "py:integrations/langgraph/tests/test_recall.py#test_recall_injects_context_labelled_untrusted"
+      ]
+    },
+    "tests/e2e/test_memory_search_concurrency.py": {
+      "mode": "go-port",
+      "supporting_evidence": [
+        "go:runtime/memory_search_concurrency_test.go#TestMemorySearchRetriesOneAdvancedHead",
+        "go:runtime/memory_search_concurrency_test.go#TestMemorySearchReturnsConflictAfterThreeAdvancedHeads"
+      ]
+    },
+    "tests/e2e/test_opencode_plugin_host.py": {
+      "mode": "retained-host",
+      "supporting_evidence": [
+        "ts:integrations/opencode/plugins/powercontext/tests/plugin.spec.ts#signals successful activation with the doctor nonce",
+        "ts:integrations/opencode/plugins/powercontext/tests/plugin.spec.ts#recalls, captures, and injects context once without persisting it through chat.message"
+      ]
+    },
+    "tests/e2e/test_sqlite_vec.py": {
+      "mode": "go-port",
+      "cases": {
+        "test_sqlite_vec_supports_vector_and_hybrid_search": [
+          "go:internal/sqlstore/sqlite_memory_vector_test.go#TestSQLiteVec0ReplaceHydrateAndSearch"
+        ]
+      }
+    },
+    "tests/integrations/test_hermes_provider.py": {
+      "mode": "retained-host",
+      "case_evidence": [
+        "py:integrations/hermes/tests/test_provider.py#{python_test}"
+      ]
+    },
+    "tests/langgraph_adapter/test_packaging.py": {
+      "mode": "retained-host",
+      "case_evidence": [
+        "py:integrations/langgraph/tests/test_packaging.py#{python_test}"
+      ]
+    },
+    "tests/langgraph_adapter/test_recall.py": {
+      "mode": "retained-host",
+      "case_evidence": [
+        "py:integrations/langgraph/tests/test_recall.py#{python_test}"
+      ]
+    },
+    "tests/langgraph_adapter/test_scope.py": {
+      "mode": "retained-host",
+      "case_evidence": [
+        "py:integrations/langgraph/tests/test_scope.py#{python_test}"
+      ]
+    },
+    "tests/langgraph_adapter/test_tools.py": {
+      "mode": "retained-host",
+      "case_evidence": [
+        "py:integrations/langgraph/tests/test_tools.py#{python_test}"
+      ]
+    },
+    "tests/test_dashboard_locale.py": {
+      "mode": "go-port",
+      "cases": {
+        "test_static_locale_catalogs_are_complete_and_not_mixed": [
+          "go:internal/webui/handler_test.go#TestDashboardRoutesAndHeaders"
+        ]
+      }
+    },
+    "tests/test_git_source.py": {
+      "mode": "cross-layer",
+      "cases": {
+        "test_github_clone_url_rejects_unencrypted_http_source": [
+          "go:internal/cli/integration_hosts_test.go#TestSetupClaudeCodeRejectsUnsafeURLBeforeHostInspection"
+        ]
+      }
+    },
+    "tests/test_hermes_cli.py": {
+      "mode": "go-port",
+      "supporting_evidence": [
+        "go:internal/cli/integration_hosts_test.go#TestSetupHermesStagesDoctorAndAtomicallyReplacesPlugin"
+      ]
+    },
+    "tests/test_openclaw_cli.py": {
+      "mode": "go-port",
+      "supporting_evidence": [
+        "go:internal/cli/integration_hosts_test.go#TestSetupOpenClawBuildsAndPreservesToolAllowlist",
+        "go:internal/cli/integration_hosts_test.go#TestDoctorOpenClawRequiresActiveSelectedMemoryPlugin"
+      ]
+    },
+    "tests/test_openclaw_configure_script.py": {
+      "mode": "retained-host",
+      "supporting_evidence": [
+        "go:internal/cli/integration_hosts_test.go#TestSetupOpenClawBuildsAndPreservesToolAllowlist",
+        "ts:integrations/openclaw/plugins/memory-powercontext/src/config.test.ts#uses a stable opaque project identity only for one trusted project"
+      ]
+    },
+    "tests/test_opencode_cli.py": {
+      "mode": "go-port",
+      "supporting_evidence": [
+        "go:internal/cli/integration_hosts_test.go#TestSetupOpenCodeProtectsAndPublishesOwnedSkill",
+        "go:internal/cli/integration_hosts_test.go#TestSetupOpenCodeRefusesUnownedSkillBeforePluginMutation"
+      ]
+    },
+    "tests/test_pi_cli.py": {
+      "mode": "go-port",
+      "supporting_evidence": [
+        "go:internal/cli/integration_hosts_test.go#TestSetupPiInstallsBeforeRemovingSupersededPackages"
+      ]
     }
   }
 }

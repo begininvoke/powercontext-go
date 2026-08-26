@@ -44,6 +44,8 @@ const (
 	MaxCatalogPageSize              = 100
 	MaxReportWorkstreams            = 100
 	MaxReportActivities             = 5_000
+	MaxReportHandoffHistory         = 20
+	MaxReportHistoryExcerptLength   = 240
 	DefaultSelectionAttempts        = 3
 	MaxSelectionAttempts            = 5
 	MaxReportBytes                  = 10 * 1024 * 1024

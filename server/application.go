@@ -31,14 +31,17 @@ import (
 // Application is one fully assembled Runtime and its shared endpoint adapter.
 // Close is idempotent and drains admitted work before closing persistence.
 type Application struct {
-	config       ProcessConfig
-	runtime      *pcruntime.Runtime
-	endpoint     *endpoint.Handler
-	capabilities pcruntime.Capabilities
-	readiness    *pcruntime.ReadinessChecks
-	metrics      *servermetrics.Server
-	tracing      trace.TracerProvider
-	logger       *slog.Logger
+	config            ProcessConfig
+	runtime           *pcruntime.Runtime
+	endpoint          *endpoint.Handler
+	capabilities      pcruntime.Capabilities
+	readiness         *pcruntime.ReadinessChecks
+	metrics           *servermetrics.Server
+	tracing           trace.TracerProvider
+	logger            *slog.Logger
+	review            *pcruntime.ReviewApplication
+	externalSkills    *pcruntime.ExternalSkillApplication
+	agentSkillTargets []skill.AgentSkillTarget
 
 	readinessMu   sync.Mutex
 	hasReadiness  bool
@@ -52,21 +55,23 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 		return nil, err
 	}
 	var database *sqlstore.Database
+	var databaseResource pcruntime.Resource
 	dialect := sqlstore.SQLiteDialect
 	var err error
-	if config.Database.Kind == "sqlite" {
+	switch config.Database.Kind {
+	case "sqlite":
 		var dsn string
 		dsn, err = SQLiteDSN(config.Database.SQLite.URL)
 		if err == nil {
 			database, err = sqlstore.OpenSQLite(ctx, sqlstore.SQLiteConfig{
 				DSN: dsn, BusyTimeout: config.Database.SQLite.BusyTimeout,
 				JournalMode: config.Database.SQLite.JournalMode, ForeignKeys: config.Database.SQLite.ForeignKeys,
-				Vec1Extension: config.Database.SQLite.Vec1Extension,
-				MaxOpenConns:  config.Database.SQLite.MaxOpenConns, MaxIdleConns: config.Database.SQLite.MaxIdleConns,
+				MaxOpenConns: config.Database.SQLite.MaxOpenConns, MaxIdleConns: config.Database.SQLite.MaxIdleConns,
 				ConnMaxLifetime: config.Database.SQLite.ConnMaxLifetime,
 			})
 		}
-	} else {
+		databaseResource = database
+	case "oceanbase":
 		dialect = sqlstore.MySQLDialect
 		database, err = sqlstore.OpenOceanBase(ctx, sqlstore.OceanBaseConfig{
 			URL:             config.Database.OceanBase.URL,
@@ -74,6 +79,21 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 			MaxIdleConns:    config.Database.OceanBase.MaxIdleConns,
 			ConnMaxLifetime: config.Database.OceanBase.MaxLifetime,
 		})
+		databaseResource = database
+	case "seekdb":
+		dialect = sqlstore.MySQLDialect
+		var instance seekDBInstance
+		database, instance.value, err = sqlstore.OpenSeekDB(ctx, sqlstore.SeekDBConfig{
+			Path: config.Database.SeekDB.Path, Database: config.Database.SeekDB.Database,
+			LibraryPath:     config.Database.SeekDB.LibraryPath,
+			MaxOpenConns:    config.Database.SeekDB.MaxOpenConns,
+			MaxIdleConns:    config.Database.SeekDB.MaxIdleConns,
+			ConnMaxLifetime: config.Database.SeekDB.MaxLifetime,
+		})
+		if err == nil {
+			instance.database = database
+			databaseResource = &instance
+		}
 	}
 	if err != nil {
 		return nil, fmt.Errorf("server: open database: %w", err)
@@ -83,9 +103,20 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 	if tracingProvider == nil {
 		tracingResource, err = servertracing.Configure(ctx, config.Tracing.Enabled)
 		if err != nil {
-			return nil, errors.Join(err, database.Close(ctx))
+			return nil, errors.Join(err, databaseResource.Close(ctx))
 		}
 		tracingProvider = tracingResource.Provider()
+	}
+	metrics, err := configuredMetrics(config.Metrics.Enabled)
+	if err != nil {
+		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		var closeErrors []error
+		if tracingResource != nil {
+			closeErrors = append(closeErrors, tracingResource.Close(closeCtx))
+		}
+		closeErrors = append(closeErrors, databaseResource.Close(closeCtx))
+		return nil, errors.Join(append([]error{err}, closeErrors...)...)
 	}
 	assembled, err := assembleDependencies(config, dependencies, tracingProvider)
 	statisticsRepository, statisticsErr := sqlstore.NewStatisticsRepository(dialect)
@@ -94,15 +125,34 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 		statisticsClock = time.Now
 	}
 	ownedResources := make([]pcruntime.Resource, 0, 2+len(assembled.resources))
-	ownedResources = append(ownedResources, database)
+	ownedResources = append(ownedResources, databaseResource)
 	if tracingResource != nil {
 		ownedResources = append(ownedResources, tracingResource)
 	}
 	ownedResources = append(ownedResources, assembled.resources...)
-	lifecycle := pcruntime.NewWithModelUsageRecorder(relationalModelUsageRecorder{
+	var scopeObserver pcruntime.ScopeCacheObserver
+	if metrics != nil {
+		scopeObserver = metrics.SetRuntimeScopes
+	}
+	lifecycle, lifecycleErr := pcruntime.NewConfigured(pcruntime.RuntimeOptions{
+		ScopeCacheSize: config.Runtime.ScopeCacheSize,
+		ScopeObserver:  scopeObserver,
+		Tracing:        newRuntimeStageTracing(tracingProvider),
+	}, relationalModelUsageRecorder{
 		database: database, repository: statisticsRepository,
 		clock: statisticsClock, logger: dependencies.Logger,
 	}, ownedResources...)
+	if lifecycleErr != nil {
+		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		var closeErrors []error
+		for index := len(ownedResources) - 1; index >= 0; index-- {
+			if ownedResources[index] != nil {
+				closeErrors = append(closeErrors, ownedResources[index].Close(closeCtx))
+			}
+		}
+		return nil, errors.Join(append([]error{lifecycleErr}, closeErrors...)...)
+	}
 	fail := func(cause error) (*Application, error) {
 		closeCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -141,7 +191,7 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 	if dialect == sqlstore.SQLiteDialect {
 		memoryIndexes = append(memoryIndexes, sqlstore.SQLiteMemoryFTSIndex{})
 		experienceIndex = sqlstore.SQLiteExperienceFTSIndex{}
-		if config.Database.SQLite.Vec1Extension != "" {
+		if assembled.embeddingModel != nil {
 			profile := assembled.embeddingModel.Profile()
 			memoryProfile, buildErr := memory.NewEmbeddingProfile(
 				profile.ID(), profile.ModelName(), profile.DimensionCount(), profile.NormalizationMode(),
@@ -149,7 +199,7 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 			if buildErr != nil {
 				return fail(buildErr)
 			}
-			vectorIndex, buildErr := sqlstore.NewSQLiteMemoryVec1Index(memoryProfile)
+			vectorIndex, buildErr := sqlstore.NewSQLiteMemoryVectorIndex(memoryProfile)
 			if buildErr != nil {
 				return fail(buildErr)
 			}
@@ -199,6 +249,7 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 	if idFactory == nil {
 		idFactory = scopedIDFactory
 	}
+	memoryReranker := pcruntime.TraceMemoryReranker(lifecycle, assembled.memoryReranker)
 	memoryFactory := func(scopeID string) (*memory.Service, error) {
 		repository, buildErr := sqlstore.NewMemoryRepository(database, scopeID, artifacts, memoryIndex)
 		if buildErr != nil {
@@ -211,7 +262,7 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 		return memory.NewService(repository, memory.ServiceOptions{
 			CandidatePipeline:    assembled.memoryCandidates,
 			EmbeddingModel:       assembled.embeddingModel,
-			Reranker:             assembled.memoryReranker,
+			Reranker:             memoryReranker,
 			RerankCandidateLimit: config.Runtime.MemoryRerankCandidateLimit,
 			SourceResolver:       resolver, IDFactory: idFactory, Clock: dependencies.Clock,
 		})
@@ -374,6 +425,10 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 	if err != nil {
 		return fail(err)
 	}
+	workApplication, err := pcruntime.NewWorkApplication(lifecycle, sourceBackend, handoffFactory)
+	if err != nil {
+		return fail(err)
+	}
 
 	var handoffReportApplication *pcruntime.HandoffReportApplication
 	if config.HandoffReport.Enabled {
@@ -389,7 +444,8 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 			return fail(buildErr)
 		}
 		handoffReportApplication, err = pcruntime.NewHandoffReportApplication(
-			lifecycle, reportStore, reader, dependencies.Clock, nil,
+			lifecycle, reportStore, reader, workApplication, dependencies.Clock, nil,
+			func(ctx context.Context) ([]string, error) { return sqlstore.HandoffScopeIDs(ctx, database) },
 		)
 		if err != nil {
 			return fail(err)
@@ -419,20 +475,18 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 	if err != nil {
 		return fail(err)
 	}
-	metrics, err := configuredMetrics(config.Metrics.Enabled)
-	if err != nil {
-		return fail(err)
-	}
 	application := &Application{
 		config: config, runtime: lifecycle, capabilities: capabilities,
 		readiness: readiness, metrics: metrics, tracing: tracingProvider, logger: dependencies.Logger,
+		review: reviewApplication, externalSkills: externalApplication,
+		agentSkillTargets: assembled.agentSkillTargets,
 	}
 	application.endpoint = endpoint.NewHandler(endpoint.HandlerOptions{
 		Capabilities: application.getCapabilities,
 		Readiness:    application.getReadiness,
 		Sources:      sourceApplication, Memory: memoryApplication, Context: contextApplication,
 		Review: reviewApplication, Generation: generationApplication, External: externalApplication,
-		Handoff: handoffApplication, HandoffReport: handoffReportApplication,
+		Handoff: handoffApplication, Work: workApplication, HandoffReport: handoffReportApplication,
 		Statistics: statisticsApplication,
 	})
 	if _, err := application.getReadiness(ctx); err != nil {
@@ -455,21 +509,25 @@ func (a *Application) HTTPHandler() (http.Handler, error) {
 	if a.config.Auth.Enabled {
 		token = a.config.Auth.Token
 	}
-	var dashboard *webui.Options
-	if a.config.Dashboard.Enabled {
+	var webOptions *webui.Options
+	if a.config.Dashboard.Enabled || a.config.HandoffReport.Enabled {
 		scopes := make([]webui.Scope, len(a.config.Dashboard.Scopes))
 		for index, scope := range a.config.Dashboard.Scopes {
 			scopes[index] = webui.Scope{ScopeID: scope.ScopeID, DisplayName: scope.DisplayName}
 		}
-		dashboard = &webui.Options{
-			Scopes: scopes, HandoffReportEnabled: a.config.HandoffReport.Enabled,
+		webOptions = &webui.Options{
+			DashboardEnabled: a.config.Dashboard.Enabled, Scopes: scopes,
+			HandoffReportEnabled:   a.config.HandoffReport.Enabled,
+			AuthenticationRequired: a.config.Auth.Enabled,
+			AgentSkillTargets:      append([]skill.AgentSkillTarget(nil), a.agentSkillTargets...),
+			SkillProjections:       webSkillProjectionOperations{review: a.review, external: a.externalSkills},
 		}
 	}
 	return NewHTTPHandler(a.endpoint, HTTPOptions{
 		BearerToken: token, HandoffReportRoutes: a.config.HandoffReport.Enabled,
 		Metrics: a.metrics, TracerProvider: a.tracing, Logger: a.logger, AccessLog: a.config.Logging.Access,
-		MCP:       MCPOptions{Enabled: a.config.MCP.Enabled, Path: a.config.MCP.Path},
-		Dashboard: dashboard,
+		MCP:   MCPOptions{Enabled: a.config.MCP.Enabled, Path: a.config.MCP.Path},
+		WebUI: webOptions,
 	})
 }
 

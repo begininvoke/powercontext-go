@@ -3,7 +3,7 @@
 `go run ./tools/fixture-generate -python ../powercontext` freezes the observable
 Python oracle used by the Go port. The command refuses to run against a
 different commit and writes only deterministic metadata under
-`test/conformance/testdata/python-v0.0.1`.
+`test/conformance/testdata/python-v0.0.2`.
 
 The generated manifest records the authoritative OpenAPI digest, prompt source
 digests, exact rendered prompt digests (including Memory reranking), and every

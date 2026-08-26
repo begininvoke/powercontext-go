@@ -10,6 +10,109 @@ import (
 	"github.com/go-faster/jx"
 )
 
+// Ref: #/components/schemas/AcknowledgeHandoffRequest
+type AcknowledgeHandoffRequest struct {
+	ScopeID        string                          `json:"scope_id"`
+	SourceID       string                          `json:"source_id"`
+	Receiver       string                          `json:"receiver"`
+	Status         HandoffReceiptStatus            `json:"status"`
+	Selection      HandoffAcknowledgementSelection `json:"selection"`
+	ReceiverChecks OptNilReceiverChecks            `json:"receiver_checks"`
+	Prepared       OptNilPreparedHandoff           `json:"prepared"`
+	Revision       OptNilArtifactReference         `json:"revision"`
+	Message        OptNilString                    `json:"message"`
+}
+
+// GetScopeID returns the value of ScopeID.
+func (s *AcknowledgeHandoffRequest) GetScopeID() string {
+	return s.ScopeID
+}
+
+// GetSourceID returns the value of SourceID.
+func (s *AcknowledgeHandoffRequest) GetSourceID() string {
+	return s.SourceID
+}
+
+// GetReceiver returns the value of Receiver.
+func (s *AcknowledgeHandoffRequest) GetReceiver() string {
+	return s.Receiver
+}
+
+// GetStatus returns the value of Status.
+func (s *AcknowledgeHandoffRequest) GetStatus() HandoffReceiptStatus {
+	return s.Status
+}
+
+// GetSelection returns the value of Selection.
+func (s *AcknowledgeHandoffRequest) GetSelection() HandoffAcknowledgementSelection {
+	return s.Selection
+}
+
+// GetReceiverChecks returns the value of ReceiverChecks.
+func (s *AcknowledgeHandoffRequest) GetReceiverChecks() OptNilReceiverChecks {
+	return s.ReceiverChecks
+}
+
+// GetPrepared returns the value of Prepared.
+func (s *AcknowledgeHandoffRequest) GetPrepared() OptNilPreparedHandoff {
+	return s.Prepared
+}
+
+// GetRevision returns the value of Revision.
+func (s *AcknowledgeHandoffRequest) GetRevision() OptNilArtifactReference {
+	return s.Revision
+}
+
+// GetMessage returns the value of Message.
+func (s *AcknowledgeHandoffRequest) GetMessage() OptNilString {
+	return s.Message
+}
+
+// SetScopeID sets the value of ScopeID.
+func (s *AcknowledgeHandoffRequest) SetScopeID(val string) {
+	s.ScopeID = val
+}
+
+// SetSourceID sets the value of SourceID.
+func (s *AcknowledgeHandoffRequest) SetSourceID(val string) {
+	s.SourceID = val
+}
+
+// SetReceiver sets the value of Receiver.
+func (s *AcknowledgeHandoffRequest) SetReceiver(val string) {
+	s.Receiver = val
+}
+
+// SetStatus sets the value of Status.
+func (s *AcknowledgeHandoffRequest) SetStatus(val HandoffReceiptStatus) {
+	s.Status = val
+}
+
+// SetSelection sets the value of Selection.
+func (s *AcknowledgeHandoffRequest) SetSelection(val HandoffAcknowledgementSelection) {
+	s.Selection = val
+}
+
+// SetReceiverChecks sets the value of ReceiverChecks.
+func (s *AcknowledgeHandoffRequest) SetReceiverChecks(val OptNilReceiverChecks) {
+	s.ReceiverChecks = val
+}
+
+// SetPrepared sets the value of Prepared.
+func (s *AcknowledgeHandoffRequest) SetPrepared(val OptNilPreparedHandoff) {
+	s.Prepared = val
+}
+
+// SetRevision sets the value of Revision.
+func (s *AcknowledgeHandoffRequest) SetRevision(val OptNilArtifactReference) {
+	s.Revision = val
+}
+
+// SetMessage sets the value of Message.
+func (s *AcknowledgeHandoffRequest) SetMessage(val OptNilString) {
+	s.Message = val
+}
+
 // Ref: #/components/schemas/ActivateHandoffRequest
 type ActivateHandoffRequest struct {
 	ScopeID        string            `json:"scope_id"`
@@ -1157,24 +1260,29 @@ func (s *ConflictHeaders) SetResponse(val ErrorResponse) {
 	s.Response = val
 }
 
+func (*ConflictHeaders) acknowledgeHandoffRes()              {}
 func (*ConflictHeaders) approveArtifactCandidateRes()        {}
 func (*ConflictHeaders) attachHandoffReportWorkspaceRes()    {}
 func (*ConflictHeaders) captureContentSourceRes()            {}
 func (*ConflictHeaders) commitHandoffRes()                   {}
 func (*ConflictHeaders) createHandoffReportProjectRes()      {}
+func (*ConflictHeaders) createWorkContractRes()              {}
 func (*ConflictHeaders) detachHandoffReportWorkspaceRes()    {}
 func (*ConflictHeaders) generateExperienceRes()              {}
 func (*ConflictHeaders) generateSkillRes()                   {}
+func (*ConflictHeaders) handoffCurrentWorkRes()              {}
 func (*ConflictHeaders) importExternalSkillRes()             {}
 func (*ConflictHeaders) proposeExperienceRes()               {}
 func (*ConflictHeaders) proposeSkillRes()                    {}
 func (*ConflictHeaders) recordHandoffReportActivityRes()     {}
+func (*ConflictHeaders) recordTaskOutcomeRes()               {}
 func (*ConflictHeaders) registerHandoffReportWorkstreamRes() {}
 func (*ConflictHeaders) rejectArtifactCandidateRes()         {}
 func (*ConflictHeaders) rememberMemoryRes()                  {}
 func (*ConflictHeaders) retireMemoryEntryRes()               {}
 func (*ConflictHeaders) reviseArtifactCandidateRes()         {}
 func (*ConflictHeaders) reviseMemoryEntryRes()               {}
+func (*ConflictHeaders) searchMemoryRes()                    {}
 func (*ConflictHeaders) updateHandoffReportProjectRes()      {}
 func (*ConflictHeaders) updateHandoffReportWorkstreamRes()   {}
 
@@ -1283,6 +1391,192 @@ func (s *CreateHandoffReportProjectRequest) SetDefaultLocale(val OptReportLocale
 // SetTimezone sets the value of Timezone.
 func (s *CreateHandoffReportProjectRequest) SetTimezone(val OptString) {
 	s.Timezone = val
+}
+
+// Ref: #/components/schemas/CreateWorkContractRequest
+type CreateWorkContractRequest struct {
+	ScopeID  string       `json:"scope_id"`
+	SourceID string       `json:"source_id"`
+	Contract WorkContract `json:"contract"`
+}
+
+// GetScopeID returns the value of ScopeID.
+func (s *CreateWorkContractRequest) GetScopeID() string {
+	return s.ScopeID
+}
+
+// GetSourceID returns the value of SourceID.
+func (s *CreateWorkContractRequest) GetSourceID() string {
+	return s.SourceID
+}
+
+// GetContract returns the value of Contract.
+func (s *CreateWorkContractRequest) GetContract() WorkContract {
+	return s.Contract
+}
+
+// SetScopeID sets the value of ScopeID.
+func (s *CreateWorkContractRequest) SetScopeID(val string) {
+	s.ScopeID = val
+}
+
+// SetSourceID sets the value of SourceID.
+func (s *CreateWorkContractRequest) SetSourceID(val string) {
+	s.SourceID = val
+}
+
+// SetContract sets the value of Contract.
+func (s *CreateWorkContractRequest) SetContract(val WorkContract) {
+	s.Contract = val
+}
+
+// Ref: #/components/schemas/CurrentWorkHandoff
+type CurrentWorkHandoff struct {
+	Schema      CurrentWorkHandoffSchema `json:"schema"`
+	Trust       CurrentWorkHandoffTrust  `json:"trust"`
+	Objective   string                   `json:"objective"`
+	State       []WorkClaim              `json:"state"`
+	Disposition HandoffDisposition       `json:"disposition"`
+	NextAction  NilWorkClaim             `json:"next_action"`
+	Omissions   []string                 `json:"omissions"`
+}
+
+// GetSchema returns the value of Schema.
+func (s *CurrentWorkHandoff) GetSchema() CurrentWorkHandoffSchema {
+	return s.Schema
+}
+
+// GetTrust returns the value of Trust.
+func (s *CurrentWorkHandoff) GetTrust() CurrentWorkHandoffTrust {
+	return s.Trust
+}
+
+// GetObjective returns the value of Objective.
+func (s *CurrentWorkHandoff) GetObjective() string {
+	return s.Objective
+}
+
+// GetState returns the value of State.
+func (s *CurrentWorkHandoff) GetState() []WorkClaim {
+	return s.State
+}
+
+// GetDisposition returns the value of Disposition.
+func (s *CurrentWorkHandoff) GetDisposition() HandoffDisposition {
+	return s.Disposition
+}
+
+// GetNextAction returns the value of NextAction.
+func (s *CurrentWorkHandoff) GetNextAction() NilWorkClaim {
+	return s.NextAction
+}
+
+// GetOmissions returns the value of Omissions.
+func (s *CurrentWorkHandoff) GetOmissions() []string {
+	return s.Omissions
+}
+
+// SetSchema sets the value of Schema.
+func (s *CurrentWorkHandoff) SetSchema(val CurrentWorkHandoffSchema) {
+	s.Schema = val
+}
+
+// SetTrust sets the value of Trust.
+func (s *CurrentWorkHandoff) SetTrust(val CurrentWorkHandoffTrust) {
+	s.Trust = val
+}
+
+// SetObjective sets the value of Objective.
+func (s *CurrentWorkHandoff) SetObjective(val string) {
+	s.Objective = val
+}
+
+// SetState sets the value of State.
+func (s *CurrentWorkHandoff) SetState(val []WorkClaim) {
+	s.State = val
+}
+
+// SetDisposition sets the value of Disposition.
+func (s *CurrentWorkHandoff) SetDisposition(val HandoffDisposition) {
+	s.Disposition = val
+}
+
+// SetNextAction sets the value of NextAction.
+func (s *CurrentWorkHandoff) SetNextAction(val NilWorkClaim) {
+	s.NextAction = val
+}
+
+// SetOmissions sets the value of Omissions.
+func (s *CurrentWorkHandoff) SetOmissions(val []string) {
+	s.Omissions = val
+}
+
+type CurrentWorkHandoffSchema string
+
+const (
+	CurrentWorkHandoffSchemaPowercontextCurrentWorkHandoffV1 CurrentWorkHandoffSchema = "powercontext.current-work-handoff.v1"
+)
+
+// AllValues returns all CurrentWorkHandoffSchema values.
+func (CurrentWorkHandoffSchema) AllValues() []CurrentWorkHandoffSchema {
+	return []CurrentWorkHandoffSchema{
+		CurrentWorkHandoffSchemaPowercontextCurrentWorkHandoffV1,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CurrentWorkHandoffSchema) MarshalText() ([]byte, error) {
+	switch s {
+	case CurrentWorkHandoffSchemaPowercontextCurrentWorkHandoffV1:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CurrentWorkHandoffSchema) UnmarshalText(data []byte) error {
+	switch CurrentWorkHandoffSchema(data) {
+	case CurrentWorkHandoffSchemaPowercontextCurrentWorkHandoffV1:
+		*s = CurrentWorkHandoffSchemaPowercontextCurrentWorkHandoffV1
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type CurrentWorkHandoffTrust string
+
+const (
+	CurrentWorkHandoffTrustUntrustedInput CurrentWorkHandoffTrust = "untrusted_input"
+)
+
+// AllValues returns all CurrentWorkHandoffTrust values.
+func (CurrentWorkHandoffTrust) AllValues() []CurrentWorkHandoffTrust {
+	return []CurrentWorkHandoffTrust{
+		CurrentWorkHandoffTrustUntrustedInput,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s CurrentWorkHandoffTrust) MarshalText() ([]byte, error) {
+	switch s {
+	case CurrentWorkHandoffTrustUntrustedInput:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *CurrentWorkHandoffTrust) UnmarshalText(data []byte) error {
+	switch CurrentWorkHandoffTrust(data) {
+	case CurrentWorkHandoffTrustUntrustedInput:
+		*s = CurrentWorkHandoffTrustUntrustedInput
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/DetachHandoffReportWorkspaceRequest
@@ -1811,13 +2105,15 @@ func (s *ExternalSkillRegistration) SetDescription(val string) {
 type ExternalSkillRegistrationAgentKind string
 
 const (
-	ExternalSkillRegistrationAgentKindCodex ExternalSkillRegistrationAgentKind = "codex"
+	ExternalSkillRegistrationAgentKindCodex      ExternalSkillRegistrationAgentKind = "codex"
+	ExternalSkillRegistrationAgentKindClaudeCode ExternalSkillRegistrationAgentKind = "claude_code"
 )
 
 // AllValues returns all ExternalSkillRegistrationAgentKind values.
 func (ExternalSkillRegistrationAgentKind) AllValues() []ExternalSkillRegistrationAgentKind {
 	return []ExternalSkillRegistrationAgentKind{
 		ExternalSkillRegistrationAgentKindCodex,
+		ExternalSkillRegistrationAgentKindClaudeCode,
 	}
 }
 
@@ -1825,6 +2121,8 @@ func (ExternalSkillRegistrationAgentKind) AllValues() []ExternalSkillRegistratio
 func (s ExternalSkillRegistrationAgentKind) MarshalText() ([]byte, error) {
 	switch s {
 	case ExternalSkillRegistrationAgentKindCodex:
+		return []byte(s), nil
+	case ExternalSkillRegistrationAgentKindClaudeCode:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1837,6 +2135,9 @@ func (s *ExternalSkillRegistrationAgentKind) UnmarshalText(data []byte) error {
 	case ExternalSkillRegistrationAgentKindCodex:
 		*s = ExternalSkillRegistrationAgentKindCodex
 		return nil
+	case ExternalSkillRegistrationAgentKindClaudeCode:
+		*s = ExternalSkillRegistrationAgentKindClaudeCode
+		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
 	}
@@ -1845,13 +2146,15 @@ func (s *ExternalSkillRegistrationAgentKind) UnmarshalText(data []byte) error {
 type ExternalSkillRegistrationProvider string
 
 const (
-	ExternalSkillRegistrationProviderCodex ExternalSkillRegistrationProvider = "codex"
+	ExternalSkillRegistrationProviderCodex      ExternalSkillRegistrationProvider = "codex"
+	ExternalSkillRegistrationProviderClaudeCode ExternalSkillRegistrationProvider = "claude_code"
 )
 
 // AllValues returns all ExternalSkillRegistrationProvider values.
 func (ExternalSkillRegistrationProvider) AllValues() []ExternalSkillRegistrationProvider {
 	return []ExternalSkillRegistrationProvider{
 		ExternalSkillRegistrationProviderCodex,
+		ExternalSkillRegistrationProviderClaudeCode,
 	}
 }
 
@@ -1859,6 +2162,8 @@ func (ExternalSkillRegistrationProvider) AllValues() []ExternalSkillRegistration
 func (s ExternalSkillRegistrationProvider) MarshalText() ([]byte, error) {
 	switch s {
 	case ExternalSkillRegistrationProviderCodex:
+		return []byte(s), nil
+	case ExternalSkillRegistrationProviderClaudeCode:
 		return []byte(s), nil
 	default:
 		return nil, errors.Errorf("invalid value: %q", s)
@@ -1870,6 +2175,9 @@ func (s *ExternalSkillRegistrationProvider) UnmarshalText(data []byte) error {
 	switch ExternalSkillRegistrationProvider(data) {
 	case ExternalSkillRegistrationProviderCodex:
 		*s = ExternalSkillRegistrationProviderCodex
+		return nil
+	case ExternalSkillRegistrationProviderClaudeCode:
+		*s = ExternalSkillRegistrationProviderClaudeCode
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -2611,7 +2919,11 @@ func (s *GetHandoffReportProjectRequest) SetProjectID(val string) {
 
 // Ref: #/components/schemas/GetHandoffReportRequest
 type GetHandoffReportRequest struct {
-	ProjectID             string                           `json:"project_id"`
+	ScopeID string `json:"scope_id"`
+	// Retained for wire compatibility and ignored when generating a scope report.
+	//
+	// Deprecated: schema marks this property as deprecated.
+	ProjectID             OptNilString                     `json:"project_id"`
 	Locale                OptNilReportLocale               `json:"locale"`
 	IncludeEvidenceChecks OptBool                          `json:"include_evidence_checks"`
 	Format                OptReportFormat                  `json:"format"`
@@ -2620,8 +2932,13 @@ type GetHandoffReportRequest struct {
 	Period                OptNilHandoffReportPeriodRequest `json:"period"`
 }
 
+// GetScopeID returns the value of ScopeID.
+func (s *GetHandoffReportRequest) GetScopeID() string {
+	return s.ScopeID
+}
+
 // GetProjectID returns the value of ProjectID.
-func (s *GetHandoffReportRequest) GetProjectID() string {
+func (s *GetHandoffReportRequest) GetProjectID() OptNilString {
 	return s.ProjectID
 }
 
@@ -2655,8 +2972,13 @@ func (s *GetHandoffReportRequest) GetPeriod() OptNilHandoffReportPeriodRequest {
 	return s.Period
 }
 
+// SetScopeID sets the value of ScopeID.
+func (s *GetHandoffReportRequest) SetScopeID(val string) {
+	s.ScopeID = val
+}
+
 // SetProjectID sets the value of ProjectID.
-func (s *GetHandoffReportRequest) SetProjectID(val string) {
+func (s *GetHandoffReportRequest) SetProjectID(val OptNilString) {
 	s.ProjectID = val
 }
 
@@ -2793,6 +3115,102 @@ func (s *GetStatsOKCacheControl) UnmarshalText(data []byte) error {
 	switch GetStatsOKCacheControl(data) {
 	case GetStatsOKCacheControlNoStore:
 		*s = GetStatsOKCacheControlNoStore
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/HandoffAcknowledgement
+type HandoffAcknowledgement struct {
+	Resolution HandoffResolution `json:"resolution"`
+	Receipt    WorkSourceReceipt `json:"receipt"`
+}
+
+// GetResolution returns the value of Resolution.
+func (s *HandoffAcknowledgement) GetResolution() HandoffResolution {
+	return s.Resolution
+}
+
+// GetReceipt returns the value of Receipt.
+func (s *HandoffAcknowledgement) GetReceipt() WorkSourceReceipt {
+	return s.Receipt
+}
+
+// SetResolution sets the value of Resolution.
+func (s *HandoffAcknowledgement) SetResolution(val HandoffResolution) {
+	s.Resolution = val
+}
+
+// SetReceipt sets the value of Receipt.
+func (s *HandoffAcknowledgement) SetReceipt(val WorkSourceReceipt) {
+	s.Receipt = val
+}
+
+// HandoffAcknowledgementHeaders wraps HandoffAcknowledgement with response headers.
+type HandoffAcknowledgementHeaders struct {
+	XPowerContextRequestID OptString
+	Response               HandoffAcknowledgement
+}
+
+// GetXPowerContextRequestID returns the value of XPowerContextRequestID.
+func (s *HandoffAcknowledgementHeaders) GetXPowerContextRequestID() OptString {
+	return s.XPowerContextRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *HandoffAcknowledgementHeaders) GetResponse() HandoffAcknowledgement {
+	return s.Response
+}
+
+// SetXPowerContextRequestID sets the value of XPowerContextRequestID.
+func (s *HandoffAcknowledgementHeaders) SetXPowerContextRequestID(val OptString) {
+	s.XPowerContextRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *HandoffAcknowledgementHeaders) SetResponse(val HandoffAcknowledgement) {
+	s.Response = val
+}
+
+func (*HandoffAcknowledgementHeaders) acknowledgeHandoffRes() {}
+
+// Ref: #/components/schemas/HandoffAcknowledgementSelection
+type HandoffAcknowledgementSelection string
+
+const (
+	HandoffAcknowledgementSelectionPrepared HandoffAcknowledgementSelection = "prepared"
+	HandoffAcknowledgementSelectionExact    HandoffAcknowledgementSelection = "exact"
+)
+
+// AllValues returns all HandoffAcknowledgementSelection values.
+func (HandoffAcknowledgementSelection) AllValues() []HandoffAcknowledgementSelection {
+	return []HandoffAcknowledgementSelection{
+		HandoffAcknowledgementSelectionPrepared,
+		HandoffAcknowledgementSelectionExact,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s HandoffAcknowledgementSelection) MarshalText() ([]byte, error) {
+	switch s {
+	case HandoffAcknowledgementSelectionPrepared:
+		return []byte(s), nil
+	case HandoffAcknowledgementSelectionExact:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *HandoffAcknowledgementSelection) UnmarshalText(data []byte) error {
+	switch HandoffAcknowledgementSelection(data) {
+	case HandoffAcknowledgementSelectionPrepared:
+		*s = HandoffAcknowledgementSelectionPrepared
+		return nil
+	case HandoffAcknowledgementSelectionExact:
+		*s = HandoffAcknowledgementSelectionExact
 		return nil
 	default:
 		return errors.Errorf("invalid value: %q", data)
@@ -3198,6 +3616,43 @@ func (s *HandoffContent) SetOmissions(val []HandoffOmission) {
 	s.Omissions = val
 }
 
+// Ref: #/components/schemas/HandoffCurrentWorkRequest
+type HandoffCurrentWorkRequest struct {
+	ScopeID  string             `json:"scope_id"`
+	SourceID string             `json:"source_id"`
+	Handoff  CurrentWorkHandoff `json:"handoff"`
+}
+
+// GetScopeID returns the value of ScopeID.
+func (s *HandoffCurrentWorkRequest) GetScopeID() string {
+	return s.ScopeID
+}
+
+// GetSourceID returns the value of SourceID.
+func (s *HandoffCurrentWorkRequest) GetSourceID() string {
+	return s.SourceID
+}
+
+// GetHandoff returns the value of Handoff.
+func (s *HandoffCurrentWorkRequest) GetHandoff() CurrentWorkHandoff {
+	return s.Handoff
+}
+
+// SetScopeID sets the value of ScopeID.
+func (s *HandoffCurrentWorkRequest) SetScopeID(val string) {
+	s.ScopeID = val
+}
+
+// SetSourceID sets the value of SourceID.
+func (s *HandoffCurrentWorkRequest) SetSourceID(val string) {
+	s.SourceID = val
+}
+
+// SetHandoff sets the value of Handoff.
+func (s *HandoffCurrentWorkRequest) SetHandoff(val CurrentWorkHandoff) {
+	s.Handoff = val
+}
+
 // Ref: #/components/schemas/HandoffDisposition
 type HandoffDisposition string
 
@@ -3508,6 +3963,55 @@ func (s *HandoffOmission) SetText(val string) {
 // SetCitation sets the value of Citation.
 func (s *HandoffOmission) SetCitation(val NilHandoffCitation) {
 	s.Citation = val
+}
+
+// Ref: #/components/schemas/HandoffReceiptStatus
+type HandoffReceiptStatus string
+
+const (
+	HandoffReceiptStatusAccepted           HandoffReceiptStatus = "accepted"
+	HandoffReceiptStatusNeedsClarification HandoffReceiptStatus = "needs_clarification"
+	HandoffReceiptStatusDeclined           HandoffReceiptStatus = "declined"
+)
+
+// AllValues returns all HandoffReceiptStatus values.
+func (HandoffReceiptStatus) AllValues() []HandoffReceiptStatus {
+	return []HandoffReceiptStatus{
+		HandoffReceiptStatusAccepted,
+		HandoffReceiptStatusNeedsClarification,
+		HandoffReceiptStatusDeclined,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s HandoffReceiptStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case HandoffReceiptStatusAccepted:
+		return []byte(s), nil
+	case HandoffReceiptStatusNeedsClarification:
+		return []byte(s), nil
+	case HandoffReceiptStatusDeclined:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *HandoffReceiptStatus) UnmarshalText(data []byte) error {
+	switch HandoffReceiptStatus(data) {
+	case HandoffReceiptStatusAccepted:
+		*s = HandoffReceiptStatusAccepted
+		return nil
+	case HandoffReceiptStatusNeedsClarification:
+		*s = HandoffReceiptStatusNeedsClarification
+		return nil
+	case HandoffReceiptStatusDeclined:
+		*s = HandoffReceiptStatusDeclined
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
 }
 
 // Ref: #/components/schemas/HandoffReportActivity
@@ -4989,6 +5493,7 @@ func (s *InternalErrorHeaders) SetResponse(val ErrorResponse) {
 	s.Response = val
 }
 
+func (*InternalErrorHeaders) acknowledgeHandoffRes()              {}
 func (*InternalErrorHeaders) activateHandoffRes()                 {}
 func (*InternalErrorHeaders) approveArtifactCandidateRes()        {}
 func (*InternalErrorHeaders) attachHandoffReportWorkspaceRes()    {}
@@ -4996,6 +5501,7 @@ func (*InternalErrorHeaders) captureContentSourceRes()            {}
 func (*InternalErrorHeaders) commitHandoffRes()                   {}
 func (*InternalErrorHeaders) continueHandoffRes()                 {}
 func (*InternalErrorHeaders) createHandoffReportProjectRes()      {}
+func (*InternalErrorHeaders) createWorkContractRes()              {}
 func (*InternalErrorHeaders) detachHandoffReportWorkspaceRes()    {}
 func (*InternalErrorHeaders) finalizeHandoffRes()                 {}
 func (*InternalErrorHeaders) flushMemoryRes()                     {}
@@ -5009,10 +5515,12 @@ func (*InternalErrorHeaders) getHandoffReportWorkspaceRes()       {}
 func (*InternalErrorHeaders) getMemoryEntryRes()                  {}
 func (*InternalErrorHeaders) getSkillRes()                        {}
 func (*InternalErrorHeaders) getStatsRes()                        {}
+func (*InternalErrorHeaders) handoffCurrentWorkRes()              {}
 func (*InternalErrorHeaders) importExternalSkillRes()             {}
 func (*InternalErrorHeaders) listArtifactCandidatesRes()          {}
 func (*InternalErrorHeaders) listExternalSkillsRes()              {}
 func (*InternalErrorHeaders) listHandoffReportActivitiesRes()     {}
+func (*InternalErrorHeaders) listHandoffReportKnownScopesRes()    {}
 func (*InternalErrorHeaders) listHandoffReportProjectsRes()       {}
 func (*InternalErrorHeaders) listHandoffReportWorkstreamsRes()    {}
 func (*InternalErrorHeaders) listMemoryChangesRes()               {}
@@ -5023,6 +5531,7 @@ func (*InternalErrorHeaders) proposeExperienceRes()               {}
 func (*InternalErrorHeaders) proposeSkillRes()                    {}
 func (*InternalErrorHeaders) purgeHandoffReportActivitiesRes()    {}
 func (*InternalErrorHeaders) recordHandoffReportActivityRes()     {}
+func (*InternalErrorHeaders) recordTaskOutcomeRes()               {}
 func (*InternalErrorHeaders) registerHandoffReportWorkstreamRes() {}
 func (*InternalErrorHeaders) rejectArtifactCandidateRes()         {}
 func (*InternalErrorHeaders) rememberMemoryRes()                  {}
@@ -5061,6 +5570,7 @@ func (s *InvalidRequestHeaders) SetResponse(val ErrorResponse) {
 	s.Response = val
 }
 
+func (*InvalidRequestHeaders) acknowledgeHandoffRes()              {}
 func (*InvalidRequestHeaders) activateHandoffRes()                 {}
 func (*InvalidRequestHeaders) approveArtifactCandidateRes()        {}
 func (*InvalidRequestHeaders) attachHandoffReportWorkspaceRes()    {}
@@ -5068,6 +5578,7 @@ func (*InvalidRequestHeaders) captureContentSourceRes()            {}
 func (*InvalidRequestHeaders) commitHandoffRes()                   {}
 func (*InvalidRequestHeaders) continueHandoffRes()                 {}
 func (*InvalidRequestHeaders) createHandoffReportProjectRes()      {}
+func (*InvalidRequestHeaders) createWorkContractRes()              {}
 func (*InvalidRequestHeaders) detachHandoffReportWorkspaceRes()    {}
 func (*InvalidRequestHeaders) finalizeHandoffRes()                 {}
 func (*InvalidRequestHeaders) flushMemoryRes()                     {}
@@ -5081,10 +5592,12 @@ func (*InvalidRequestHeaders) getHandoffReportWorkspaceRes()       {}
 func (*InvalidRequestHeaders) getMemoryEntryRes()                  {}
 func (*InvalidRequestHeaders) getSkillRes()                        {}
 func (*InvalidRequestHeaders) getStatsRes()                        {}
+func (*InvalidRequestHeaders) handoffCurrentWorkRes()              {}
 func (*InvalidRequestHeaders) importExternalSkillRes()             {}
 func (*InvalidRequestHeaders) listArtifactCandidatesRes()          {}
 func (*InvalidRequestHeaders) listExternalSkillsRes()              {}
 func (*InvalidRequestHeaders) listHandoffReportActivitiesRes()     {}
+func (*InvalidRequestHeaders) listHandoffReportKnownScopesRes()    {}
 func (*InvalidRequestHeaders) listHandoffReportProjectsRes()       {}
 func (*InvalidRequestHeaders) listHandoffReportWorkstreamsRes()    {}
 func (*InvalidRequestHeaders) listMemoryChangesRes()               {}
@@ -5095,6 +5608,7 @@ func (*InvalidRequestHeaders) proposeExperienceRes()               {}
 func (*InvalidRequestHeaders) proposeSkillRes()                    {}
 func (*InvalidRequestHeaders) purgeHandoffReportActivitiesRes()    {}
 func (*InvalidRequestHeaders) recordHandoffReportActivityRes()     {}
+func (*InvalidRequestHeaders) recordTaskOutcomeRes()               {}
 func (*InvalidRequestHeaders) registerHandoffReportWorkstreamRes() {}
 func (*InvalidRequestHeaders) rejectArtifactCandidateRes()         {}
 func (*InvalidRequestHeaders) rememberMemoryRes()                  {}
@@ -5154,6 +5668,75 @@ func (s *InventoryStatistics) SetCandidates(val CandidateInventoryStatistics) {
 func (s *InventoryStatistics) SetMemory(val MemoryInventoryStatistics) {
 	s.Memory = val
 }
+
+// Ref: #/components/schemas/KnownHandoffScope
+type KnownHandoffScope struct {
+	ScopeID string `json:"scope_id"`
+}
+
+// GetScopeID returns the value of ScopeID.
+func (s *KnownHandoffScope) GetScopeID() string {
+	return s.ScopeID
+}
+
+// SetScopeID sets the value of ScopeID.
+func (s *KnownHandoffScope) SetScopeID(val string) {
+	s.ScopeID = val
+}
+
+// Ref: #/components/schemas/KnownHandoffScopePage
+type KnownHandoffScopePage struct {
+	Items      []KnownHandoffScope `json:"items"`
+	NextCursor OptNilString        `json:"next_cursor"`
+}
+
+// GetItems returns the value of Items.
+func (s *KnownHandoffScopePage) GetItems() []KnownHandoffScope {
+	return s.Items
+}
+
+// GetNextCursor returns the value of NextCursor.
+func (s *KnownHandoffScopePage) GetNextCursor() OptNilString {
+	return s.NextCursor
+}
+
+// SetItems sets the value of Items.
+func (s *KnownHandoffScopePage) SetItems(val []KnownHandoffScope) {
+	s.Items = val
+}
+
+// SetNextCursor sets the value of NextCursor.
+func (s *KnownHandoffScopePage) SetNextCursor(val OptNilString) {
+	s.NextCursor = val
+}
+
+// KnownHandoffScopePageHeaders wraps KnownHandoffScopePage with response headers.
+type KnownHandoffScopePageHeaders struct {
+	XPowerContextRequestID OptString
+	Response               KnownHandoffScopePage
+}
+
+// GetXPowerContextRequestID returns the value of XPowerContextRequestID.
+func (s *KnownHandoffScopePageHeaders) GetXPowerContextRequestID() OptString {
+	return s.XPowerContextRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *KnownHandoffScopePageHeaders) GetResponse() KnownHandoffScopePage {
+	return s.Response
+}
+
+// SetXPowerContextRequestID sets the value of XPowerContextRequestID.
+func (s *KnownHandoffScopePageHeaders) SetXPowerContextRequestID(val OptString) {
+	s.XPowerContextRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *KnownHandoffScopePageHeaders) SetResponse(val KnownHandoffScopePage) {
+	s.Response = val
+}
+
+func (*KnownHandoffScopePageHeaders) listHandoffReportKnownScopesRes() {}
 
 // Ref: #/components/schemas/ListArtifactCandidatesRequest
 type ListArtifactCandidatesRequest struct {
@@ -5361,6 +5944,32 @@ func (s *ListHandoffReportActivitiesRequest) SetThroughCursor(val OptNilInt) {
 
 // SetLimit sets the value of Limit.
 func (s *ListHandoffReportActivitiesRequest) SetLimit(val OptInt) {
+	s.Limit = val
+}
+
+// Ref: #/components/schemas/ListHandoffReportKnownScopesRequest
+type ListHandoffReportKnownScopesRequest struct {
+	Cursor OptNilString `json:"cursor"`
+	Limit  OptInt       `json:"limit"`
+}
+
+// GetCursor returns the value of Cursor.
+func (s *ListHandoffReportKnownScopesRequest) GetCursor() OptNilString {
+	return s.Cursor
+}
+
+// GetLimit returns the value of Limit.
+func (s *ListHandoffReportKnownScopesRequest) GetLimit() OptInt {
+	return s.Limit
+}
+
+// SetCursor sets the value of Cursor.
+func (s *ListHandoffReportKnownScopesRequest) SetCursor(val OptNilString) {
+	s.Cursor = val
+}
+
+// SetLimit sets the value of Limit.
+func (s *ListHandoffReportKnownScopesRequest) SetLimit(val OptInt) {
 	s.Limit = val
 }
 
@@ -5611,6 +6220,55 @@ func (s *ListMemoryEntriesResponseHeaders) SetResponse(val ListMemoryEntriesResp
 }
 
 func (*ListMemoryEntriesResponseHeaders) listMemoryEntriesRes() {}
+
+// Ref: #/components/schemas/LiveStateCheckStatus
+type LiveStateCheckStatus string
+
+const (
+	LiveStateCheckStatusConfirmed  LiveStateCheckStatus = "confirmed"
+	LiveStateCheckStatusMismatch   LiveStateCheckStatus = "mismatch"
+	LiveStateCheckStatusNotChecked LiveStateCheckStatus = "not_checked"
+)
+
+// AllValues returns all LiveStateCheckStatus values.
+func (LiveStateCheckStatus) AllValues() []LiveStateCheckStatus {
+	return []LiveStateCheckStatus{
+		LiveStateCheckStatusConfirmed,
+		LiveStateCheckStatusMismatch,
+		LiveStateCheckStatusNotChecked,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s LiveStateCheckStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case LiveStateCheckStatusConfirmed:
+		return []byte(s), nil
+	case LiveStateCheckStatusMismatch:
+		return []byte(s), nil
+	case LiveStateCheckStatusNotChecked:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *LiveStateCheckStatus) UnmarshalText(data []byte) error {
+	switch LiveStateCheckStatus(data) {
+	case LiveStateCheckStatusConfirmed:
+		*s = LiveStateCheckStatusConfirmed
+		return nil
+	case LiveStateCheckStatusMismatch:
+		*s = LiveStateCheckStatusMismatch
+		return nil
+	case LiveStateCheckStatusNotChecked:
+		*s = LiveStateCheckStatusNotChecked
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
 
 // Ref: #/components/schemas/MemoryCitation
 type MemoryCitation struct {
@@ -7008,6 +7666,51 @@ func (o NilTokenEstimatorProfile) Or(d TokenEstimatorProfile) TokenEstimatorProf
 	return d
 }
 
+// NewNilWorkClaim returns new NilWorkClaim with value set to v.
+func NewNilWorkClaim(v WorkClaim) NilWorkClaim {
+	return NilWorkClaim{
+		Value: v,
+	}
+}
+
+// NilWorkClaim is nullable WorkClaim.
+type NilWorkClaim struct {
+	Value WorkClaim
+	Null  bool
+}
+
+// SetTo sets value to v.
+func (o *NilWorkClaim) SetTo(v WorkClaim) {
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o NilWorkClaim) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *NilWorkClaim) SetToNull() {
+	o.Null = true
+	var v WorkClaim
+	o.Value = v
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o NilWorkClaim) Get() (v WorkClaim, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o NilWorkClaim) Or(d WorkClaim) WorkClaim {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NotFoundHeaders wraps ErrorResponse with response headers.
 type NotFoundHeaders struct {
 	XPowerContextRequestID OptString
@@ -7034,11 +7737,13 @@ func (s *NotFoundHeaders) SetResponse(val ErrorResponse) {
 	s.Response = val
 }
 
+func (*NotFoundHeaders) acknowledgeHandoffRes()              {}
 func (*NotFoundHeaders) activateHandoffRes()                 {}
 func (*NotFoundHeaders) approveArtifactCandidateRes()        {}
 func (*NotFoundHeaders) attachHandoffReportWorkspaceRes()    {}
 func (*NotFoundHeaders) commitHandoffRes()                   {}
 func (*NotFoundHeaders) continueHandoffRes()                 {}
+func (*NotFoundHeaders) createWorkContractRes()              {}
 func (*NotFoundHeaders) detachHandoffReportWorkspaceRes()    {}
 func (*NotFoundHeaders) finalizeHandoffRes()                 {}
 func (*NotFoundHeaders) getArtifactCandidateRes()            {}
@@ -7048,6 +7753,7 @@ func (*NotFoundHeaders) getHandoffReportRes()                {}
 func (*NotFoundHeaders) getHandoffReportWorkspaceRes()       {}
 func (*NotFoundHeaders) getMemoryEntryRes()                  {}
 func (*NotFoundHeaders) getSkillRes()                        {}
+func (*NotFoundHeaders) handoffCurrentWorkRes()              {}
 func (*NotFoundHeaders) importExternalSkillRes()             {}
 func (*NotFoundHeaders) listHandoffReportActivitiesRes()     {}
 func (*NotFoundHeaders) listHandoffReportWorkstreamsRes()    {}
@@ -7056,6 +7762,7 @@ func (*NotFoundHeaders) listMemoryEntriesRes()               {}
 func (*NotFoundHeaders) prepareHandoffRes()                  {}
 func (*NotFoundHeaders) purgeHandoffReportActivitiesRes()    {}
 func (*NotFoundHeaders) recordHandoffReportActivityRes()     {}
+func (*NotFoundHeaders) recordTaskOutcomeRes()               {}
 func (*NotFoundHeaders) registerHandoffReportWorkstreamRes() {}
 func (*NotFoundHeaders) rejectArtifactCandidateRes()         {}
 func (*NotFoundHeaders) resolveExternalSkillRes()            {}
@@ -8157,6 +8864,74 @@ func (o OptNilPreparedHandoff) Or(d PreparedHandoff) PreparedHandoff {
 	return d
 }
 
+// NewOptNilReceiverChecks returns new OptNilReceiverChecks with value set to v.
+func NewOptNilReceiverChecks(v ReceiverChecks) OptNilReceiverChecks {
+	return OptNilReceiverChecks{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilReceiverChecks is optional nullable ReceiverChecks.
+type OptNilReceiverChecks struct {
+	Value ReceiverChecks
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilReceiverChecks was set.
+func (o OptNilReceiverChecks) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilReceiverChecks) Reset() {
+	var v ReceiverChecks
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilReceiverChecks) SetTo(v ReceiverChecks) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilReceiverChecks) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilReceiverChecks) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v ReceiverChecks
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilReceiverChecks) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilReceiverChecks) Get() (v ReceiverChecks, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilReceiverChecks) Or(d ReceiverChecks) ReceiverChecks {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
 // NewOptNilReportActivitySourceArray returns new OptNilReportActivitySourceArray with value set to v.
 func NewOptNilReportActivitySourceArray(v []ReportActivitySource) OptNilReportActivitySourceArray {
 	return OptNilReportActivitySourceArray{
@@ -8287,6 +9062,74 @@ func (o OptNilReportLocale) Get() (v ReportLocale, ok bool) {
 
 // Or returns value if set, or given parameter if does not.
 func (o OptNilReportLocale) Or(d ReportLocale) ReportLocale {
+	if v, ok := o.Get(); ok {
+		return v
+	}
+	return d
+}
+
+// NewOptNilSourceReference returns new OptNilSourceReference with value set to v.
+func NewOptNilSourceReference(v SourceReference) OptNilSourceReference {
+	return OptNilSourceReference{
+		Value: v,
+		Set:   true,
+	}
+}
+
+// OptNilSourceReference is optional nullable SourceReference.
+type OptNilSourceReference struct {
+	Value SourceReference
+	Set   bool
+	Null  bool
+}
+
+// IsSet returns true if OptNilSourceReference was set.
+func (o OptNilSourceReference) IsSet() bool { return o.Set }
+
+// Reset unsets value.
+func (o *OptNilSourceReference) Reset() {
+	var v SourceReference
+	o.Value = v
+	o.Set = false
+	o.Null = false
+}
+
+// SetTo sets value to v.
+func (o *OptNilSourceReference) SetTo(v SourceReference) {
+	o.Set = true
+	o.Null = false
+	o.Value = v
+}
+
+// IsNull returns true if value is Null.
+func (o OptNilSourceReference) IsNull() bool { return o.Null }
+
+// SetToNull sets value to null.
+func (o *OptNilSourceReference) SetToNull() {
+	o.Set = true
+	o.Null = true
+	var v SourceReference
+	o.Value = v
+}
+
+// IsEmpty returns true if the field was omitted from the payload (not Set and not Null).
+func (o OptNilSourceReference) IsEmpty() bool {
+	return !o.Set && !o.Null
+}
+
+// Get returns value and boolean that denotes whether value was set.
+func (o OptNilSourceReference) Get() (v SourceReference, ok bool) {
+	if o.Null {
+		return v, false
+	}
+	if !o.Set {
+		return v, false
+	}
+	return o.Value, true
+}
+
+// Or returns value if set, or given parameter if does not.
+func (o OptNilSourceReference) Or(d SourceReference) SourceReference {
 	if v, ok := o.Get(); ok {
 		return v
 	}
@@ -8939,6 +9782,60 @@ func (s *PreparedHandoffSchema) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// Ref: #/components/schemas/PreparedWorkHandoff
+type PreparedWorkHandoff struct {
+	Boundary WorkSourceReceipt `json:"boundary"`
+	Handoff  PreparedHandoff   `json:"handoff"`
+}
+
+// GetBoundary returns the value of Boundary.
+func (s *PreparedWorkHandoff) GetBoundary() WorkSourceReceipt {
+	return s.Boundary
+}
+
+// GetHandoff returns the value of Handoff.
+func (s *PreparedWorkHandoff) GetHandoff() PreparedHandoff {
+	return s.Handoff
+}
+
+// SetBoundary sets the value of Boundary.
+func (s *PreparedWorkHandoff) SetBoundary(val WorkSourceReceipt) {
+	s.Boundary = val
+}
+
+// SetHandoff sets the value of Handoff.
+func (s *PreparedWorkHandoff) SetHandoff(val PreparedHandoff) {
+	s.Handoff = val
+}
+
+// PreparedWorkHandoffHeaders wraps PreparedWorkHandoff with response headers.
+type PreparedWorkHandoffHeaders struct {
+	XPowerContextRequestID OptString
+	Response               PreparedWorkHandoff
+}
+
+// GetXPowerContextRequestID returns the value of XPowerContextRequestID.
+func (s *PreparedWorkHandoffHeaders) GetXPowerContextRequestID() OptString {
+	return s.XPowerContextRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *PreparedWorkHandoffHeaders) GetResponse() PreparedWorkHandoff {
+	return s.Response
+}
+
+// SetXPowerContextRequestID sets the value of XPowerContextRequestID.
+func (s *PreparedWorkHandoffHeaders) SetXPowerContextRequestID(val OptString) {
+	s.XPowerContextRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *PreparedWorkHandoffHeaders) SetResponse(val PreparedWorkHandoff) {
+	s.Response = val
+}
+
+func (*PreparedWorkHandoffHeaders) handoffCurrentWorkRes() {}
 
 // Ref: #/components/schemas/ProjectDescriptor
 type ProjectDescriptor struct {
@@ -9685,6 +10582,94 @@ func (s *RecallTokenValue) SetTokenReduction(val int) {
 	s.TokenReduction = val
 }
 
+// Untrusted receiver self-attestation kept separate from citation availability. All three values must
+// be confirmed when status is accepted.
+// Ref: #/components/schemas/ReceiverChecks
+type ReceiverChecks struct {
+	LiveState     LiveStateCheckStatus         `json:"live_state"`
+	Capability    ReceiverReadinessCheckStatus `json:"capability"`
+	Authorization ReceiverReadinessCheckStatus `json:"authorization"`
+}
+
+// GetLiveState returns the value of LiveState.
+func (s *ReceiverChecks) GetLiveState() LiveStateCheckStatus {
+	return s.LiveState
+}
+
+// GetCapability returns the value of Capability.
+func (s *ReceiverChecks) GetCapability() ReceiverReadinessCheckStatus {
+	return s.Capability
+}
+
+// GetAuthorization returns the value of Authorization.
+func (s *ReceiverChecks) GetAuthorization() ReceiverReadinessCheckStatus {
+	return s.Authorization
+}
+
+// SetLiveState sets the value of LiveState.
+func (s *ReceiverChecks) SetLiveState(val LiveStateCheckStatus) {
+	s.LiveState = val
+}
+
+// SetCapability sets the value of Capability.
+func (s *ReceiverChecks) SetCapability(val ReceiverReadinessCheckStatus) {
+	s.Capability = val
+}
+
+// SetAuthorization sets the value of Authorization.
+func (s *ReceiverChecks) SetAuthorization(val ReceiverReadinessCheckStatus) {
+	s.Authorization = val
+}
+
+// Ref: #/components/schemas/ReceiverReadinessCheckStatus
+type ReceiverReadinessCheckStatus string
+
+const (
+	ReceiverReadinessCheckStatusConfirmed    ReceiverReadinessCheckStatus = "confirmed"
+	ReceiverReadinessCheckStatusInsufficient ReceiverReadinessCheckStatus = "insufficient"
+	ReceiverReadinessCheckStatusNotChecked   ReceiverReadinessCheckStatus = "not_checked"
+)
+
+// AllValues returns all ReceiverReadinessCheckStatus values.
+func (ReceiverReadinessCheckStatus) AllValues() []ReceiverReadinessCheckStatus {
+	return []ReceiverReadinessCheckStatus{
+		ReceiverReadinessCheckStatusConfirmed,
+		ReceiverReadinessCheckStatusInsufficient,
+		ReceiverReadinessCheckStatusNotChecked,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s ReceiverReadinessCheckStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case ReceiverReadinessCheckStatusConfirmed:
+		return []byte(s), nil
+	case ReceiverReadinessCheckStatusInsufficient:
+		return []byte(s), nil
+	case ReceiverReadinessCheckStatusNotChecked:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *ReceiverReadinessCheckStatus) UnmarshalText(data []byte) error {
+	switch ReceiverReadinessCheckStatus(data) {
+	case ReceiverReadinessCheckStatusConfirmed:
+		*s = ReceiverReadinessCheckStatusConfirmed
+		return nil
+	case ReceiverReadinessCheckStatusInsufficient:
+		*s = ReceiverReadinessCheckStatusInsufficient
+		return nil
+	case ReceiverReadinessCheckStatusNotChecked:
+		*s = ReceiverReadinessCheckStatusNotChecked
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/RecordHandoffReportActivityRequest
 type RecordHandoffReportActivityRequest struct {
 	ProjectID     string                                `json:"project_id"`
@@ -9830,6 +10815,43 @@ func (s *RecordHandoffReportActivityRequest) SetVcsContext(val OptNilHandoffRepo
 // SetEvidenceRefs sets the value of EvidenceRefs.
 func (s *RecordHandoffReportActivityRequest) SetEvidenceRefs(val []HandoffReportExternalReference) {
 	s.EvidenceRefs = val
+}
+
+// Ref: #/components/schemas/RecordTaskOutcomeRequest
+type RecordTaskOutcomeRequest struct {
+	ScopeID  string      `json:"scope_id"`
+	SourceID string      `json:"source_id"`
+	Outcome  TaskOutcome `json:"outcome"`
+}
+
+// GetScopeID returns the value of ScopeID.
+func (s *RecordTaskOutcomeRequest) GetScopeID() string {
+	return s.ScopeID
+}
+
+// GetSourceID returns the value of SourceID.
+func (s *RecordTaskOutcomeRequest) GetSourceID() string {
+	return s.SourceID
+}
+
+// GetOutcome returns the value of Outcome.
+func (s *RecordTaskOutcomeRequest) GetOutcome() TaskOutcome {
+	return s.Outcome
+}
+
+// SetScopeID sets the value of ScopeID.
+func (s *RecordTaskOutcomeRequest) SetScopeID(val string) {
+	s.ScopeID = val
+}
+
+// SetSourceID sets the value of SourceID.
+func (s *RecordTaskOutcomeRequest) SetSourceID(val string) {
+	s.SourceID = val
+}
+
+// SetOutcome sets the value of Outcome.
+func (s *RecordTaskOutcomeRequest) SetOutcome(val TaskOutcome) {
+	s.Outcome = val
 }
 
 // Ref: #/components/schemas/RegisterHandoffReportWorkstreamRequest
@@ -11362,6 +12384,394 @@ func (s *StoredHandoffReportActivityHeaders) SetResponse(val StoredHandoffReport
 
 func (*StoredHandoffReportActivityHeaders) recordHandoffReportActivityRes() {}
 
+// Ref: #/components/schemas/TaskCheck
+type TaskCheck struct {
+	Name     string            `json:"name"`
+	Status   TaskCheckStatus   `json:"status"`
+	Details  OptNilString      `json:"details"`
+	Basis    WorkClaimBasis    `json:"basis"`
+	Evidence []HandoffCitation `json:"evidence"`
+}
+
+// GetName returns the value of Name.
+func (s *TaskCheck) GetName() string {
+	return s.Name
+}
+
+// GetStatus returns the value of Status.
+func (s *TaskCheck) GetStatus() TaskCheckStatus {
+	return s.Status
+}
+
+// GetDetails returns the value of Details.
+func (s *TaskCheck) GetDetails() OptNilString {
+	return s.Details
+}
+
+// GetBasis returns the value of Basis.
+func (s *TaskCheck) GetBasis() WorkClaimBasis {
+	return s.Basis
+}
+
+// GetEvidence returns the value of Evidence.
+func (s *TaskCheck) GetEvidence() []HandoffCitation {
+	return s.Evidence
+}
+
+// SetName sets the value of Name.
+func (s *TaskCheck) SetName(val string) {
+	s.Name = val
+}
+
+// SetStatus sets the value of Status.
+func (s *TaskCheck) SetStatus(val TaskCheckStatus) {
+	s.Status = val
+}
+
+// SetDetails sets the value of Details.
+func (s *TaskCheck) SetDetails(val OptNilString) {
+	s.Details = val
+}
+
+// SetBasis sets the value of Basis.
+func (s *TaskCheck) SetBasis(val WorkClaimBasis) {
+	s.Basis = val
+}
+
+// SetEvidence sets the value of Evidence.
+func (s *TaskCheck) SetEvidence(val []HandoffCitation) {
+	s.Evidence = val
+}
+
+// Ref: #/components/schemas/TaskCheckStatus
+type TaskCheckStatus string
+
+const (
+	TaskCheckStatusPassed      TaskCheckStatus = "passed"
+	TaskCheckStatusFailed      TaskCheckStatus = "failed"
+	TaskCheckStatusSkipped     TaskCheckStatus = "skipped"
+	TaskCheckStatusTimedOut    TaskCheckStatus = "timed_out"
+	TaskCheckStatusUnavailable TaskCheckStatus = "unavailable"
+	TaskCheckStatusCancelled   TaskCheckStatus = "cancelled"
+	TaskCheckStatusUnknown     TaskCheckStatus = "unknown"
+)
+
+// AllValues returns all TaskCheckStatus values.
+func (TaskCheckStatus) AllValues() []TaskCheckStatus {
+	return []TaskCheckStatus{
+		TaskCheckStatusPassed,
+		TaskCheckStatusFailed,
+		TaskCheckStatusSkipped,
+		TaskCheckStatusTimedOut,
+		TaskCheckStatusUnavailable,
+		TaskCheckStatusCancelled,
+		TaskCheckStatusUnknown,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskCheckStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskCheckStatusPassed:
+		return []byte(s), nil
+	case TaskCheckStatusFailed:
+		return []byte(s), nil
+	case TaskCheckStatusSkipped:
+		return []byte(s), nil
+	case TaskCheckStatusTimedOut:
+		return []byte(s), nil
+	case TaskCheckStatusUnavailable:
+		return []byte(s), nil
+	case TaskCheckStatusCancelled:
+		return []byte(s), nil
+	case TaskCheckStatusUnknown:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskCheckStatus) UnmarshalText(data []byte) error {
+	switch TaskCheckStatus(data) {
+	case TaskCheckStatusPassed:
+		*s = TaskCheckStatusPassed
+		return nil
+	case TaskCheckStatusFailed:
+		*s = TaskCheckStatusFailed
+		return nil
+	case TaskCheckStatusSkipped:
+		*s = TaskCheckStatusSkipped
+		return nil
+	case TaskCheckStatusTimedOut:
+		*s = TaskCheckStatusTimedOut
+		return nil
+	case TaskCheckStatusUnavailable:
+		*s = TaskCheckStatusUnavailable
+		return nil
+	case TaskCheckStatusCancelled:
+		*s = TaskCheckStatusCancelled
+		return nil
+	case TaskCheckStatusUnknown:
+		*s = TaskCheckStatusUnknown
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/TaskOutcome
+type TaskOutcome struct {
+	Schema            TaskOutcomeSchema     `json:"schema"`
+	Trust             TaskOutcomeTrust      `json:"trust"`
+	Objective         string                `json:"objective"`
+	Status            TaskOutcomeStatus     `json:"status"`
+	Summary           string                `json:"summary"`
+	HandoffReceiptRef OptNilSourceReference `json:"handoff_receipt_ref"`
+	Observations      []WorkClaim           `json:"observations"`
+	Checks            []TaskCheck           `json:"checks"`
+	ProducedArtifacts []ArtifactReference   `json:"produced_artifacts"`
+	RemainingWork     []string              `json:"remaining_work"`
+}
+
+// GetSchema returns the value of Schema.
+func (s *TaskOutcome) GetSchema() TaskOutcomeSchema {
+	return s.Schema
+}
+
+// GetTrust returns the value of Trust.
+func (s *TaskOutcome) GetTrust() TaskOutcomeTrust {
+	return s.Trust
+}
+
+// GetObjective returns the value of Objective.
+func (s *TaskOutcome) GetObjective() string {
+	return s.Objective
+}
+
+// GetStatus returns the value of Status.
+func (s *TaskOutcome) GetStatus() TaskOutcomeStatus {
+	return s.Status
+}
+
+// GetSummary returns the value of Summary.
+func (s *TaskOutcome) GetSummary() string {
+	return s.Summary
+}
+
+// GetHandoffReceiptRef returns the value of HandoffReceiptRef.
+func (s *TaskOutcome) GetHandoffReceiptRef() OptNilSourceReference {
+	return s.HandoffReceiptRef
+}
+
+// GetObservations returns the value of Observations.
+func (s *TaskOutcome) GetObservations() []WorkClaim {
+	return s.Observations
+}
+
+// GetChecks returns the value of Checks.
+func (s *TaskOutcome) GetChecks() []TaskCheck {
+	return s.Checks
+}
+
+// GetProducedArtifacts returns the value of ProducedArtifacts.
+func (s *TaskOutcome) GetProducedArtifacts() []ArtifactReference {
+	return s.ProducedArtifacts
+}
+
+// GetRemainingWork returns the value of RemainingWork.
+func (s *TaskOutcome) GetRemainingWork() []string {
+	return s.RemainingWork
+}
+
+// SetSchema sets the value of Schema.
+func (s *TaskOutcome) SetSchema(val TaskOutcomeSchema) {
+	s.Schema = val
+}
+
+// SetTrust sets the value of Trust.
+func (s *TaskOutcome) SetTrust(val TaskOutcomeTrust) {
+	s.Trust = val
+}
+
+// SetObjective sets the value of Objective.
+func (s *TaskOutcome) SetObjective(val string) {
+	s.Objective = val
+}
+
+// SetStatus sets the value of Status.
+func (s *TaskOutcome) SetStatus(val TaskOutcomeStatus) {
+	s.Status = val
+}
+
+// SetSummary sets the value of Summary.
+func (s *TaskOutcome) SetSummary(val string) {
+	s.Summary = val
+}
+
+// SetHandoffReceiptRef sets the value of HandoffReceiptRef.
+func (s *TaskOutcome) SetHandoffReceiptRef(val OptNilSourceReference) {
+	s.HandoffReceiptRef = val
+}
+
+// SetObservations sets the value of Observations.
+func (s *TaskOutcome) SetObservations(val []WorkClaim) {
+	s.Observations = val
+}
+
+// SetChecks sets the value of Checks.
+func (s *TaskOutcome) SetChecks(val []TaskCheck) {
+	s.Checks = val
+}
+
+// SetProducedArtifacts sets the value of ProducedArtifacts.
+func (s *TaskOutcome) SetProducedArtifacts(val []ArtifactReference) {
+	s.ProducedArtifacts = val
+}
+
+// SetRemainingWork sets the value of RemainingWork.
+func (s *TaskOutcome) SetRemainingWork(val []string) {
+	s.RemainingWork = val
+}
+
+type TaskOutcomeSchema string
+
+const (
+	TaskOutcomeSchemaPowercontextTaskOutcomeV1 TaskOutcomeSchema = "powercontext.task-outcome.v1"
+)
+
+// AllValues returns all TaskOutcomeSchema values.
+func (TaskOutcomeSchema) AllValues() []TaskOutcomeSchema {
+	return []TaskOutcomeSchema{
+		TaskOutcomeSchemaPowercontextTaskOutcomeV1,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskOutcomeSchema) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskOutcomeSchemaPowercontextTaskOutcomeV1:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskOutcomeSchema) UnmarshalText(data []byte) error {
+	switch TaskOutcomeSchema(data) {
+	case TaskOutcomeSchemaPowercontextTaskOutcomeV1:
+		*s = TaskOutcomeSchemaPowercontextTaskOutcomeV1
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/TaskOutcomeStatus
+type TaskOutcomeStatus string
+
+const (
+	TaskOutcomeStatusSucceeded TaskOutcomeStatus = "succeeded"
+	TaskOutcomeStatusPartial   TaskOutcomeStatus = "partial"
+	TaskOutcomeStatusBlocked   TaskOutcomeStatus = "blocked"
+	TaskOutcomeStatusFailed    TaskOutcomeStatus = "failed"
+	TaskOutcomeStatusCancelled TaskOutcomeStatus = "cancelled"
+	TaskOutcomeStatusUnknown   TaskOutcomeStatus = "unknown"
+)
+
+// AllValues returns all TaskOutcomeStatus values.
+func (TaskOutcomeStatus) AllValues() []TaskOutcomeStatus {
+	return []TaskOutcomeStatus{
+		TaskOutcomeStatusSucceeded,
+		TaskOutcomeStatusPartial,
+		TaskOutcomeStatusBlocked,
+		TaskOutcomeStatusFailed,
+		TaskOutcomeStatusCancelled,
+		TaskOutcomeStatusUnknown,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskOutcomeStatus) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskOutcomeStatusSucceeded:
+		return []byte(s), nil
+	case TaskOutcomeStatusPartial:
+		return []byte(s), nil
+	case TaskOutcomeStatusBlocked:
+		return []byte(s), nil
+	case TaskOutcomeStatusFailed:
+		return []byte(s), nil
+	case TaskOutcomeStatusCancelled:
+		return []byte(s), nil
+	case TaskOutcomeStatusUnknown:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskOutcomeStatus) UnmarshalText(data []byte) error {
+	switch TaskOutcomeStatus(data) {
+	case TaskOutcomeStatusSucceeded:
+		*s = TaskOutcomeStatusSucceeded
+		return nil
+	case TaskOutcomeStatusPartial:
+		*s = TaskOutcomeStatusPartial
+		return nil
+	case TaskOutcomeStatusBlocked:
+		*s = TaskOutcomeStatusBlocked
+		return nil
+	case TaskOutcomeStatusFailed:
+		*s = TaskOutcomeStatusFailed
+		return nil
+	case TaskOutcomeStatusCancelled:
+		*s = TaskOutcomeStatusCancelled
+		return nil
+	case TaskOutcomeStatusUnknown:
+		*s = TaskOutcomeStatusUnknown
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type TaskOutcomeTrust string
+
+const (
+	TaskOutcomeTrustUntrustedObservation TaskOutcomeTrust = "untrusted_observation"
+)
+
+// AllValues returns all TaskOutcomeTrust values.
+func (TaskOutcomeTrust) AllValues() []TaskOutcomeTrust {
+	return []TaskOutcomeTrust{
+		TaskOutcomeTrustUntrustedObservation,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s TaskOutcomeTrust) MarshalText() ([]byte, error) {
+	switch s {
+	case TaskOutcomeTrustUntrustedObservation:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *TaskOutcomeTrust) UnmarshalText(data []byte) error {
+	switch TaskOutcomeTrust(data) {
+	case TaskOutcomeTrustUntrustedObservation:
+		*s = TaskOutcomeTrustUntrustedObservation
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
 // Ref: #/components/schemas/TokenEstimatorProfile
 type TokenEstimatorProfile struct {
 	EstimatorID string `json:"estimator_id"`
@@ -11425,6 +12835,7 @@ func (s *UnauthorizedHeaders) SetResponse(val ErrorResponse) {
 	s.Response = val
 }
 
+func (*UnauthorizedHeaders) acknowledgeHandoffRes()              {}
 func (*UnauthorizedHeaders) activateHandoffRes()                 {}
 func (*UnauthorizedHeaders) approveArtifactCandidateRes()        {}
 func (*UnauthorizedHeaders) attachHandoffReportWorkspaceRes()    {}
@@ -11432,6 +12843,7 @@ func (*UnauthorizedHeaders) captureContentSourceRes()            {}
 func (*UnauthorizedHeaders) commitHandoffRes()                   {}
 func (*UnauthorizedHeaders) continueHandoffRes()                 {}
 func (*UnauthorizedHeaders) createHandoffReportProjectRes()      {}
+func (*UnauthorizedHeaders) createWorkContractRes()              {}
 func (*UnauthorizedHeaders) detachHandoffReportWorkspaceRes()    {}
 func (*UnauthorizedHeaders) finalizeHandoffRes()                 {}
 func (*UnauthorizedHeaders) flushMemoryRes()                     {}
@@ -11446,10 +12858,12 @@ func (*UnauthorizedHeaders) getHandoffReportWorkspaceRes()       {}
 func (*UnauthorizedHeaders) getMemoryEntryRes()                  {}
 func (*UnauthorizedHeaders) getSkillRes()                        {}
 func (*UnauthorizedHeaders) getStatsRes()                        {}
+func (*UnauthorizedHeaders) handoffCurrentWorkRes()              {}
 func (*UnauthorizedHeaders) importExternalSkillRes()             {}
 func (*UnauthorizedHeaders) listArtifactCandidatesRes()          {}
 func (*UnauthorizedHeaders) listExternalSkillsRes()              {}
 func (*UnauthorizedHeaders) listHandoffReportActivitiesRes()     {}
+func (*UnauthorizedHeaders) listHandoffReportKnownScopesRes()    {}
 func (*UnauthorizedHeaders) listHandoffReportProjectsRes()       {}
 func (*UnauthorizedHeaders) listHandoffReportWorkstreamsRes()    {}
 func (*UnauthorizedHeaders) listMemoryChangesRes()               {}
@@ -11460,6 +12874,7 @@ func (*UnauthorizedHeaders) proposeExperienceRes()               {}
 func (*UnauthorizedHeaders) proposeSkillRes()                    {}
 func (*UnauthorizedHeaders) purgeHandoffReportActivitiesRes()    {}
 func (*UnauthorizedHeaders) recordHandoffReportActivityRes()     {}
+func (*UnauthorizedHeaders) recordTaskOutcomeRes()               {}
 func (*UnauthorizedHeaders) registerHandoffReportWorkstreamRes() {}
 func (*UnauthorizedHeaders) rejectArtifactCandidateRes()         {}
 func (*UnauthorizedHeaders) rememberMemoryRes()                  {}
@@ -11498,11 +12913,13 @@ func (s *UnavailableHeaders) SetResponse(val ErrorResponse) {
 	s.Response = val
 }
 
+func (*UnavailableHeaders) acknowledgeHandoffRes()       {}
 func (*UnavailableHeaders) activateHandoffRes()          {}
 func (*UnavailableHeaders) approveArtifactCandidateRes() {}
 func (*UnavailableHeaders) captureContentSourceRes()     {}
 func (*UnavailableHeaders) commitHandoffRes()            {}
 func (*UnavailableHeaders) continueHandoffRes()          {}
+func (*UnavailableHeaders) createWorkContractRes()       {}
 func (*UnavailableHeaders) finalizeHandoffRes()          {}
 func (*UnavailableHeaders) flushMemoryRes()              {}
 func (*UnavailableHeaders) generateExperienceRes()       {}
@@ -11513,6 +12930,7 @@ func (*UnavailableHeaders) getHandoffReportRes()         {}
 func (*UnavailableHeaders) getMemoryEntryRes()           {}
 func (*UnavailableHeaders) getSkillRes()                 {}
 func (*UnavailableHeaders) getStatsRes()                 {}
+func (*UnavailableHeaders) handoffCurrentWorkRes()       {}
 func (*UnavailableHeaders) importExternalSkillRes()      {}
 func (*UnavailableHeaders) listArtifactCandidatesRes()   {}
 func (*UnavailableHeaders) listExternalSkillsRes()       {}
@@ -11522,6 +12940,7 @@ func (*UnavailableHeaders) prepareContextRes()           {}
 func (*UnavailableHeaders) prepareHandoffRes()           {}
 func (*UnavailableHeaders) proposeExperienceRes()        {}
 func (*UnavailableHeaders) proposeSkillRes()             {}
+func (*UnavailableHeaders) recordTaskOutcomeRes()        {}
 func (*UnavailableHeaders) rejectArtifactCandidateRes()  {}
 func (*UnavailableHeaders) rememberMemoryRes()           {}
 func (*UnavailableHeaders) resolveExternalSkillRes()     {}
@@ -11630,6 +13049,389 @@ func (s *UsageStatistics) SetByPurpose(val []ModelUsagePurposeBreakdown) {
 func (s *UsageStatistics) SetDaily(val []ModelUsageDay) {
 	s.Daily = val
 }
+
+// Ref: #/components/schemas/WorkClaim
+type WorkClaim struct {
+	Text     string            `json:"text"`
+	Basis    WorkClaimBasis    `json:"basis"`
+	Evidence []HandoffCitation `json:"evidence"`
+}
+
+// GetText returns the value of Text.
+func (s *WorkClaim) GetText() string {
+	return s.Text
+}
+
+// GetBasis returns the value of Basis.
+func (s *WorkClaim) GetBasis() WorkClaimBasis {
+	return s.Basis
+}
+
+// GetEvidence returns the value of Evidence.
+func (s *WorkClaim) GetEvidence() []HandoffCitation {
+	return s.Evidence
+}
+
+// SetText sets the value of Text.
+func (s *WorkClaim) SetText(val string) {
+	s.Text = val
+}
+
+// SetBasis sets the value of Basis.
+func (s *WorkClaim) SetBasis(val WorkClaimBasis) {
+	s.Basis = val
+}
+
+// SetEvidence sets the value of Evidence.
+func (s *WorkClaim) SetEvidence(val []HandoffCitation) {
+	s.Evidence = val
+}
+
+// Ref: #/components/schemas/WorkClaimBasis
+type WorkClaimBasis string
+
+const (
+	WorkClaimBasisDeclared WorkClaimBasis = "declared"
+	WorkClaimBasisVerified WorkClaimBasis = "verified"
+)
+
+// AllValues returns all WorkClaimBasis values.
+func (WorkClaimBasis) AllValues() []WorkClaimBasis {
+	return []WorkClaimBasis{
+		WorkClaimBasisDeclared,
+		WorkClaimBasisVerified,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkClaimBasis) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkClaimBasisDeclared:
+		return []byte(s), nil
+	case WorkClaimBasisVerified:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkClaimBasis) UnmarshalText(data []byte) error {
+	switch WorkClaimBasis(data) {
+	case WorkClaimBasisDeclared:
+		*s = WorkClaimBasisDeclared
+		return nil
+	case WorkClaimBasisVerified:
+		*s = WorkClaimBasisVerified
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/WorkContract
+type WorkContract struct {
+	Schema             WorkContractSchema `json:"schema"`
+	Trust              WorkContractTrust  `json:"trust"`
+	Objective          string             `json:"objective"`
+	Facts              []WorkClaim        `json:"facts"`
+	InScope            []string           `json:"in_scope"`
+	Exclusions         []string           `json:"exclusions"`
+	CompletionCriteria []string           `json:"completion_criteria"`
+	AuthorizationNotes []string           `json:"authorization_notes"`
+	OpenQuestions      []string           `json:"open_questions"`
+}
+
+// GetSchema returns the value of Schema.
+func (s *WorkContract) GetSchema() WorkContractSchema {
+	return s.Schema
+}
+
+// GetTrust returns the value of Trust.
+func (s *WorkContract) GetTrust() WorkContractTrust {
+	return s.Trust
+}
+
+// GetObjective returns the value of Objective.
+func (s *WorkContract) GetObjective() string {
+	return s.Objective
+}
+
+// GetFacts returns the value of Facts.
+func (s *WorkContract) GetFacts() []WorkClaim {
+	return s.Facts
+}
+
+// GetInScope returns the value of InScope.
+func (s *WorkContract) GetInScope() []string {
+	return s.InScope
+}
+
+// GetExclusions returns the value of Exclusions.
+func (s *WorkContract) GetExclusions() []string {
+	return s.Exclusions
+}
+
+// GetCompletionCriteria returns the value of CompletionCriteria.
+func (s *WorkContract) GetCompletionCriteria() []string {
+	return s.CompletionCriteria
+}
+
+// GetAuthorizationNotes returns the value of AuthorizationNotes.
+func (s *WorkContract) GetAuthorizationNotes() []string {
+	return s.AuthorizationNotes
+}
+
+// GetOpenQuestions returns the value of OpenQuestions.
+func (s *WorkContract) GetOpenQuestions() []string {
+	return s.OpenQuestions
+}
+
+// SetSchema sets the value of Schema.
+func (s *WorkContract) SetSchema(val WorkContractSchema) {
+	s.Schema = val
+}
+
+// SetTrust sets the value of Trust.
+func (s *WorkContract) SetTrust(val WorkContractTrust) {
+	s.Trust = val
+}
+
+// SetObjective sets the value of Objective.
+func (s *WorkContract) SetObjective(val string) {
+	s.Objective = val
+}
+
+// SetFacts sets the value of Facts.
+func (s *WorkContract) SetFacts(val []WorkClaim) {
+	s.Facts = val
+}
+
+// SetInScope sets the value of InScope.
+func (s *WorkContract) SetInScope(val []string) {
+	s.InScope = val
+}
+
+// SetExclusions sets the value of Exclusions.
+func (s *WorkContract) SetExclusions(val []string) {
+	s.Exclusions = val
+}
+
+// SetCompletionCriteria sets the value of CompletionCriteria.
+func (s *WorkContract) SetCompletionCriteria(val []string) {
+	s.CompletionCriteria = val
+}
+
+// SetAuthorizationNotes sets the value of AuthorizationNotes.
+func (s *WorkContract) SetAuthorizationNotes(val []string) {
+	s.AuthorizationNotes = val
+}
+
+// SetOpenQuestions sets the value of OpenQuestions.
+func (s *WorkContract) SetOpenQuestions(val []string) {
+	s.OpenQuestions = val
+}
+
+type WorkContractSchema string
+
+const (
+	WorkContractSchemaPowercontextWorkContractV1 WorkContractSchema = "powercontext.work-contract.v1"
+)
+
+// AllValues returns all WorkContractSchema values.
+func (WorkContractSchema) AllValues() []WorkContractSchema {
+	return []WorkContractSchema{
+		WorkContractSchemaPowercontextWorkContractV1,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkContractSchema) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkContractSchemaPowercontextWorkContractV1:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkContractSchema) UnmarshalText(data []byte) error {
+	switch WorkContractSchema(data) {
+	case WorkContractSchemaPowercontextWorkContractV1:
+		*s = WorkContractSchemaPowercontextWorkContractV1
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+type WorkContractTrust string
+
+const (
+	WorkContractTrustUntrustedInput WorkContractTrust = "untrusted_input"
+)
+
+// AllValues returns all WorkContractTrust values.
+func (WorkContractTrust) AllValues() []WorkContractTrust {
+	return []WorkContractTrust{
+		WorkContractTrustUntrustedInput,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkContractTrust) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkContractTrustUntrustedInput:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkContractTrust) UnmarshalText(data []byte) error {
+	switch WorkContractTrust(data) {
+	case WorkContractTrustUntrustedInput:
+		*s = WorkContractTrustUntrustedInput
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/WorkSourceKind
+type WorkSourceKind string
+
+const (
+	WorkSourceKindWorkContract    WorkSourceKind = "work-contract"
+	WorkSourceKindHandoffBoundary WorkSourceKind = "handoff-boundary"
+	WorkSourceKindHandoffReceipt  WorkSourceKind = "handoff-receipt"
+	WorkSourceKindTaskOutcome     WorkSourceKind = "task-outcome"
+)
+
+// AllValues returns all WorkSourceKind values.
+func (WorkSourceKind) AllValues() []WorkSourceKind {
+	return []WorkSourceKind{
+		WorkSourceKindWorkContract,
+		WorkSourceKindHandoffBoundary,
+		WorkSourceKindHandoffReceipt,
+		WorkSourceKindTaskOutcome,
+	}
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (s WorkSourceKind) MarshalText() ([]byte, error) {
+	switch s {
+	case WorkSourceKindWorkContract:
+		return []byte(s), nil
+	case WorkSourceKindHandoffBoundary:
+		return []byte(s), nil
+	case WorkSourceKindHandoffReceipt:
+		return []byte(s), nil
+	case WorkSourceKindTaskOutcome:
+		return []byte(s), nil
+	default:
+		return nil, errors.Errorf("invalid value: %q", s)
+	}
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (s *WorkSourceKind) UnmarshalText(data []byte) error {
+	switch WorkSourceKind(data) {
+	case WorkSourceKindWorkContract:
+		*s = WorkSourceKindWorkContract
+		return nil
+	case WorkSourceKindHandoffBoundary:
+		*s = WorkSourceKindHandoffBoundary
+		return nil
+	case WorkSourceKindHandoffReceipt:
+		*s = WorkSourceKindHandoffReceipt
+		return nil
+	case WorkSourceKindTaskOutcome:
+		*s = WorkSourceKindTaskOutcome
+		return nil
+	default:
+		return errors.Errorf("invalid value: %q", data)
+	}
+}
+
+// Ref: #/components/schemas/WorkSourceReceipt
+type WorkSourceReceipt struct {
+	Kind          WorkSourceKind  `json:"kind"`
+	Source        SourceReference `json:"source"`
+	Position      int             `json:"position"`
+	ContentDigest string          `json:"content_digest"`
+}
+
+// GetKind returns the value of Kind.
+func (s *WorkSourceReceipt) GetKind() WorkSourceKind {
+	return s.Kind
+}
+
+// GetSource returns the value of Source.
+func (s *WorkSourceReceipt) GetSource() SourceReference {
+	return s.Source
+}
+
+// GetPosition returns the value of Position.
+func (s *WorkSourceReceipt) GetPosition() int {
+	return s.Position
+}
+
+// GetContentDigest returns the value of ContentDigest.
+func (s *WorkSourceReceipt) GetContentDigest() string {
+	return s.ContentDigest
+}
+
+// SetKind sets the value of Kind.
+func (s *WorkSourceReceipt) SetKind(val WorkSourceKind) {
+	s.Kind = val
+}
+
+// SetSource sets the value of Source.
+func (s *WorkSourceReceipt) SetSource(val SourceReference) {
+	s.Source = val
+}
+
+// SetPosition sets the value of Position.
+func (s *WorkSourceReceipt) SetPosition(val int) {
+	s.Position = val
+}
+
+// SetContentDigest sets the value of ContentDigest.
+func (s *WorkSourceReceipt) SetContentDigest(val string) {
+	s.ContentDigest = val
+}
+
+// WorkSourceReceiptHeaders wraps WorkSourceReceipt with response headers.
+type WorkSourceReceiptHeaders struct {
+	XPowerContextRequestID OptString
+	Response               WorkSourceReceipt
+}
+
+// GetXPowerContextRequestID returns the value of XPowerContextRequestID.
+func (s *WorkSourceReceiptHeaders) GetXPowerContextRequestID() OptString {
+	return s.XPowerContextRequestID
+}
+
+// GetResponse returns the value of Response.
+func (s *WorkSourceReceiptHeaders) GetResponse() WorkSourceReceipt {
+	return s.Response
+}
+
+// SetXPowerContextRequestID sets the value of XPowerContextRequestID.
+func (s *WorkSourceReceiptHeaders) SetXPowerContextRequestID(val OptString) {
+	s.XPowerContextRequestID = val
+}
+
+// SetResponse sets the value of Response.
+func (s *WorkSourceReceiptHeaders) SetResponse(val WorkSourceReceipt) {
+	s.Response = val
+}
+
+func (*WorkSourceReceiptHeaders) createWorkContractRes() {}
+func (*WorkSourceReceiptHeaders) recordTaskOutcomeRes()  {}
 
 // Ref: #/components/schemas/WorkstreamDescriptor
 type WorkstreamDescriptor struct {

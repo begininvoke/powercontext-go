@@ -26,7 +26,7 @@ func TestExternalSkillReplacementIsScopedAtomicAndDeterministic(t *testing.T) {
 	}
 	first := externalRegistration(t, "friendly-python", "/workspace/friendly-python", "a")
 	second := externalRegistration(t, "piglet", "/workspace/piglet", "b")
-	if _, err := store.Replace(ctx, "codex", "workstation-1", []skill.Registration{second, first}); err != nil {
+	if _, err := store.Replace(ctx, []string{"codex"}, "workstation-1", []skill.Registration{second, first}); err != nil {
 		t.Fatal(err)
 	}
 	listed, err := store.List(ctx)
@@ -41,7 +41,7 @@ func TestExternalSkillReplacementIsScopedAtomicAndDeterministic(t *testing.T) {
 	// replacement deletes first, so this also proves the surrounding transaction
 	// restores the preceding projection on insert failure.
 	conflict := externalRegistration(t, "conflict", first.Locator(), "c")
-	if _, err := store.Replace(ctx, "codex", "workstation-1", []skill.Registration{first, conflict}); err == nil {
+	if _, err := store.Replace(ctx, []string{"codex"}, "workstation-1", []skill.Registration{first, conflict}); err == nil {
 		t.Fatal("expected binding conflict")
 	}
 	listed, err = store.List(ctx)
@@ -60,6 +60,34 @@ func TestExternalSkillReplacementIsScopedAtomicAndDeterministic(t *testing.T) {
 	var missing *skill.ExternalNotFoundError
 	if !errors.As(err, &missing) {
 		t.Fatalf("expected scoped not found, got %v", err)
+	}
+}
+
+func TestExternalSkillReplacementAtomicallyCoversAllAgentProviders(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	database := openTestDatabase(t)
+	store, err := sqlstore.NewExternalSkillStore(database, "project:example")
+	if err != nil {
+		t.Fatal(err)
+	}
+	codex := externalRegistration(t, "codex-review", "/workspace/codex-review", "a")
+	claude := externalRegistrationForProvider(
+		t, "claude_code", "claude-review", "/workspace/claude-review", "b",
+	)
+	providers := []string{"codex", "claude_code"}
+	if _, err := store.Replace(ctx, providers, "workstation-1", []skill.Registration{codex, claude}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Replace(ctx, providers, "workstation-1", []skill.Registration{codex}); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := store.List(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(listed) != 1 || listed[0].Provider() != "codex" {
+		t.Fatalf("mixed-provider replacement left stale registrations: %#v", listed)
 	}
 }
 
@@ -166,13 +194,20 @@ func TestScopedStatisticsPreservesIncompleteUsageAndRecallProfile(t *testing.T) 
 }
 
 func externalRegistration(t *testing.T, name, locator, fingerprintPrefix string) skill.Registration {
+	return externalRegistrationForProvider(t, "codex", name, locator, fingerprintPrefix)
+}
+
+func externalRegistrationForProvider(
+	t *testing.T,
+	provider, name, locator, fingerprintPrefix string,
+) skill.Registration {
 	t.Helper()
 	fingerprint := fingerprintPrefix
 	for len(fingerprint) < 64 {
 		fingerprint += fingerprintPrefix
 	}
 	value, err := skill.NewRegistration(
-		"codex:project:repository/"+name, "codex", "codex", "workstation-1",
+		provider+":project:repository/"+name, provider, provider, "workstation-1",
 		skill.ProjectScope, locator, fingerprint[:64], name, "Use "+name+" for a bounded task.",
 	)
 	if err != nil {

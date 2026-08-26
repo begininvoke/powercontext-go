@@ -13,6 +13,16 @@ type UnimplementedHandler struct{}
 
 var _ Handler = UnimplementedHandler{}
 
+// AcknowledgeHandoff implements acknowledge_handoff operation.
+//
+// Re-resolve one prepared or exact Handoff, check evidence, and capture the receiver's explicit
+// live-state, capability, and authorization checks.
+//
+// POST /v1/work/handoffs/acknowledge
+func (UnimplementedHandler) AcknowledgeHandoff(ctx context.Context, req *AcknowledgeHandoffRequest) (r AcknowledgeHandoffRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ActivateHandoff implements activate_handoff operation.
 //
 // Evaluate the standard Handoff Trigger and synchronously execute any emitted PrepareHandoff Action.
@@ -73,6 +83,15 @@ func (UnimplementedHandler) ContinueHandoff(ctx context.Context, req *ContinueHa
 //
 // POST /v1/handoff-reports/projects/create
 func (UnimplementedHandler) CreateHandoffReportProject(ctx context.Context, req *CreateHandoffReportProjectRequest) (r CreateHandoffReportProjectRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// CreateWorkContract implements create_work_contract operation.
+//
+// Persist an inspectable delegation baseline without granting execution authority.
+//
+// POST /v1/work/contracts/create
+func (UnimplementedHandler) CreateWorkContract(ctx context.Context, req *CreateWorkContractRequest) (r CreateWorkContractRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -222,6 +241,16 @@ func (UnimplementedHandler) GetStats(ctx context.Context, params GetStatsParams)
 	return r, ht.ErrNotImplemented
 }
 
+// HandoffCurrentWork implements handoff_current_work operation.
+//
+// Capture an inspected boundary and prepare a temporary evidence-bearing Handoff without committing
+// it.
+//
+// POST /v1/work/handoffs/prepare-current
+func (UnimplementedHandler) HandoffCurrentWork(ctx context.Context, req *HandoffCurrentWorkRequest) (r HandoffCurrentWorkRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // ImportExternalSkill implements import_external_skill operation.
 //
 // Capture one exact local snapshot and use the configured model to propose a new managed Skill
@@ -256,6 +285,15 @@ func (UnimplementedHandler) ListExternalSkills(ctx context.Context, req *ListExt
 //
 // POST /v1/handoff-reports/activities/list
 func (UnimplementedHandler) ListHandoffReportActivities(ctx context.Context, req *ListHandoffReportActivitiesRequest) (r ListHandoffReportActivitiesRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// ListHandoffReportKnownScopes implements list_handoff_report_known_scopes operation.
+//
+// List scopes that contain a committed Handoff.
+//
+// POST /v1/handoff-reports/scopes/list-known
+func (UnimplementedHandler) ListHandoffReportKnownScopes(ctx context.Context, req *ListHandoffReportKnownScopesRequest) (r ListHandoffReportKnownScopesRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 
@@ -347,6 +385,16 @@ func (UnimplementedHandler) PurgeHandoffReportActivities(ctx context.Context, re
 //
 // POST /v1/handoff-reports/activities/record
 func (UnimplementedHandler) RecordHandoffReportActivity(ctx context.Context, req *RecordHandoffReportActivityRequest) (r RecordHandoffReportActivityRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
+// RecordTaskOutcome implements record_task_outcome operation.
+//
+// Preserve one attempt's status and checks, optionally linked to the exact accepted Handoff Receipt
+// that the result covers.
+//
+// POST /v1/work/outcomes/record
+func (UnimplementedHandler) RecordTaskOutcome(ctx context.Context, req *RecordTaskOutcomeRequest) (r RecordTaskOutcomeRes, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

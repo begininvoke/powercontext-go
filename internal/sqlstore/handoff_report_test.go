@@ -270,13 +270,13 @@ func TestHandoffReportWorkspaceRequiresDetachBeforeProjectMove(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	remote := "HTTPS://GitHub.com/oceanbase/powercontext.git/"
+	remote := "HTTPS://GitHub.com/ob-labs/powercontext-go.git/"
 	subpath := "./services/api"
 	repository, err := handoffreport.NewRepositoryRef(handoffreport.RepositoryGitHub, nil, &remote, &subpath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := *repository.NormalizedRemote(); got != "https://github.com/oceanbase/powercontext.git" {
+	if got := *repository.NormalizedRemote(); got != "https://github.com/ob-labs/powercontext-go.git" {
 		t.Fatalf("remote = %q", got)
 	}
 	if got := *repository.Subpath(); got != "services/api" {

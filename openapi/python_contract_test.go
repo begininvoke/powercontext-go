@@ -387,8 +387,8 @@ func TestGeneratedServerRoutesMatchCanonicalOpenAPI(t *testing.T) {
 		}
 		count++
 	}
-	if count != 48 {
-		t.Fatalf("verified generated routes = %d, want 48", count)
+	if count != 53 {
+		t.Fatalf("verified generated routes = %d, want 53", count)
 	}
 }
 

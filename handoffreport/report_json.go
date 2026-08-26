@@ -121,10 +121,26 @@ func workstreamReportObject(v WorkstreamReport, canonical bool) (map[string]any,
 	if v.handoffActivityRelation != nil {
 		relation = *v.handoffActivityRelation
 	}
+	history := make([]any, len(v.handoffHistory))
+	for index, summary := range v.handoffHistory {
+		ref := summary.reference
+		history[index] = map[string]any{
+			"reference":           artifactRefMap(&ref),
+			"objective_excerpt":   summary.objectiveExcerpt,
+			"disposition":         summary.disposition,
+			"next_action_excerpt": summary.nextActionExcerpt,
+			"state_count":         summary.stateCount,
+			"omission_count":      summary.omissionCount,
+		}
+	}
 	return map[string]any{
 		"workstream":                v.workstream,
+		"continuity":                v.continuity,
 		"handoff_ref":               artifactRefMap(v.handoffRef),
 		"content":                   content,
+		"handoff_revision_count":    v.handoffRevisionCount,
+		"handoff_history_truncated": v.handoffHistoryTruncated,
+		"handoff_history":           history,
 		"evidence_checks":           checks,
 		"evidence_unavailable":      v.evidenceUnavailable,
 		"activities":                activities,

@@ -10,23 +10,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && install -d -o 65532 -g 65532 /out/data
 
-FROM ${DEBIAN_IMAGE}:${DEBIAN_VERSION} AS vec1-build
-ARG TARGETARCH
-ARG VEC1_VERSION=0.7
-ARG VEC1_SHA256=8571bb4f77f9547d11ad11e2f72e0de7d3b2ab44e7930151998bce9377ed4b86
-RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends ca-certificates curl gcc libc6-dev libsqlite3-dev \
-    && rm -rf /var/lib/apt/lists/*
-RUN curl --fail --location --retry 3 --output /tmp/vec1.c "https://sqlite.org/vec1/raw/vec1.c?ci=version-${VEC1_VERSION}" \
-    && echo "${VEC1_SHA256}  /tmp/vec1.c" | sha256sum --check --strict \
-    && install -d /out \
-    && case "${TARGETARCH}" in \
-      arm64) gcc -O2 -fPIC -shared -flax-vector-conversions -I/usr/include -o /out/vec1.so /tmp/vec1.c -lm ;; \
-      amd64) gcc -O2 -fPIC -shared -I/usr/include -o /out/vec1.so /tmp/vec1.c -lm ;; \
-      *) echo "unsupported TARGETARCH: ${TARGETARCH}" >&2; exit 2 ;; \
-    esac \
-    && strip /out/vec1.so
-
 FROM ${GO_IMAGE}:${GO_VERSION}-bookworm AS go-build
 WORKDIR /src
 COPY go.mod go.sum ./
@@ -41,11 +24,10 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=1 go build -tags sqlite_fts5 -trimpath \
     -ldflags "-s -w -X main.version=${VERSION} -X main.commit=${COMMIT} -X main.date=${BUILD_DATE}" \
     -o /out/powercontext ./cmd/powercontext
-COPY --from=vec1-build /out/vec1.so /opt/powercontext/vec1.so
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go run ./tools/release metadata \
-    -binary /out/powercontext -vec1 /opt/powercontext/vec1.so -edition standard \
+    -binary /out/powercontext -edition standard \
     -version "${VERSION}" -commit "${COMMIT}" -build-date "${BUILD_DATE}" \
     -output /out/metadata-standard
 
@@ -89,7 +71,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go run ./tools/release metadata \
-    -binary /out/powercontext-full -vec1 /opt/powercontext/vec1.so \
+    -binary /out/powercontext-full \
     -onnxruntime-dir /opt/powercontext/onnxruntime -edition full \
     -version "${VERSION}" -commit "${COMMIT}" -build-date "${BUILD_DATE}" \
     -output /out/metadata-full
@@ -98,7 +80,6 @@ FROM ${DISTROLESS_IMAGE} AS runtime-base
 COPY --from=runtime-files /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=runtime-files /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=runtime-files --chown=65532:65532 /out/data /var/lib/powercontext
-COPY --from=vec1-build /out/vec1.so /usr/lib/powercontext/vec1.so
 WORKDIR /var/lib/powercontext
 USER 65532:65532
 

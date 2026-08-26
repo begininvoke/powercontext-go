@@ -16,17 +16,21 @@ import (
 )
 
 var baseToolNames = []string{
+	"acknowledge_handoff",
 	"activate_handoff",
 	"approve_artifact_candidate",
 	"capture_content_source",
 	"commit_handoff",
 	"continue_handoff",
+	"create_work_contract",
 	"finalize_handoff",
 	"get_artifact_candidate",
 	"get_memory_entry",
+	"handoff_current_work",
 	"list_artifact_candidates",
 	"list_memory_entries",
 	"reject_artifact_candidate",
+	"record_task_outcome",
 	"remember_memory",
 	"retire_memory_entry",
 	"revise_artifact_candidate",
@@ -47,7 +51,8 @@ func TestServerExposesFrozenToolSet(t *testing.T) {
 			name:    "handoff-report-enabled",
 			reports: true,
 			expectedTools: append(slices.Clone(baseToolNames),
-				"get_handoff_report", "get_handoff_report_workspace"),
+				"get_handoff_report", "get_handoff_report_workspace", "list_handoff_report_known_scopes",
+				"select_handoff_workstream"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

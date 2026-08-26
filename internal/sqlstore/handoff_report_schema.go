@@ -100,6 +100,7 @@ func EnsureHandoffReportSchemaForDialect(ctx context.Context, db DBTX, dialect D
 	}
 	for _, statement := range handoffReportSchema {
 		if dialect == MySQLDialect {
+			statement = mysqlIdentityColumns(statement)
 			statement = quoteCursorIdentifier(statement)
 		}
 		if dialect == MySQLDialect && strings.HasPrefix(strings.TrimSpace(statement), "CREATE INDEX IF NOT EXISTS ") {

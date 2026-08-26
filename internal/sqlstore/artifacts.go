@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"reflect"
 
+	mysql "github.com/go-sql-driver/mysql"
+	"github.com/mattn/go-sqlite3"
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/source"
 )
@@ -65,14 +67,59 @@ func (r *ArtifactRepository) Create(
 	}
 	created, err := r.insertRevision(ctx, db, scopeID, codec, ref, draft.ContentValue(), draft.Lineage())
 	if err != nil {
-		return nil, err
+		return nil, r.normalizeCreateIntegrity(ctx, db, scopeID, ref, err)
 	}
 	if _, err := db.ExecContext(ctx, `INSERT INTO pc_artifact_heads
         (scope_id, family, artifact_id, revision) VALUES (?, ?, ?, ?)`,
 		scopeID, ref.Family(), ref.ID(), ref.Revision()); err != nil {
-		return nil, err
+		return nil, r.normalizeCreateIntegrity(ctx, db, scopeID, ref, err)
 	}
 	return created, nil
+}
+
+// normalizeCreateIntegrity closes the race between the optimistic head read
+// and the two inserts. Like the Python repository, only a now-committed head
+// turns a constraint failure into a Revision conflict; unrelated foreign-key,
+// check, or lineage violations retain their original database error.
+func (r *ArtifactRepository) normalizeCreateIntegrity(
+	ctx context.Context,
+	db DBTX,
+	scopeID string,
+	requested artifact.Ref,
+	cause error,
+) error {
+	if !isIntegrityConstraint(cause) {
+		return cause
+	}
+	revision, found, err := r.findHead(ctx, db, scopeID, requested.Family(), requested.ID(), false)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return cause
+	}
+	current, err := artifact.NewRef(requested.Family(), requested.ID(), revision)
+	if err != nil {
+		return err
+	}
+	return &artifact.RevisionConflictError{Requested: requested, Current: current}
+}
+
+func isIntegrityConstraint(err error) bool {
+	var sqliteError sqlite3.Error
+	if errors.As(err, &sqliteError) && sqliteError.Code == sqlite3.ErrConstraint {
+		return true
+	}
+	var mysqlError *mysql.MySQLError
+	if !errors.As(err, &mysqlError) {
+		return false
+	}
+	switch mysqlError.Number {
+	case 1022, 1048, 1062, 1169, 1216, 1217, 1451, 1452, 3819:
+		return true
+	default:
+		return false
+	}
 }
 
 func (r *ArtifactRepository) Revise(

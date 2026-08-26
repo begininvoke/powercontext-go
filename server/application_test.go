@@ -907,6 +907,7 @@ func TestOpenApplicationStatsUsesInclusiveUTCPeriodsForEmptyScope(t *testing.T) 
 func TestDisabledHandoffReportDoesNotCreateOptionalTables(t *testing.T) {
 	t.Parallel()
 	config := applicationTestConfig(t)
+	config.HandoffReport.Enabled = false
 	path, err := SQLiteDSN(config.Database.SQLite.URL)
 	if err != nil {
 		t.Fatal(err)
@@ -937,9 +938,9 @@ func TestProcessConfigEnforcesTrustAndInferenceBoundaries(t *testing.T) {
 	t.Parallel()
 	config := applicationTestConfig(t)
 	config.Dashboard.Enabled = true
-	config.Dashboard.Scopes = []DashboardScope{{ScopeID: "scope", DisplayName: "Scope"}}
-	if err := config.Validate(); err == nil {
-		t.Fatal("Dashboard without authentication was accepted")
+	config.Dashboard.Scopes = nil
+	if err := config.Validate(); err != nil {
+		t.Fatalf("default public Dashboard was rejected: %v", err)
 	}
 	config.Auth = AuthConfig{Enabled: true, Token: "secret"}
 	if err := config.Validate(); err != nil {

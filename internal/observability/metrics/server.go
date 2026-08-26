@@ -25,6 +25,7 @@ type Server struct {
 	applicationOperations *prometheus.CounterVec
 	applicationDuration   *prometheus.HistogramVec
 	runtimeReady          prometheus.Gauge
+	runtimeScopes         *prometheus.GaugeVec
 }
 
 func New() (*Server, error) {
@@ -54,6 +55,10 @@ func New() (*Server, error) {
 			Name: "powercontext_server_runtime_ready",
 			Help: "Whether the built-in Runtime can accept operations.",
 		}),
+		runtimeScopes: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "powercontext_server_runtime_scopes",
+			Help: "Scope compositions currently active or retained by the built-in Runtime.",
+		}, []string{"state"}),
 	}
 	if err := server.registry.Register(server.transportRequests); err != nil {
 		return nil, err
@@ -73,6 +78,10 @@ func New() (*Server, error) {
 	if err := server.registry.Register(server.runtimeReady); err != nil {
 		return nil, err
 	}
+	if err := server.registry.Register(server.runtimeScopes); err != nil {
+		return nil, err
+	}
+	server.SetRuntimeScopes(0, 0)
 	return server, nil
 }
 
@@ -93,6 +102,14 @@ func (s *Server) SetReady(ready bool) {
 			s.runtimeReady.Set(0)
 		}
 	})
+}
+
+func (s *Server) SetRuntimeScopes(cached, active int) {
+	if s == nil {
+		return
+	}
+	safely(func() { s.runtimeScopes.WithLabelValues("active").Set(float64(active)) })
+	safely(func() { s.runtimeScopes.WithLabelValues("cached").Set(float64(cached)) })
 }
 
 func (s *Server) startTransport(transport, operation string) time.Time {

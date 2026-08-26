@@ -118,8 +118,22 @@ func (p *ScheduledProcessor) process(
 				p.notify(ctx, ScheduledObservation{Operation: operation, Outcome: ScheduledProcessingFailure, Err: err})
 				continue
 			}
-			release, err := p.runtime.scopes.acquire(ctx, scope)
+			lease, releaseLease := p.runtime.scopes.lease(scope)
+			if err := p.runtime.resolveScope(ctx); err != nil {
+				releaseLease()
+				p.notify(ctx, ScheduledObservation{Operation: operation, Outcome: ScheduledProcessingFailure, Err: err})
+				continue
+			}
+			var release func()
+			err = p.runtime.runStage(ctx, "scope.lock", map[string]TraceAttribute{
+				"powercontext.scope.lock.contended": lease.contended(),
+			}, func(stageContext context.Context, _ StageSpan) error {
+				var acquireErr error
+				release, acquireErr = lease.acquire(stageContext)
+				return acquireErr
+			})
 			if err != nil {
+				releaseLease()
 				outcome := ScheduledProcessingFailure
 				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 					outcome = ScheduledProcessingCancelled
@@ -129,6 +143,7 @@ func (p *ScheduledProcessor) process(
 			}
 			observation := processScope(ctx, scope)
 			release()
+			releaseLease()
 			p.notify(ctx, observation)
 		}
 		return nil

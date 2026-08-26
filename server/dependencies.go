@@ -46,6 +46,7 @@ type assembledDependencies struct {
 	embeddingModel       inference.EmbeddingModel
 	memoryReranker       memory.Reranker
 	externalSkills       skill.ExternalProvider
+	agentSkillTargets    []skill.AgentSkillTarget
 	generationReadiness  pcruntime.DependencyOperation
 	embeddingReadiness   pcruntime.DependencyOperation
 	resources            []pcruntime.Resource
@@ -63,6 +64,11 @@ func assembleDependencies(
 		embeddingModel: supplied.EmbeddingModel, memoryReranker: supplied.MemoryReranker,
 		externalSkills: supplied.ExternalSkills,
 	}
+	configuredTargets, err := agentSkillTargets(config.ExternalSkills)
+	if err != nil {
+		return result, err
+	}
+	result.agentSkillTargets = configuredTargets
 	needsGenerated := result.memoryCandidates == nil || result.experienceCandidates == nil || result.experienceGenerator == nil ||
 		result.skillGenerator == nil || result.handoffGenerator == nil ||
 		(config.Runtime.MemoryRerankEnabled && result.memoryReranker == nil)
@@ -193,24 +199,41 @@ func assembleDependencies(
 	if result.embeddingModel != nil {
 		result.embeddingModel = pcruntime.ReportEmbeddingUsage(result.embeddingModel)
 	}
-	if result.externalSkills == nil && len(config.ExternalSkills.Roots) > 0 {
-		roots := make([]skill.CodexRoot, len(config.ExternalSkills.Roots))
-		for index, configured := range config.ExternalSkills.Roots {
-			root, err := skill.NewCodexRoot(
-				configured.RootID, skill.InstallationScope(configured.InstallationScope), configured.Path,
-			)
-			if err != nil {
-				return result, err
-			}
-			roots[index] = root
-		}
-		provider, err := skill.NewCodexProvider(config.ExternalSkills.HostID, roots)
+	if result.externalSkills == nil && len(configuredTargets) > 0 {
+		provider, err := skill.NewAgentSkillProvider(config.ExternalSkills.HostID, configuredTargets)
 		if err != nil {
 			return result, err
 		}
 		result.externalSkills = provider
 	}
 	return result, nil
+}
+
+func agentSkillTargets(config ExternalSkillsConfig) ([]skill.AgentSkillTarget, error) {
+	targets := make([]skill.AgentSkillTarget, 0, len(config.Targets)+len(config.CodexRoots))
+	for _, configured := range config.Targets {
+		target, err := skill.NewAgentSkillTarget(
+			configured.TargetID, skill.AgentKind(configured.AgentKind),
+			skill.InstallationScope(configured.InstallationScope), configured.Path,
+			configured.AllowManagedPublish,
+		)
+		if err != nil {
+			return nil, err
+		}
+		targets = append(targets, target)
+	}
+	for _, configured := range config.CodexRoots {
+		target, err := skill.NewAgentSkillTarget(
+			configured.RootID, skill.CodexAgent,
+			skill.InstallationScope(configured.InstallationScope), configured.Path,
+			configured.AllowManagedPublish,
+		)
+		if err != nil {
+			return nil, err
+		}
+		targets = append(targets, target)
+	}
+	return targets, nil
 }
 
 func embeddingReadinessOperation(model inference.EmbeddingModel) pcruntime.DependencyOperation {

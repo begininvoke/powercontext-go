@@ -285,24 +285,39 @@ func (r *MemoryRepository) Search(ctx context.Context, request memory.SearchRequ
 	var channels memory.SearchChannels
 	request = request.Clone()
 	err := r.database.Transaction(ctx, func(tx DBTX) error {
-		for _, ref := range request.Memories {
-			exact, err := r.get(ctx, tx, ref)
-			if err != nil {
-				return err
-			}
-			latest, err := r.latest(ctx, tx, ref.ID())
-			if err != nil {
-				return err
-			}
-			if exact.Ref() != latest.Ref() {
-				return &memory.InvalidCitationError{Code: "memory-mismatch"}
-			}
+		if err := r.validateSearchHeads(ctx, tx, request.Memories); err != nil {
+			return err
 		}
 		var err error
 		channels, err = r.index.Search(ctx, tx, r.scopeID, request)
-		return err
+		if err != nil {
+			return err
+		}
+		return r.validateSearchHeads(ctx, tx, request.Memories)
 	})
 	return channels, err
+}
+
+// validateSearchHeads surrounds projection reads so a backend never treats a
+// stale requested revision as the current active-head projection. Calling it
+// both before and after Search is deliberate: OceanBase READ COMMITTED can
+// observe a concurrent head advance between the two checks, while SQLite
+// still returns one internally consistent snapshot.
+func (r *MemoryRepository) validateSearchHeads(ctx context.Context, tx DBTX, refs []artifact.Ref) error {
+	for _, ref := range refs {
+		exact, err := r.get(ctx, tx, ref)
+		if err != nil {
+			return err
+		}
+		latest, err := r.latest(ctx, tx, ref.ID())
+		if err != nil {
+			return err
+		}
+		if exact.Ref() != latest.Ref() {
+			return &memory.InvalidCitationError{Code: "memory-mismatch"}
+		}
+	}
+	return nil
 }
 
 func (r *MemoryRepository) Expand(ctx context.Context, hits []memory.Hit) ([]memory.EntryVersion, error) {

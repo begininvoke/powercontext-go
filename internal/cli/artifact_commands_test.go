@@ -77,6 +77,26 @@ func TestCodexProjectionRejectsInvalidManagedContent(t *testing.T) {
 	}
 }
 
+func TestClaudeCodeProjectionUsesSharedAgentProjection(t *testing.T) {
+	value := testSkillArtifact("safe-skill", "Use <carefully> for a bounded task.")
+	destination := filepath.Join(t.TempDir(), ".claude", "skills", value.Content.Name)
+	projected, err := projectAgentSkill(value, destination, "claude_code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	manifestBytes, err := os.ReadFile(filepath.Join(projected, "powercontext.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest struct {
+		Schema    string `json:"schema"`
+		AgentKind string `json:"agent_kind"`
+	}
+	if json.Unmarshal(manifestBytes, &manifest) != nil || manifest.Schema != codexProjectionSchema || manifest.AgentKind != "claude_code" {
+		t.Fatalf("Claude Code projection manifest = %s", manifestBytes)
+	}
+}
+
 func testSkillArtifact(name, description string) v1.SkillArtifact {
 	return v1.SkillArtifact{
 		Artifact: v1.ArtifactReference{Family: "skill", ArtifactID: "skill-123", Revision: 2},

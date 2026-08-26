@@ -53,8 +53,9 @@ type Runtime struct {
 	active  int
 	drained chan struct{}
 
-	scopes     keyedGate
+	scopes     *scopeCache
 	background semaphore
+	tracing    StageTracing
 
 	scheduler  SchedulerLifecycle
 	resources  []Resource
@@ -82,10 +83,35 @@ func New(resources ...Resource) *Runtime {
 // attribute successful inference calls. The recorder is deliberately
 // best-effort and does not participate in Runtime resource ownership.
 func NewWithModelUsageRecorder(recorder ModelUsageRecorder, resources ...Resource) *Runtime {
-	return &Runtime{
-		background: newSemaphore(), resources: append([]Resource(nil), resources...),
-		modelUsage: recorder,
+	runtime, err := NewConfigured(RuntimeOptions{}, recorder, resources...)
+	if err != nil {
+		panic(err)
 	}
+	return runtime
+}
+
+// NewConfigured constructs a Runtime with bounded Scope retention and optional
+// low-cardinality observation. A zero ScopeCacheSize selects the current
+// compatibility default.
+func NewConfigured(
+	options RuntimeOptions,
+	recorder ModelUsageRecorder,
+	resources ...Resource,
+) (*Runtime, error) {
+	capacity := options.ScopeCacheSize
+	if capacity == 0 {
+		capacity = DefaultScopeCacheSize
+	}
+	if capacity < 1 {
+		return nil, errors.New("runtime: scope_cache_size must be positive")
+	}
+	return &Runtime{
+		background: newSemaphore(),
+		scopes:     newScopeCache(capacity, options.ScopeEvictor, options.ScopeObserver),
+		tracing:    options.Tracing,
+		resources:  append([]Resource(nil), resources...),
+		modelUsage: recorder,
+	}, nil
 }
 
 // AttachScheduler transfers lifecycle ownership after a scheduler has been
@@ -129,7 +155,14 @@ func (r *Runtime) ScopedRead(ctx context.Context, scopeID string, fn func(contex
 	if err != nil {
 		return err
 	}
-	return r.Operation(ctx, func(ctx context.Context) error { return fn(ctx, scope) })
+	return r.Operation(ctx, func(ctx context.Context) error {
+		_, release := r.scopes.lease(scope)
+		defer release()
+		if err := r.resolveScope(ctx); err != nil {
+			return err
+		}
+		return fn(ctx, scope)
+	})
 }
 
 // ScopedWrite admits one operation then acquires the reference-counted lock
@@ -144,7 +177,19 @@ func (r *Runtime) ScopedWrite(ctx context.Context, scopeID string, fn func(conte
 		return err
 	}
 	return r.Operation(ctx, func(ctx context.Context) error {
-		release, err := r.scopes.acquire(ctx, scope)
+		lease, releaseLease := r.scopes.lease(scope)
+		defer releaseLease()
+		if err := r.resolveScope(ctx); err != nil {
+			return err
+		}
+		var release func()
+		err := r.runStage(ctx, "scope.lock", map[string]TraceAttribute{
+			"powercontext.scope.lock.contended": lease.contended(),
+		}, func(stageContext context.Context, _ StageSpan) error {
+			var acquireErr error
+			release, acquireErr = lease.acquire(stageContext)
+			return acquireErr
+		})
 		if err != nil {
 			return err
 		}
@@ -209,6 +254,9 @@ func (r *Runtime) Close(ctx context.Context) error {
 			return err
 		}
 	}
+	if err := r.scopes.clear(); err != nil {
+		return err
+	}
 	for index := len(r.resources) - 1; index >= 0; index-- {
 		if r.resources[index] == nil {
 			continue
@@ -264,51 +312,5 @@ func (s *semaphore) acquire(ctx context.Context) (func(), error) {
 		return func() { once.Do(func() { s.token <- struct{}{} }) }, nil
 	case <-ctx.Done():
 		return nil, context.Cause(ctx)
-	}
-}
-
-type gateEntry struct {
-	semaphore  semaphore
-	references int
-}
-
-type keyedGate struct {
-	mu      sync.Mutex
-	entries map[string]*gateEntry
-}
-
-func (g *keyedGate) acquire(ctx context.Context, key string) (func(), error) {
-	g.mu.Lock()
-	if g.entries == nil {
-		g.entries = make(map[string]*gateEntry)
-	}
-	entry := g.entries[key]
-	if entry == nil {
-		entry = &gateEntry{semaphore: newSemaphore()}
-		g.entries[key] = entry
-	}
-	entry.references++
-	g.mu.Unlock()
-
-	releaseToken, err := entry.semaphore.acquire(ctx)
-	if err != nil {
-		g.releaseReference(key, entry)
-		return nil, err
-	}
-	var once sync.Once
-	return func() {
-		once.Do(func() {
-			releaseToken()
-			g.releaseReference(key, entry)
-		})
-	}, nil
-}
-
-func (g *keyedGate) releaseReference(key string, entry *gateEntry) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	entry.references--
-	if entry.references == 0 && g.entries[key] == entry {
-		delete(g.entries, key)
 	}
 }

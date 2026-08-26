@@ -1,4 +1,4 @@
-"""Generate and verify the frozen Python v0.0.1 SQLite authority fixture.
+"""Generate and verify the frozen Python v0.0.2 SQLite authority fixture.
 
 This file lives in the Go repository so the Python repository remains an
 unmodified Oracle. It is executed with the frozen repository's locked virtual
@@ -92,7 +92,7 @@ def encoded_cell(value: Any) -> Any:
 
 
 def semantic_snapshot(database_path: Path) -> dict[str, Any]:
-    result: dict[str, Any] = {"schema": "powercontext.python-v0.0.1.sqlite-authority.v2", "tables": {}}
+    result: dict[str, Any] = {"schema": "powercontext.python-v0.0.2.sqlite-authority.v2", "tables": {}}
     with sqlite3.connect(database_path) as connection:
         schema_objects = [
             {"type": row[0], "name": row[1], "sql": row[2]}

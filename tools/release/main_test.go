@@ -97,8 +97,6 @@ func TestDockerNativeAssetDefaultsMatchManifest(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected := map[string]string{
-		"VEC1_VERSION":             assets.Vec1.Version,
-		"VEC1_SHA256":              assets.Vec1.SHA256,
 		"TOKENIZERS_VERSION":       assets.Tokenizers.Version,
 		"TOKENIZERS_AMD64_SHA256":  assets.Tokenizers.Assets["linux-amd64"].SHA256,
 		"TOKENIZERS_ARM64_SHA256":  assets.Tokenizers.Assets["linux-arm64"].SHA256,

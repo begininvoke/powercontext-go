@@ -47,7 +47,7 @@ func TestServiceFreezesExactHeadsAndBuildsCanonicalReport(t *testing.T) {
 	}
 	const (
 		pythonSelectionDigest = "sha256:d1a0d0bd8915f90be468f009b54a49ee89f3fba8f9f5fdec19c4912d6a43f557"
-		pythonReportDigest    = "sha256:5e544f32572461577cdaf6a321a2740bb6147e6596e0bbe41716714c23957021"
+		pythonReportDigest    = "sha256:29084e12ef68a81ffa66845f6d843de2ad0cb230be11bbc1848b14e2e0e331ef"
 	)
 	if report.SelectionDigest() != pythonSelectionDigest || report.ReportDigest() != pythonReportDigest {
 		t.Fatalf("digests = %q, %q; want frozen Python digests %q, %q", report.SelectionDigest(), report.ReportDigest(), pythonSelectionDigest, pythonReportDigest)
@@ -71,7 +71,7 @@ func TestServiceFreezesExactHeadsAndBuildsCanonicalReport(t *testing.T) {
 	if first["reporting_status"] != "evidence_unavailable" || first["evidence_checks"] != "not_checked" {
 		t.Fatalf("selected projection = %#v", first)
 	}
-	fixtureBytes, err := os.ReadFile("../test/conformance/testdata/python-v0.0.1/handoff-report-digests.json")
+	fixtureBytes, err := os.ReadFile("../test/conformance/testdata/python-v0.0.2/handoff-report-digests.json")
 	if err != nil {
 		t.Fatal(err)
 	}

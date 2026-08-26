@@ -89,17 +89,12 @@ func (repository SourceCursorRepository) Save(
 	}
 	var generation int64
 	if expectedGeneration == nil {
-		existing, found, err := repository.Load(ctx, db, scopeID, bindingName)
-		if err != nil {
-			return StoredSourceCursor{}, err
-		}
-		if found {
-			actual := existing.Generation
-			return StoredSourceCursor{}, &GenerationConflictError{
-				BindingName: bindingName, Actual: &actual,
-			}
-		}
 		generation = 1
+		// Do not read before the insert. Besides adding a round trip, a prior
+		// SQLite read pins a snapshot that cannot be upgraded after another
+		// connection commits the same key. The unique key is the atomic create
+		// CAS for every supported dialect; after a losing insert, the winner is
+		// visible and supplies the authoritative generation for the conflict.
 		if _, err := db.ExecContext(ctx, quoteCursorIdentifier(`INSERT INTO pc_source_cursors
             (scope_id, binding_name, cursor, generation) VALUES (?, ?, ?, ?)`),
 			scopeID, bindingName, payload, generation); err != nil {

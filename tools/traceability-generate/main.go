@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-const oracleCommit = "9e23c336492c8bba16c6f26083298b6f484a91b0"
+const oracleCommit = "3a6cb0151670eaff7dc0293466edd673124e80da"
 
 type oracleManifest struct {
 	OracleCommit  string       `json:"oracle_commit"`
@@ -79,7 +79,7 @@ const (
 )
 
 func main() {
-	manifestPath := flag.String("manifest", "test/conformance/testdata/python-v0.0.1/manifest.json", "frozen Oracle manifest")
+	manifestPath := flag.String("manifest", "test/conformance/testdata/python-v0.0.2/manifest.json", "frozen Oracle manifest")
 	rulesPath := flag.String("rules", "test/conformance/traceability-rules.json", "traceability rules")
 	outputPath := flag.String("output", "test/conformance/traceability.json", "generated traceability table")
 	root := flag.String("root", ".", "Go repository root")

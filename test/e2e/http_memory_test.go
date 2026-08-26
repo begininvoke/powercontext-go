@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -196,6 +197,10 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	workApp, err := runtime.NewWorkApplication(lifecycle, sourceBackend, handoffFactory)
+	if err != nil {
+		t.Fatal(err)
+	}
 	handoffReportStore, err := sqlstore.NewHandoffReportStore(database, sqlstore.SQLiteDialect)
 	if err != nil {
 		t.Fatal(err)
@@ -211,8 +216,10 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 		lifecycle,
 		handoffReportStore,
 		handoffReportReader,
+		workApp,
 		func() time.Time { return time.Date(2026, 8, 17, 13, 14, 15, 123456000, time.UTC) },
 		deterministicHandoffReportIDs(),
+		func(ctx context.Context) ([]string, error) { return sqlstore.HandoffScopeIDs(ctx, database) },
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -241,6 +248,7 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 		Generation:    generationApp,
 		External:      externalApp,
 		Handoff:       handoffApp,
+		Work:          workApp,
 		HandoffReport: handoffReportApp,
 		Statistics:    statisticsApp,
 	}), server.HTTPOptions{HandoffReportRoutes: true})
@@ -520,7 +528,7 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 	}
 
 	markdownReport := postJSON(t, httpHandler, "/v1/handoff-reports/get", map[string]any{
-		"project_id": "prj_report-1", "format": "markdown", "download": true,
+		"scope_id": "project:test", "project_id": "prj_report-1", "format": "markdown", "download": true,
 	})
 	assertStatus(t, markdownReport, http.StatusOK)
 	if !strings.HasPrefix(markdownReport.Header().Get("Content-Type"), "text/markdown") ||
@@ -534,7 +542,7 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 	}
 
 	jsonReport := postJSON(t, httpHandler, "/v1/handoff-reports/get", map[string]any{
-		"project_id": "prj_report-1", "format": "json", "include_evidence_checks": false,
+		"scope_id": "project:test", "project_id": "prj_report-1", "format": "json", "include_evidence_checks": false,
 		"period": map[string]any{
 			"start": "2026-08-17T00:00:00Z", "end": "2026-08-18T00:00:00Z",
 			"timezone": "Asia/Shanghai", "compare_to_previous_period": true,
@@ -546,7 +554,7 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 		t.Fatalf("JSON Report envelope = %#v", jsonReportBody)
 	}
 	reportPayload := fieldObject(t, jsonReportBody, "report")
-	if reportPayload["report_kind"] != "periodic" || reportPayload["project_revision"] != float64(2) ||
+	if reportPayload["report_kind"] != "periodic" || reportPayload["project_revision"] != float64(1) ||
 		len(fieldArray(t, reportPayload, "workstreams")) != 1 {
 		t.Fatalf("JSON Report = %#v", reportPayload)
 	}
@@ -936,6 +944,103 @@ func TestHTTPSourceAndMemorySQLiteVerticalSlice(t *testing.T) {
 	}
 	if sourceRows != 2 || artifactRows != 4 {
 		t.Fatalf("stored rows = sources:%d artifacts:%d", sourceRows, artifactRows)
+	}
+
+	contractResponse := postJSON(t, httpHandler, "/v1/work/contracts/create", map[string]any{
+		"scope_id": "project:test", "source_id": "contract-1",
+		"contract": map[string]any{
+			"schema": "powercontext.work-contract.v1", "trust": "untrusted_input",
+			"objective": "Transfer the implementation safely.", "facts": []any{},
+			"in_scope": []any{"Run the focused acceptance test."}, "exclusions": []any{},
+			"completion_criteria": []any{"Record the receiver outcome."},
+			"authorization_notes": []any{}, "open_questions": []any{},
+		},
+	})
+	assertStatus(t, contractResponse, http.StatusAccepted)
+	if body := object(t, contractResponse); body["kind"] != "work-contract" || body["position"] != float64(3) {
+		t.Fatalf("Work Contract receipt = %#v", body)
+	}
+
+	currentResponse := postJSON(t, httpHandler, "/v1/work/handoffs/prepare-current", map[string]any{
+		"scope_id": "project:test", "source_id": "work-boundary-1",
+		"handoff": map[string]any{
+			"schema": "powercontext.current-work-handoff.v1", "trust": "untrusted_input",
+			"objective":   "Transfer the implementation safely.",
+			"state":       []any{map[string]any{"text": "The implementation is ready.", "basis": "declared", "evidence": []any{}}},
+			"disposition": "continuable", "next_action": nil, "omissions": []any{},
+		},
+	})
+	assertStatus(t, currentResponse, http.StatusOK)
+	preparedWork := object(t, currentResponse)
+	if fieldObject(t, preparedWork, "boundary")["kind"] != "handoff-boundary" {
+		t.Fatalf("Prepared Work Handoff = %#v", preparedWork)
+	}
+	workCommit := postJSON(t, httpHandler, "/v1/handoff/commit", map[string]any{
+		"scope_id": "project:test", "handoff": preparedWork["handoff"],
+	})
+	assertStatus(t, workCommit, http.StatusOK)
+	workRevision := fieldObject(t, object(t, workCommit), "reference")
+
+	acknowledgement := postJSON(t, httpHandler, "/v1/work/handoffs/acknowledge", map[string]any{
+		"scope_id": "project:test", "source_id": "receipt-1", "receiver": "receiver-agent",
+		"status": "accepted", "selection": "exact", "revision": workRevision,
+		"receiver_checks": map[string]any{
+			"live_state": "confirmed", "capability": "confirmed", "authorization": "confirmed",
+		},
+		"prepared": nil, "message": nil,
+	})
+	assertStatus(t, acknowledgement, http.StatusOK)
+	acknowledgementBody := object(t, acknowledgement)
+	workReceipt := fieldObject(t, acknowledgementBody, "receipt")
+	if workReceipt["kind"] != "handoff-receipt" {
+		t.Fatalf("Handoff acknowledgement = %#v", acknowledgementBody)
+	}
+
+	outcomeResponse := postJSON(t, httpHandler, "/v1/work/outcomes/record", map[string]any{
+		"scope_id": "project:test", "source_id": "outcome-1",
+		"outcome": map[string]any{
+			"schema": "powercontext.task-outcome.v1", "trust": "untrusted_observation",
+			"objective": "Transfer the implementation safely.", "status": "succeeded", "summary": "The test passed.",
+			"handoff_receipt_ref": workReceipt["source"],
+			"observations":        []any{map[string]any{"text": "The receiver completed the test.", "basis": "declared", "evidence": []any{}}},
+			"checks":              []any{}, "produced_artifacts": []any{}, "remaining_work": []any{},
+		},
+	})
+	assertStatus(t, outcomeResponse, http.StatusAccepted)
+	if body := object(t, outcomeResponse); body["kind"] != "task-outcome" || body["position"] != float64(6) {
+		t.Fatalf("Task Outcome receipt = %#v", body)
+	}
+
+	knownScopes := postJSON(t, httpHandler, "/v1/handoff-reports/scopes/list-known", map[string]any{})
+	assertStatus(t, knownScopes, http.StatusOK)
+	items := fieldArray(t, object(t, knownScopes), "items")
+	if len(items) != 1 || items[0].(map[string]any)["scope_id"] != "project:test" {
+		t.Fatalf("known Handoff scopes = %#v", items)
+	}
+	continuityReport := postJSON(t, httpHandler, "/v1/handoff-reports/get", map[string]any{
+		"scope_id": "project:test", "format": "json", "include_evidence_checks": false,
+	})
+	assertStatus(t, continuityReport, http.StatusOK)
+	continuityEnvelope := object(t, continuityReport)
+	continuityPayload := fieldObject(t, continuityEnvelope, "report")
+	continuityWorkstreams := fieldArray(t, continuityPayload, "workstreams")
+	continuityItem := continuityWorkstreams[0].(map[string]any)
+	continuity := fieldObject(t, continuityItem, "continuity")
+	coverage := fieldObject(t, continuity, "coverage")
+	if coverage["transfer_state"] != "accepted" || coverage["outcome_state"] != "covered" ||
+		coverage["handoff_result_covered"] != true {
+		t.Fatalf("Work continuity coverage = %#v", coverage)
+	}
+	events := fieldArray(t, continuity, "events")
+	kinds := make([]any, len(events))
+	for index, event := range events {
+		kinds[index] = event.(map[string]any)["kind"]
+	}
+	if !slices.Equal(kinds, []any{"work-contract", "handoff-boundary", "handoff-receipt", "task-outcome"}) {
+		t.Fatalf("Work continuity events = %#v", events)
+	}
+	if continuityItem["handoff_revision_count"] != float64(3) || len(fieldArray(t, continuityItem, "handoff_history")) != 3 {
+		t.Fatalf("Handoff Revision history = %#v", continuityItem)
 	}
 }
 

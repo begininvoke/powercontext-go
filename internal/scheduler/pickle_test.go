@@ -15,7 +15,7 @@ import (
 const frozenSchedulerSHA256 = "45aaa07dd69a3180a9bfa8b4f17aa8ff89c9cd3f6212893c6459ada09b2d1753"
 
 func TestDecodeFrozenPythonAPSchedulerSidecar(t *testing.T) {
-	path := filepath.Join("..", "..", "test", "conformance", "testdata", "python-v0.0.1", "scheduler.db")
+	path := filepath.Join("..", "..", "test", "conformance", "testdata", "python-v0.0.2", "scheduler.db")
 	contents, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)

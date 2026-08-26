@@ -96,7 +96,19 @@ func (a *ContextApplication) Prepare(
 	}
 	var build contextpack.Build
 	err = a.runtime.Operation(ctx, func(ctx context.Context) error {
-		release, err := a.runtime.scopes.acquire(ctx, scope)
+		lease, releaseLease := a.runtime.scopes.lease(scope)
+		defer releaseLease()
+		if err := a.runtime.resolveScope(ctx); err != nil {
+			return err
+		}
+		var release func()
+		err := a.runtime.runStage(ctx, "scope.lock", map[string]TraceAttribute{
+			"powercontext.scope.lock.contended": lease.contended(),
+		}, func(stageContext context.Context, _ StageSpan) error {
+			var acquireErr error
+			release, acquireErr = lease.acquire(stageContext)
+			return acquireErr
+		})
 		if err != nil {
 			return err
 		}
@@ -130,15 +142,44 @@ func (a *ContextApplication) prepareLocked(
 		}
 	}
 	experienceHits := []experience.SearchHit{}
-	if a.experiences != nil {
-		experienceHits, err = a.experiences.Search(
-			ctx, scope, request.Query(), contextpack.ExperienceCandidateLimit,
-		)
-		if err != nil {
-			return contextpack.Build{}, err
+	err = a.runtime.runStage(ctx, "experience.search", map[string]TraceAttribute{
+		"powercontext.experience.search.configured": a.experiences != nil,
+		"powercontext.experience.search.limit":      contextpack.ExperienceCandidateLimit,
+	}, func(stageContext context.Context, span StageSpan) error {
+		if a.experiences != nil {
+			var searchErr error
+			experienceHits, searchErr = a.experiences.Search(
+				stageContext, scope, request.Query(), contextpack.ExperienceCandidateLimit,
+			)
+			if searchErr != nil {
+				return searchErr
+			}
 		}
+		setStageAttributes(span, map[string]TraceAttribute{
+			"powercontext.experience.search.result_count": len(experienceHits),
+		})
+		return nil
+	})
+	if err != nil {
+		return contextpack.Build{}, err
 	}
-	return a.builder.BuildResult(request, memoryPage.MemoryRef, memoryPage.Hits, experienceHits)
+	var build contextpack.Build
+	err = a.runtime.runStage(ctx, "context.build", map[string]TraceAttribute{
+		"powercontext.context.build.memory_candidate_count":     len(memoryPage.Hits),
+		"powercontext.context.build.experience_candidate_count": len(experienceHits),
+	}, func(_ context.Context, span StageSpan) error {
+		var buildErr error
+		build, buildErr = a.builder.BuildResult(request, memoryPage.MemoryRef, memoryPage.Hits, experienceHits)
+		if buildErr == nil {
+			setStageAttributes(span, map[string]TraceAttribute{
+				"powercontext.context.build.selected_count": len(build.Origins),
+				"powercontext.context.build.status":         string(build.Context.Status()),
+				"powercontext.context.build.content_bytes":  build.Context.ContentBytes(),
+			})
+		}
+		return buildErr
+	})
+	return build, err
 }
 
 func (a *ContextApplication) observePreparedContext(

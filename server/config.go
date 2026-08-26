@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -24,6 +25,8 @@ const (
 	PowerContextHomeEnv     = "POWERCONTEXT_HOME"
 	DefaultMCPPath          = "/mcp"
 )
+
+var externalSkillTargetIDPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 
 // ProcessConfig is the validated process-owned configuration. Domain packages
 // intentionally never read it or inspect the environment.
@@ -98,6 +101,7 @@ type MetricsConfig struct{ Enabled bool }
 type TracingConfig struct{ Enabled bool }
 
 type RuntimeConfig struct {
+	ScopeCacheSize               int
 	SourceWindowLimit            int64
 	MemoryExtractionProfile      memory.ExtractionProfile
 	MemoryRerankEnabled          bool
@@ -110,6 +114,7 @@ type DatabaseConfig struct {
 	Kind      string
 	SQLite    SQLiteDatabaseConfig
 	OceanBase OceanBaseDatabaseConfig
+	SeekDB    SeekDBDatabaseConfig
 }
 
 type SQLiteDatabaseConfig struct {
@@ -117,7 +122,6 @@ type SQLiteDatabaseConfig struct {
 	BusyTimeout     time.Duration
 	JournalMode     string
 	ForeignKeys     bool
-	Vec1Extension   string
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
@@ -125,6 +129,15 @@ type SQLiteDatabaseConfig struct {
 
 type OceanBaseDatabaseConfig struct {
 	URL          string
+	MaxOpenConns int
+	MaxIdleConns int
+	MaxLifetime  time.Duration
+}
+
+type SeekDBDatabaseConfig struct {
+	Path         string
+	Database     string
+	LibraryPath  string
 	MaxOpenConns int
 	MaxIdleConns int
 	MaxLifetime  time.Duration
@@ -145,14 +158,24 @@ type InferenceConfig struct {
 }
 
 type ExternalSkillRoot struct {
-	RootID            string `json:"root_id"`
-	InstallationScope string `json:"installation_scope"`
-	Path              string `json:"path"`
+	RootID              string `json:"root_id"`
+	InstallationScope   string `json:"installation_scope"`
+	Path                string `json:"path"`
+	AllowManagedPublish bool   `json:"allow_managed_publish"`
+}
+
+type ExternalSkillTarget struct {
+	TargetID            string `json:"target_id"`
+	AgentKind           string `json:"agent_kind"`
+	InstallationScope   string `json:"installation_scope"`
+	Path                string `json:"path"`
+	AllowManagedPublish bool   `json:"allow_managed_publish"`
 }
 
 type ExternalSkillsConfig struct {
-	HostID string
-	Roots  []ExternalSkillRoot
+	HostID     string
+	Targets    []ExternalSkillTarget
+	CodexRoots []ExternalSkillRoot
 }
 
 type environmentConfig struct {
@@ -174,6 +197,7 @@ type environmentConfig struct {
 	MetricsEnabled bool   `env:"METRICS_ENABLED"`
 	TracingEnabled bool   `env:"TRACING_ENABLED"`
 
+	ScopeCacheSize             int    `env:"RUNTIME_SCOPE_CACHE_SIZE"`
 	SourceWindowLimit          int64  `env:"RUNTIME_SOURCE_WINDOW_LIMIT"`
 	MemoryExtractionProfile    string `env:"RUNTIME_MEMORY_EXTRACTION_PROFILE"`
 	MemoryRerankEnabled        bool   `env:"RUNTIME_MEMORY_RERANK_ENABLED"`
@@ -183,10 +207,12 @@ type environmentConfig struct {
 
 	DatabaseKind          string `env:"DATABASE_KIND"`
 	DatabaseURL           string `env:"DATABASE_URL"`
+	DatabasePath          string `env:"DATABASE_PATH"`
+	DatabaseName          string `env:"DATABASE_DATABASE"`
+	DatabaseLibraryPath   string `env:"DATABASE_LIBRARY_PATH"`
 	DatabaseBusyTimeoutMS int64  `env:"DATABASE_BUSY_TIMEOUT_MS"`
 	DatabaseJournalMode   string `env:"DATABASE_JOURNAL_MODE"`
 	DatabaseForeignKeys   bool   `env:"DATABASE_FOREIGN_KEYS"`
-	DatabaseVec1Extension string `env:"DATABASE_VEC1_EXTENSION"`
 	DatabaseMaxOpenConns  int    `env:"DATABASE_MAX_OPEN_CONNS"`
 	DatabaseMaxIdleConns  int    `env:"DATABASE_MAX_IDLE_CONNS"`
 	DatabaseMaxLifetime   string `env:"DATABASE_MAX_LIFETIME"`
@@ -204,13 +230,15 @@ type environmentConfig struct {
 	EmbeddingBatchSize       int    `env:"INFERENCE_EMBEDDING_BATCH_SIZE"`
 	ExternalSkills           string `env:"EXTERNAL_SKILLS"`
 	ExternalSkillHostID      string `env:"EXTERNAL_SKILLS_HOST_ID"`
+	ExternalSkillTargets     string `env:"EXTERNAL_SKILLS_TARGETS"`
 	ExternalSkillRoots       string `env:"EXTERNAL_SKILLS_CODEX_ROOTS"`
 	SchedulerPath            string `env:"SCHEDULER_PATH"`
 }
 
 type externalSkillsEnvironment struct {
-	HostID     string              `json:"host_id"`
-	CodexRoots []ExternalSkillRoot `json:"codex_roots"`
+	HostID     string                `json:"host_id"`
+	Targets    []ExternalSkillTarget `json:"targets"`
+	CodexRoots []ExternalSkillRoot   `json:"codex_roots"`
 }
 
 // LoadConfig overlays POWERCONTEXT_SERVER_* values on the frozen Python
@@ -246,14 +274,20 @@ func defaultEnvironmentConfig() (environmentConfig, error) {
 	if err != nil {
 		return environmentConfig{}, err
 	}
+	seekDBPath, err := DefaultSeekDBPath()
+	if err != nil {
+		return environmentConfig{}, err
+	}
 	return environmentConfig{
 		HTTPHost: "127.0.0.1", HTTPPort: 8000,
 		MCPEnabled: true, MCPPath: DefaultMCPPath,
+		DashboardEnabled: true, HandoffReportEnabled: true,
 		LoggingLevel: "INFO", LoggingFormat: "console", LoggingAccess: true,
-		MetricsEnabled:    true,
-		SourceWindowLimit: 100, MemoryExtractionProfile: string(memory.CodingProfile),
+		MetricsEnabled: true,
+		ScopeCacheSize: 128, SourceWindowLimit: 100, MemoryExtractionProfile: string(memory.CodingProfile),
 		MemoryRerankCandidateLimit: 30,
 		DatabaseKind:               "sqlite", DatabaseURL: sqliteURL(databasePath),
+		DatabasePath: seekDBPath, DatabaseName: "test",
 		DatabaseBusyTimeoutMS: 5_000, DatabaseJournalMode: "WAL", DatabaseForeignKeys: true,
 		DatabaseMaxOpenConns: 8, DatabaseMaxIdleConns: 8,
 		GenerationTimeoutSeconds: "30", GenerationMaxRequests: 2,
@@ -287,6 +321,13 @@ func buildProcessConfig(value environmentConfig) (ProcessConfig, error) {
 	if err != nil {
 		return ProcessConfig{}, err
 	}
+	seekDBPath := strings.TrimSpace(value.DatabasePath)
+	if seekDBPath == "" {
+		seekDBPath, err = DefaultSeekDBPath()
+		if err != nil {
+			return ProcessConfig{}, err
+		}
+	}
 
 	var scopes []DashboardScope
 	if strings.TrimSpace(value.DashboardScopes) != "" {
@@ -295,19 +336,28 @@ func buildProcessConfig(value environmentConfig) (ProcessConfig, error) {
 		}
 	}
 	externalHostID := value.ExternalSkillHostID
+	var targets []ExternalSkillTarget
 	var roots []ExternalSkillRoot
 	if strings.TrimSpace(value.ExternalSkills) != "" {
-		if value.ExternalSkillHostID != "" || strings.TrimSpace(value.ExternalSkillRoots) != "" {
+		if value.ExternalSkillHostID != "" || strings.TrimSpace(value.ExternalSkillTargets) != "" ||
+			strings.TrimSpace(value.ExternalSkillRoots) != "" {
 			return ProcessConfig{}, errors.New("server: external_skills JSON cannot be combined with split external Skill settings")
 		}
 		var external externalSkillsEnvironment
 		if err := decodeJSONObject(value.ExternalSkills, &external); err != nil {
 			return ProcessConfig{}, fmt.Errorf("server: external_skills must be a JSON object: %w", err)
 		}
-		externalHostID, roots = external.HostID, external.CodexRoots
-	} else if strings.TrimSpace(value.ExternalSkillRoots) != "" {
-		if err := decodeJSONArray(value.ExternalSkillRoots, &roots); err != nil {
-			return ProcessConfig{}, fmt.Errorf("server: external_skills.codex_roots must be a JSON array: %w", err)
+		externalHostID, targets, roots = external.HostID, external.Targets, external.CodexRoots
+	} else {
+		if strings.TrimSpace(value.ExternalSkillTargets) != "" {
+			if err := decodeJSONArray(value.ExternalSkillTargets, &targets); err != nil {
+				return ProcessConfig{}, fmt.Errorf("server: external_skills.targets must be a JSON array: %w", err)
+			}
+		}
+		if strings.TrimSpace(value.ExternalSkillRoots) != "" {
+			if err := decodeJSONArray(value.ExternalSkillRoots, &roots); err != nil {
+				return ProcessConfig{}, fmt.Errorf("server: external_skills.codex_roots must be a JSON array: %w", err)
+			}
 		}
 	}
 
@@ -319,8 +369,9 @@ func buildProcessConfig(value environmentConfig) (ProcessConfig, error) {
 		Logging:   LoggingConfig{Level: strings.ToUpper(value.LoggingLevel), Format: value.LoggingFormat, Access: value.LoggingAccess},
 		Metrics:   MetricsConfig{Enabled: value.MetricsEnabled}, Tracing: TracingConfig{Enabled: value.TracingEnabled},
 		Runtime: RuntimeConfig{
-			SourceWindowLimit: value.SourceWindowLimit, MemoryExtractionProfile: memory.ExtractionProfile(value.MemoryExtractionProfile),
-			MemoryRerankEnabled: value.MemoryRerankEnabled, MemoryRerankCandidateLimit: value.MemoryRerankCandidateLimit,
+			ScopeCacheSize: value.ScopeCacheSize, SourceWindowLimit: value.SourceWindowLimit,
+			MemoryExtractionProfile: memory.ExtractionProfile(value.MemoryExtractionProfile),
+			MemoryRerankEnabled:     value.MemoryRerankEnabled, MemoryRerankCandidateLimit: value.MemoryRerankCandidateLimit,
 			SourceWindowInterval: sourceSchedule, ExperienceIncubationInterval: experienceSchedule,
 		},
 		Database: DatabaseConfig{
@@ -328,12 +379,18 @@ func buildProcessConfig(value environmentConfig) (ProcessConfig, error) {
 			SQLite: SQLiteDatabaseConfig{
 				URL: value.DatabaseURL, BusyTimeout: time.Duration(value.DatabaseBusyTimeoutMS) * time.Millisecond,
 				JournalMode: value.DatabaseJournalMode, ForeignKeys: value.DatabaseForeignKeys,
-				Vec1Extension: value.DatabaseVec1Extension, MaxOpenConns: value.DatabaseMaxOpenConns,
+				MaxOpenConns: value.DatabaseMaxOpenConns,
 				MaxIdleConns: value.DatabaseMaxIdleConns, ConnMaxLifetime: maxLifetime,
 			},
 			OceanBase: OceanBaseDatabaseConfig{
 				URL: value.DatabaseURL, MaxOpenConns: value.DatabaseMaxOpenConns,
 				MaxIdleConns: value.DatabaseMaxIdleConns, MaxLifetime: maxLifetime,
+			},
+			SeekDB: SeekDBDatabaseConfig{
+				Path: seekDBPath, Database: value.DatabaseName,
+				LibraryPath:  strings.TrimSpace(value.DatabaseLibraryPath),
+				MaxOpenConns: value.DatabaseMaxOpenConns, MaxIdleConns: value.DatabaseMaxIdleConns,
+				MaxLifetime: maxLifetime,
 			},
 		},
 		HandoffReport: HandoffReportConfig{Enabled: value.HandoffReportEnabled},
@@ -344,7 +401,7 @@ func buildProcessConfig(value environmentConfig) (ProcessConfig, error) {
 			EmbeddingNormalization: strings.TrimSpace(value.EmbeddingNormalization), EmbeddingTimeout: embeddingTimeout,
 			EmbeddingBatchSize: value.EmbeddingBatchSize,
 		},
-		ExternalSkills: ExternalSkillsConfig{HostID: externalHostID, Roots: roots},
+		ExternalSkills: ExternalSkillsConfig{HostID: externalHostID, Targets: targets, CodexRoots: roots},
 		SchedulerPath:  value.SchedulerPath,
 	}
 	if err := config.Validate(); err != nil {
@@ -363,9 +420,6 @@ func (c ProcessConfig) Validate() error {
 	if c.Auth.Enabled && c.Auth.Token == "" {
 		return errors.New("server: bearer token is required when authentication is enabled")
 	}
-	if c.Dashboard.Enabled && !c.Auth.Enabled {
-		return errors.New("server: Dashboard requires bearer authentication")
-	}
 	if err := validateDashboard(c.Dashboard); err != nil {
 		return err
 	}
@@ -377,14 +431,15 @@ func (c ProcessConfig) Validate() error {
 	if c.Logging.Format != "console" && c.Logging.Format != "json" {
 		return errors.New("server: logging format must be console or json")
 	}
-	if c.Runtime.SourceWindowLimit < 1 || c.Runtime.MemoryRerankCandidateLimit < 1 || c.Runtime.MemoryRerankCandidateLimit > 100 {
+	if c.Runtime.ScopeCacheSize < 1 || c.Runtime.SourceWindowLimit < 1 ||
+		c.Runtime.MemoryRerankCandidateLimit < 1 || c.Runtime.MemoryRerankCandidateLimit > 100 {
 		return errors.New("server: Runtime limits are invalid")
 	}
 	if _, err := memory.ExtractionInstructions(c.Runtime.MemoryExtractionProfile); err != nil {
 		return fmt.Errorf("server: %w", err)
 	}
-	if c.Database.Kind != "sqlite" && c.Database.Kind != "oceanbase" {
-		return errors.New("server: database kind must be sqlite or oceanbase")
+	if c.Database.Kind != "sqlite" && c.Database.Kind != "oceanbase" && c.Database.Kind != "seekdb" {
+		return errors.New("server: database kind must be sqlite, oceanbase, or seekdb")
 	}
 	if c.Database.Kind == "sqlite" {
 		if _, err := SQLiteDSN(c.Database.SQLite.URL); err != nil {
@@ -398,8 +453,21 @@ func (c ProcessConfig) Validate() error {
 		default:
 			return errors.New("server: SQLite journal mode is invalid")
 		}
-	} else if err := sqlstore.ValidateOceanBaseURL(c.Database.OceanBase.URL); err != nil {
-		return fmt.Errorf("server: %w", err)
+	} else if c.Database.Kind == "oceanbase" {
+		if err := sqlstore.ValidateOceanBaseURL(c.Database.OceanBase.URL); err != nil {
+			return fmt.Errorf("server: %w", err)
+		}
+	} else {
+		if strings.TrimSpace(c.Database.SeekDB.Path) == "" || c.Database.SeekDB.Path != strings.TrimSpace(c.Database.SeekDB.Path) {
+			return errors.New("server: embedded seekDB path must be a non-empty trimmed path")
+		}
+		if c.Database.SeekDB.Database != "test" {
+			return errors.New("server: embedded seekDB database must be test")
+		}
+		if c.Database.SeekDB.MaxOpenConns < 1 || c.Database.SeekDB.MaxIdleConns < 0 ||
+			c.Database.SeekDB.MaxIdleConns > c.Database.SeekDB.MaxOpenConns || c.Database.SeekDB.MaxLifetime < 0 {
+			return errors.New("server: embedded seekDB connection pool limits are invalid")
+		}
 	}
 	if c.Inference.GenerationTimeout <= 0 || c.Inference.GenerationMaxRequests < 1 || c.Inference.EmbeddingTimeout <= 0 || c.Inference.EmbeddingBatchSize < 1 {
 		return errors.New("server: inference limits are invalid")
@@ -423,9 +491,6 @@ func (c ProcessConfig) Validate() error {
 	if c.Runtime.ExperienceIncubationInterval != nil && c.Inference.GenerationModel == "" {
 		return errors.New("server: scheduled Experience incubation requires a generation model")
 	}
-	if c.Database.Kind == "sqlite" && c.Database.SQLite.Vec1Extension != "" && c.Inference.EmbeddingModel == "" {
-		return errors.New("server: SQLite Vec1 requires an embedding model")
-	}
 	if err := validateExternalSkills(c.ExternalSkills); err != nil {
 		return err
 	}
@@ -436,9 +501,6 @@ func (c ProcessConfig) Validate() error {
 }
 
 func validateDashboard(config DashboardConfig) error {
-	if config.Enabled && len(config.Scopes) == 0 {
-		return errors.New("server: enabled Dashboard requires at least one scope")
-	}
 	if len(config.Scopes) > 100 {
 		return errors.New("server: Dashboard supports at most 100 scopes")
 	}
@@ -457,25 +519,42 @@ func validateDashboard(config DashboardConfig) error {
 }
 
 func validateExternalSkills(config ExternalSkillsConfig) error {
-	if len(config.Roots) > 0 && (strings.TrimSpace(config.HostID) == "" || config.HostID != strings.TrimSpace(config.HostID)) {
-		return errors.New("server: external Skill roots require a trimmed host identity")
+	targetCount := len(config.Targets) + len(config.CodexRoots)
+	if targetCount > 0 && (strings.TrimSpace(config.HostID) == "" || config.HostID != strings.TrimSpace(config.HostID)) {
+		return errors.New("server: external Skill Agent targets require a trimmed host identity")
 	}
 	if len([]rune(config.HostID)) > 128 {
 		return errors.New("server: external Skill host identity is too long")
 	}
-	seen := make(map[string]struct{}, len(config.Roots))
-	for _, root := range config.Roots {
-		if root.RootID == "" || root.Path == "" {
-			return errors.New("server: external Skill root is incomplete")
+	seen := make(map[string]struct{}, targetCount)
+	validateTarget := func(id, agentKind, installationScope, path string) error {
+		if len(id) < 1 || len(id) > 64 || !externalSkillTargetIDPattern.MatchString(id) || path == "" {
+			return errors.New("server: external Skill Agent target is incomplete")
 		}
-		if _, duplicate := seen[root.RootID]; duplicate {
-			return errors.New("server: external Skill root IDs must be unique")
+		if _, duplicate := seen[id]; duplicate {
+			return errors.New("server: external Skill Agent target IDs must be unique")
 		}
-		seen[root.RootID] = struct{}{}
-		switch root.InstallationScope {
+		seen[id] = struct{}{}
+		switch agentKind {
+		case "codex", "claude_code":
+		default:
+			return errors.New("server: external Skill Agent kind is invalid")
+		}
+		switch installationScope {
 		case "user", "project", "plugin":
 		default:
 			return errors.New("server: external Skill installation scope is invalid")
+		}
+		return nil
+	}
+	for _, target := range config.Targets {
+		if err := validateTarget(target.TargetID, target.AgentKind, target.InstallationScope, target.Path); err != nil {
+			return err
+		}
+	}
+	for _, root := range config.CodexRoots {
+		if err := validateTarget(root.RootID, "codex", root.InstallationScope, root.Path); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -577,6 +656,14 @@ func DefaultDatabasePath() (string, error) {
 		return "", err
 	}
 	return filepath.Join(directory, "powercontext.db"), nil
+}
+
+func DefaultSeekDBPath() (string, error) {
+	directory, err := PowerContextDataDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(directory, "seekdb"), nil
 }
 
 func DefaultSchedulerPath() (string, error) {

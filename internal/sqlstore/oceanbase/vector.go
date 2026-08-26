@@ -38,19 +38,7 @@ func (i *MemoryVectorIndex) Capabilities() memory.Capabilities {
 }
 
 func (i *MemoryVectorIndex) Initialize(ctx context.Context, db sqlstore.DBTX) error {
-	statement := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
-        vector_id BIGINT NOT NULL AUTO_INCREMENT,
-        scope_id VARCHAR(256) NOT NULL,
-        memory_artifact_id VARCHAR(128) NOT NULL,
-        head_revision BIGINT NOT NULL,
-        entry_id VARCHAR(128) NOT NULL,
-        entry_version_id VARCHAR(128) NOT NULL,
-        entry_content_hash VARCHAR(64) NOT NULL,
-        embedding_content_hash VARCHAR(64) NOT NULL,
-        embedding VECTOR(%d) NOT NULL,
-        PRIMARY KEY (vector_id),
-        CONSTRAINT uq_pc_memory_vector_entries_head UNIQUE (scope_id, memory_artifact_id, entry_id)
-    )`, memoryVectorTableName, i.profile.Dimension)
+	statement := memoryVectorDDL(i.profile.Dimension)
 	if _, err := db.ExecContext(ctx, statement); err != nil {
 		return &memory.CapabilityNotSupportedError{Capability: "oceanbase-vector", Detail: err.Error()}
 	}
@@ -81,6 +69,26 @@ func (i *MemoryVectorIndex) Initialize(ctx context.Context, db sqlstore.DBTX) er
 		}
 	}
 	return nil
+}
+
+func memoryVectorDDL(dimension int) string {
+	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
+        vector_id BIGINT NOT NULL AUTO_INCREMENT,
+		scope_id %s NOT NULL,
+		memory_artifact_id %s NOT NULL,
+        head_revision BIGINT NOT NULL,
+		entry_id %s NOT NULL,
+		entry_version_id %s NOT NULL,
+		entry_content_hash %s NOT NULL,
+		embedding_content_hash %s NOT NULL,
+        embedding VECTOR(%d) NOT NULL,
+        PRIMARY KEY (vector_id),
+        CONSTRAINT uq_pc_memory_vector_entries_head UNIQUE (scope_id, memory_artifact_id, entry_id)
+	)`, memoryVectorTableName,
+		sqlstore.MySQLIdentityType(256), sqlstore.MySQLIdentityType(128),
+		sqlstore.MySQLIdentityType(128), sqlstore.MySQLIdentityType(128),
+		sqlstore.MySQLIdentityType(64), sqlstore.MySQLIdentityType(64),
+		dimension)
 }
 
 func (i *MemoryVectorIndex) Replace(

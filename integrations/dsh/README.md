@@ -5,8 +5,8 @@
 Install the PowerContext tool first, then configure the plugin from the same Git ref:
 
 ```bash
-uv tool install "powercontext[cli,server] @ git+https://github.com/oceanbase/powercontext.git@master"
-powercontext setup dsh --source oceanbase/powercontext --ref master
+go install github.com/ob-labs/powercontext-go/cmd/powercontext@latest
+powercontext setup dsh --source ob-labs/powercontext-go --ref main
 powercontext server run
 ```
 

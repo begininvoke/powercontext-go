@@ -1,12 +1,14 @@
 {{define "document-head"}}<!doctype html>
-<html lang="en" data-server-session="missing">
+<html lang="en" data-server-session="{{if .AuthenticationRequired}}missing{{else}}active{{end}}" data-server-auth-required="{{if .AuthenticationRequired}}true{{else}}false{{end}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Title}}</title>
+  <link rel="icon" href="/static/powercontext-color.png" type="image/png">
   <script>
     try {
-      document.documentElement.dataset.serverSession = sessionStorage.getItem("powercontext.server.token")
+      const authenticationRequired = document.documentElement.dataset.serverAuthRequired === "true";
+      document.documentElement.dataset.serverSession = !authenticationRequired || sessionStorage.getItem("powercontext.server.token")
         ? "active"
         : "missing";
     } catch (error) {
@@ -26,20 +28,20 @@
       // Theme persistence is optional when browser storage is unavailable.
     }
   </script>
-  <link rel="stylesheet" href="/static/site.css?v=handoff-baseline">
+  <link rel="stylesheet" href="/static/site.css?v=powercontext-brand-review-v1">
 </head>
 <body>{{end}}
 
 {{define "header"}}<header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="/" aria-label="PowerContext Dashboard">
-      <img class="brand-mark" src="/static/oceanbase-logo.svg" alt="">
-      <span class="brand-owner">OceanBase</span>
-      <span class="brand-divider" aria-hidden="true">|</span>
-      <span class="brand-product">PowerContext</span>
+    <a class="brand" href="{{.HomeRoute}}" aria-label="PowerContext Dashboard" data-i18n-aria-label="brandHomeLabel">
+      <img class="brand-wordmark brand-wordmark-color" src="/static/powercontext-color.png" alt="PowerContext">
+      <img class="brand-wordmark brand-wordmark-reverse" src="/static/powercontext-reverse.png" alt="" aria-hidden="true">
     </a>
-    <nav class="primary-nav" aria-label="Primary navigation">
-      <a href="/"{{if eq .ActivePage "dashboard"}} aria-current="page"{{end}} data-i18n="dashboardTitle">Dashboard</a>
+    <nav class="primary-nav" aria-label="Primary navigation" data-i18n-aria-label="primaryNavigation">
+      {{if .DashboardEnabled}}<a href="/"{{if eq .ActivePage "dashboard"}} aria-current="page"{{end}} data-i18n="dashboardTitle">Dashboard</a>{{end}}
+      {{if .SkillsEnabled}}<a href="/skills"{{if eq .ActivePage "skills"}} aria-current="page"{{end}} data-i18n="skillsTitle">Skills</a>{{end}}
+      {{if .ReviewEnabled}}<a href="/reviews"{{if eq .ActivePage "review"}} aria-current="page"{{end}} data-i18n="reviewTitle">Review</a>{{end}}
       {{if .HandoffReportEnabled}}<a href="/handoff-reports"{{if eq .ActivePage "handoff_report"}} aria-current="page"{{end}} data-i18n="handoffReportTitle">Handoff Report</a>{{end}}
     </nav>
     <div class="header-tools">
@@ -52,11 +54,9 @@
 
 {{define "footer"}}<footer class="site-footer">
   <div class="site-footer-inner">
-    <a class="footer-brand" href="/" aria-label="PowerContext Dashboard">
-      <img class="brand-mark" src="/static/oceanbase-logo.svg" alt="">
-      <span>OceanBase</span>
-      <span class="brand-divider" aria-hidden="true">|</span>
-      <span class="brand-product">PowerContext</span>
+    <a class="footer-brand" href="{{.HomeRoute}}" aria-label="PowerContext Dashboard" data-i18n-aria-label="brandHomeLabel">
+      <img class="brand-wordmark brand-wordmark-color" src="/static/powercontext-color.png" alt="PowerContext">
+      <img class="brand-wordmark brand-wordmark-reverse" src="/static/powercontext-reverse.png" alt="" aria-hidden="true">
     </a>
     <div class="footer-maintainer" data-i18n="maintainedBy">Maintained by OceanBase.</div>
   </div>

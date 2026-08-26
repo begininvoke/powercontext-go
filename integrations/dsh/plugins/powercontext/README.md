@@ -5,7 +5,7 @@ This plugin is a thin DeepSeek Harness integration for a running PowerContext Se
 Install it from a PowerContext checkout so the Server and plugin stay on the same ref:
 
 ```bash
-powercontext setup dsh --source oceanbase/powercontext --ref master
+powercontext setup dsh --source ob-labs/powercontext-go --ref main
 powercontext server run
 dsh web
 ```

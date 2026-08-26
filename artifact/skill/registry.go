@@ -8,7 +8,7 @@ import (
 // RegistrationStore is the consumer-shaped persistence boundary for one
 // scoped, rebuildable external Skill projection.
 type RegistrationStore interface {
-	Replace(context.Context, string, string, []Registration) ([]Registration, error)
+	Replace(context.Context, []string, string, []Registration) ([]Registration, error)
 	Get(context.Context, string) (Registration, error)
 	List(context.Context) ([]Registration, error)
 }
@@ -34,6 +34,20 @@ func NewRegistryService(store RegistrationStore, provider ExternalProvider) (*Re
 	if err := externalText("host_id", provider.HostID(), MaxExternalHostIDLength); err != nil {
 		return nil, err
 	}
+	providerNames := provider.ProviderNames()
+	if len(providerNames) == 0 {
+		return nil, fmt.Errorf("external Skill provider names must not be empty")
+	}
+	seen := make(map[string]struct{}, len(providerNames))
+	for _, name := range providerNames {
+		if !validAgentKind(name) {
+			return nil, fmt.Errorf("invalid external Skill provider name %q", name)
+		}
+		if _, duplicate := seen[name]; duplicate {
+			return nil, fmt.Errorf("external Skill provider names must be unique")
+		}
+		seen[name] = struct{}{}
+	}
 	return &RegistryService{store: store, provider: provider}, nil
 }
 
@@ -42,7 +56,9 @@ func (s *RegistryService) Scan(ctx context.Context) (ProviderScan, error) {
 	if err != nil {
 		return ProviderScan{}, err
 	}
-	if _, err := s.store.Replace(ctx, s.provider.Name(), s.provider.HostID(), snapshot.Registrations()); err != nil {
+	if _, err := s.store.Replace(
+		ctx, s.provider.ProviderNames(), s.provider.HostID(), snapshot.Registrations(),
+	); err != nil {
 		return ProviderScan{}, err
 	}
 	return snapshot, nil

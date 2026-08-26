@@ -29,6 +29,13 @@ func trimTrailingSlashes(u *url.URL) {
 
 // Invoker invokes operations described by OpenAPI v3 specification.
 type Invoker interface {
+	// AcknowledgeHandoff invokes acknowledge_handoff operation.
+	//
+	// Re-resolve one prepared or exact Handoff, check evidence, and capture the receiver's explicit
+	// live-state, capability, and authorization checks.
+	//
+	// POST /v1/work/handoffs/acknowledge
+	AcknowledgeHandoff(ctx context.Context, request *AcknowledgeHandoffRequest) (AcknowledgeHandoffRes, error)
 	// ActivateHandoff invokes activate_handoff operation.
 	//
 	// Evaluate the standard Handoff Trigger and synchronously execute any emitted PrepareHandoff Action.
@@ -71,6 +78,12 @@ type Invoker interface {
 	//
 	// POST /v1/handoff-reports/projects/create
 	CreateHandoffReportProject(ctx context.Context, request *CreateHandoffReportProjectRequest) (CreateHandoffReportProjectRes, error)
+	// CreateWorkContract invokes create_work_contract operation.
+	//
+	// Persist an inspectable delegation baseline without granting execution authority.
+	//
+	// POST /v1/work/contracts/create
+	CreateWorkContract(ctx context.Context, request *CreateWorkContractRequest) (CreateWorkContractRes, error)
 	// DetachHandoffReportWorkspace invokes detach_handoff_report_workspace operation.
 	//
 	// Detach a Handoff Report Workspace Binding.
@@ -169,6 +182,13 @@ type Invoker interface {
 	//
 	// GET /v1/stats
 	GetStats(ctx context.Context, params GetStatsParams) (GetStatsRes, error)
+	// HandoffCurrentWork invokes handoff_current_work operation.
+	//
+	// Capture an inspected boundary and prepare a temporary evidence-bearing Handoff without committing
+	// it.
+	//
+	// POST /v1/work/handoffs/prepare-current
+	HandoffCurrentWork(ctx context.Context, request *HandoffCurrentWorkRequest) (HandoffCurrentWorkRes, error)
 	// ImportExternalSkill invokes import_external_skill operation.
 	//
 	// Capture one exact local snapshot and use the configured model to propose a new managed Skill
@@ -194,6 +214,12 @@ type Invoker interface {
 	//
 	// POST /v1/handoff-reports/activities/list
 	ListHandoffReportActivities(ctx context.Context, request *ListHandoffReportActivitiesRequest) (ListHandoffReportActivitiesRes, error)
+	// ListHandoffReportKnownScopes invokes list_handoff_report_known_scopes operation.
+	//
+	// List scopes that contain a committed Handoff.
+	//
+	// POST /v1/handoff-reports/scopes/list-known
+	ListHandoffReportKnownScopes(ctx context.Context, request *ListHandoffReportKnownScopesRequest) (ListHandoffReportKnownScopesRes, error)
 	// ListHandoffReportProjects invokes list_handoff_report_projects operation.
 	//
 	// List Handoff Report Projects.
@@ -255,6 +281,13 @@ type Invoker interface {
 	//
 	// POST /v1/handoff-reports/activities/record
 	RecordHandoffReportActivity(ctx context.Context, request *RecordHandoffReportActivityRequest) (RecordHandoffReportActivityRes, error)
+	// RecordTaskOutcome invokes record_task_outcome operation.
+	//
+	// Preserve one attempt's status and checks, optionally linked to the exact accepted Handoff Receipt
+	// that the result covers.
+	//
+	// POST /v1/work/outcomes/record
+	RecordTaskOutcome(ctx context.Context, request *RecordTaskOutcomeRequest) (RecordTaskOutcomeRes, error)
 	// RegisterHandoffReportWorkstream invokes register_handoff_report_workstream operation.
 	//
 	// Register a Handoff Report Workstream.
@@ -363,6 +396,124 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 		return c.serverURL
 	}
 	return u
+}
+
+// AcknowledgeHandoff invokes acknowledge_handoff operation.
+//
+// Re-resolve one prepared or exact Handoff, check evidence, and capture the receiver's explicit
+// live-state, capability, and authorization checks.
+//
+// POST /v1/work/handoffs/acknowledge
+func (c *Client) AcknowledgeHandoff(ctx context.Context, request *AcknowledgeHandoffRequest) (AcknowledgeHandoffRes, error) {
+	res, err := c.sendAcknowledgeHandoff(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendAcknowledgeHandoff(ctx context.Context, request *AcknowledgeHandoffRequest) (res AcknowledgeHandoffRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("acknowledge_handoff"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/work/handoffs/acknowledge"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, AcknowledgeHandoffOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/work/handoffs/acknowledge"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeAcknowledgeHandoffRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, AcknowledgeHandoffOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+				{},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeAcknowledgeHandoffResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
 }
 
 // ActivateHandoff invokes activate_handoff operation.
@@ -1177,6 +1328,123 @@ func (c *Client) sendCreateHandoffReportProject(ctx context.Context, request *Cr
 
 	stage = "DecodeResponse"
 	result, err := decodeCreateHandoffReportProjectResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// CreateWorkContract invokes create_work_contract operation.
+//
+// Persist an inspectable delegation baseline without granting execution authority.
+//
+// POST /v1/work/contracts/create
+func (c *Client) CreateWorkContract(ctx context.Context, request *CreateWorkContractRequest) (CreateWorkContractRes, error) {
+	res, err := c.sendCreateWorkContract(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendCreateWorkContract(ctx context.Context, request *CreateWorkContractRequest) (res CreateWorkContractRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("create_work_contract"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/work/contracts/create"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, CreateWorkContractOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/work/contracts/create"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeCreateWorkContractRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, CreateWorkContractOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+				{},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeCreateWorkContractResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -3013,6 +3281,124 @@ func (c *Client) sendGetStats(ctx context.Context, params GetStatsParams) (res G
 	return result, nil
 }
 
+// HandoffCurrentWork invokes handoff_current_work operation.
+//
+// Capture an inspected boundary and prepare a temporary evidence-bearing Handoff without committing
+// it.
+//
+// POST /v1/work/handoffs/prepare-current
+func (c *Client) HandoffCurrentWork(ctx context.Context, request *HandoffCurrentWorkRequest) (HandoffCurrentWorkRes, error) {
+	res, err := c.sendHandoffCurrentWork(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendHandoffCurrentWork(ctx context.Context, request *HandoffCurrentWorkRequest) (res HandoffCurrentWorkRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("handoff_current_work"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/work/handoffs/prepare-current"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, HandoffCurrentWorkOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/work/handoffs/prepare-current"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeHandoffCurrentWorkRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, HandoffCurrentWorkOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+				{},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeHandoffCurrentWorkResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
 // ImportExternalSkill invokes import_external_skill operation.
 //
 // Capture one exact local snapshot and use the configured model to propose a new managed Skill
@@ -3475,6 +3861,123 @@ func (c *Client) sendListHandoffReportActivities(ctx context.Context, request *L
 
 	stage = "DecodeResponse"
 	result, err := decodeListHandoffReportActivitiesResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// ListHandoffReportKnownScopes invokes list_handoff_report_known_scopes operation.
+//
+// List scopes that contain a committed Handoff.
+//
+// POST /v1/handoff-reports/scopes/list-known
+func (c *Client) ListHandoffReportKnownScopes(ctx context.Context, request *ListHandoffReportKnownScopesRequest) (ListHandoffReportKnownScopesRes, error) {
+	res, err := c.sendListHandoffReportKnownScopes(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendListHandoffReportKnownScopes(ctx context.Context, request *ListHandoffReportKnownScopesRequest) (res ListHandoffReportKnownScopesRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("list_handoff_report_known_scopes"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/handoff-reports/scopes/list-known"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, ListHandoffReportKnownScopesOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/handoff-reports/scopes/list-known"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeListHandoffReportKnownScopesRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, ListHandoffReportKnownScopesOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+				{},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeListHandoffReportKnownScopesResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}
@@ -4646,6 +5149,124 @@ func (c *Client) sendRecordHandoffReportActivity(ctx context.Context, request *R
 
 	stage = "DecodeResponse"
 	result, err := decodeRecordHandoffReportActivityResponse(resp)
+	if err != nil {
+		return res, errors.Wrap(err, "decode response")
+	}
+
+	return result, nil
+}
+
+// RecordTaskOutcome invokes record_task_outcome operation.
+//
+// Preserve one attempt's status and checks, optionally linked to the exact accepted Handoff Receipt
+// that the result covers.
+//
+// POST /v1/work/outcomes/record
+func (c *Client) RecordTaskOutcome(ctx context.Context, request *RecordTaskOutcomeRequest) (RecordTaskOutcomeRes, error) {
+	res, err := c.sendRecordTaskOutcome(ctx, request)
+	return res, err
+}
+
+func (c *Client) sendRecordTaskOutcome(ctx context.Context, request *RecordTaskOutcomeRequest) (res RecordTaskOutcomeRes, err error) {
+	otelAttrs := []attribute.KeyValue{
+		otelogen.OperationID("record_task_outcome"),
+		semconv.HTTPRequestMethodKey.String("POST"),
+		semconv.URLTemplateKey.String("/v1/work/outcomes/record"),
+	}
+	otelAttrs = append(otelAttrs, c.cfg.Attributes...)
+
+	// Run stopwatch.
+	startTime := time.Now()
+	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
+		elapsedDuration := time.Since(startTime)
+		c.duration.Record(ctx, float64(elapsedDuration)/float64(time.Millisecond), metric.WithAttributes(otelAttrs...))
+	}()
+
+	// Increment request counter.
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+
+	// Start a span for this request.
+	ctx, span := c.cfg.Tracer.Start(ctx, RecordTaskOutcomeOperation,
+		trace.WithAttributes(otelAttrs...),
+		clientSpanKind,
+	)
+	// Track stage for error reporting.
+	var stage string
+	defer func() {
+		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, stage)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
+		}
+		span.End()
+	}()
+
+	stage = "BuildURL"
+	u := uri.Clone(c.requestURL(ctx))
+	var pathParts [1]string
+	pathParts[0] = "/v1/work/outcomes/record"
+	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeRequest"
+	r, err := ht.NewRequest(ctx, "POST", u)
+	if err != nil {
+		return res, errors.Wrap(err, "create request")
+	}
+	if err := encodeRecordTaskOutcomeRequest(request, r); err != nil {
+		return res, errors.Wrap(err, "encode request")
+	}
+
+	{
+		type bitset = [1]uint8
+		var satisfied bitset
+		{
+			stage = "Security:BearerAuth"
+			switch err := c.securityBearerAuth(ctx, RecordTaskOutcomeOperation, r); {
+			case err == nil: // if NO error
+				satisfied[0] |= 1 << 0
+			case errors.Is(err, ogenerrors.ErrSkipClientSecurity):
+				// Skip this security.
+			default:
+				return res, errors.Wrap(err, "security \"BearerAuth\"")
+			}
+		}
+
+		if ok := func() bool {
+		nextRequirement:
+			for _, requirement := range []bitset{
+				{0b00000001},
+				{},
+			} {
+				for i, mask := range requirement {
+					if satisfied[i]&mask != mask {
+						continue nextRequirement
+					}
+				}
+				return true
+			}
+			return false
+		}(); !ok {
+			return res, ogenerrors.ErrSecurityRequirementIsNotSatisfied
+		}
+	}
+
+	stage = "SendRequest"
+	resp, err := c.cfg.Client.Do(r)
+	if err != nil {
+		return res, errors.Wrap(err, "do request")
+	}
+	body := resp.Body
+	defer func() {
+		// Drain the body to EOF before closing, so the underlying
+		// connection can be reused by the Transport regardless of the
+		// response status code. See https://github.com/ogen-go/ogen/issues/1670.
+		_, _ = io.Copy(io.Discard, body)
+		_ = body.Close()
+	}()
+
+	stage = "DecodeResponse"
+	result, err := decodeRecordTaskOutcomeResponse(resp)
 	if err != nil {
 		return res, errors.Wrap(err, "decode response")
 	}

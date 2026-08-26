@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 type systemCommandCall struct {
@@ -60,6 +61,24 @@ func (s *scriptedSystemCommands) Run(_ context.Context, executable string, argum
 	return []byte(result.output), result.err
 }
 
+func (s *scriptedSystemCommands) RunEnv(
+	ctx context.Context,
+	_ map[string]string,
+	executable string,
+	arguments ...string,
+) ([]byte, error) {
+	return s.Run(ctx, executable, arguments...)
+}
+
+func (s *scriptedSystemCommands) RunTimeout(
+	ctx context.Context,
+	_ time.Duration,
+	executable string,
+	arguments ...string,
+) ([]byte, error) {
+	return s.Run(ctx, executable, arguments...)
+}
+
 func executeSystemCLI(
 	t *testing.T,
 	httpClient *http.Client,
@@ -99,7 +118,7 @@ func TestSetupCodexRemoteRefPreparesStorageAndVerifiesPlugin(t *testing.T) {
 	}
 
 	stdout, _, err := executeSystemCLI(t, nil, commands,
-		"setup", "codex", "--source", "oceanbase/powercontext", "--ref", "tested-ref", "--json")
+		"setup", "codex", "--source", "ob-labs/powercontext-go", "--ref", "tested-ref", "--json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +137,7 @@ func TestSetupCodexRemoteRefPreparesStorageAndVerifiesPlugin(t *testing.T) {
 		t.Fatalf("data directory was not prepared: %v", statErr)
 	}
 	wantCalls := []string{
-		"codex plugin marketplace add oceanbase/powercontext --ref tested-ref --json",
+		"codex plugin marketplace add ob-labs/powercontext-go --ref tested-ref --json",
 		"codex plugin add powercontext@powercontext --json",
 		"codex plugin list --json",
 	}
@@ -382,7 +401,7 @@ func TestSetupDSHRejectsMissingBundleBeforeCommand(t *testing.T) {
 func TestResolveDSHPluginRejectsEscapingRef(t *testing.T) {
 	_, err := resolveDSHPlugin(
 		context.Background(), &scriptedSystemCommands{t: t},
-		"oceanbase/powercontext", "../../etc", filepath.Join(t.TempDir(), "data"),
+		"ob-labs/powercontext-go", "../../etc", filepath.Join(t.TempDir(), "data"),
 	)
 	if err == nil || !strings.Contains(err.Error(), "invalid DeepSeek Harness ref") {
 		t.Fatalf("resolve error = %v", err)
@@ -391,7 +410,7 @@ func TestResolveDSHPluginRejectsEscapingRef(t *testing.T) {
 
 func TestResolveDSHPluginReplacesBrokenCheckout(t *testing.T) {
 	home := filepath.Join(t.TempDir(), "data")
-	stale := filepath.Join(home, "checkouts", "dsh", "master")
+	stale := filepath.Join(home, "checkouts", "dsh", "main")
 	if err := os.MkdirAll(stale, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -405,7 +424,7 @@ func TestResolveDSHPluginReplacesBrokenCheckout(t *testing.T) {
 		}}},
 	}
 	plugin, err := resolveDSHPlugin(
-		context.Background(), commands, "https://github.com/oceanbase/powercontext", "master", home,
+		context.Background(), commands, "https://github.com/ob-labs/powercontext-go", "main", home,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -422,7 +441,7 @@ func TestResolveDSHPluginReplacesBrokenCheckout(t *testing.T) {
 	if plugin != wantPlugin {
 		t.Fatalf("plugin = %q, want %q", plugin, wantPlugin)
 	}
-	wantCommand := "git clone --depth 1 --branch master https://github.com/oceanbase/powercontext.git " + stale
+	wantCommand := "git clone --depth 1 --branch main https://github.com/ob-labs/powercontext-go.git " + stale
 	if got := commands.calls[0].String(); got != wantCommand {
 		t.Fatalf("clone command = %q, want %q", got, wantCommand)
 	}
