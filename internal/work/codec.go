@@ -1,3 +1,17 @@
+// Copyright (c) 2026 OceanBase.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package work
 
 import (
@@ -219,202 +233,6 @@ func PreparedDigest(value handoff.Prepared) (string, error) {
 	}
 	sum := sha256.Sum256(encoded)
 	return "sha256:" + hex.EncodeToString(sum[:]), nil
-}
-
-func encodeContract(value Contract) (contractJSON, error) {
-	if err := value.Validate(); err != nil {
-		return contractJSON{}, err
-	}
-	facts, err := encodeClaims(value.facts)
-	if err != nil {
-		return contractJSON{}, err
-	}
-	return contractJSON{
-		Schema: WorkContractSchema, Trust: UntrustedInput, Objective: value.objective,
-		Facts: facts, InScope: nonNil(value.inScope), Exclusions: nonNil(value.exclusions),
-		CompletionCriteria: nonNil(value.completionCriteria), AuthorizationNotes: nonNil(value.authorizationNotes),
-		OpenQuestions: nonNil(value.openQuestions),
-	}, nil
-}
-
-func decodeContract(value contractJSON) (Contract, error) {
-	if value.Schema != WorkContractSchema || value.Trust != UntrustedInput {
-		return Contract{}, &InvalidError{Field: "contract.schema", Detail: "does not match the Work contract"}
-	}
-	facts, err := decodeClaims(value.Facts)
-	if err != nil {
-		return Contract{}, err
-	}
-	return NewContract(value.Objective, facts, value.InScope, value.Exclusions, value.CompletionCriteria, value.AuthorizationNotes, value.OpenQuestions)
-}
-
-func encodeCurrentHandoff(value CurrentHandoff) (currentHandoffJSON, error) {
-	if err := value.Validate(); err != nil {
-		return currentHandoffJSON{}, err
-	}
-	state, err := encodeClaims(value.state)
-	if err != nil {
-		return currentHandoffJSON{}, err
-	}
-	var next *claimJSON
-	if value.nextAction != nil {
-		encoded, encodeErr := encodeClaim(*value.nextAction)
-		if encodeErr != nil {
-			return currentHandoffJSON{}, encodeErr
-		}
-		next = &encoded
-	}
-	return currentHandoffJSON{
-		Schema: CurrentWorkHandoffSchema, Trust: UntrustedInput, Objective: value.objective,
-		State: state, Disposition: value.disposition, NextAction: next, Omissions: nonNil(value.omissions),
-	}, nil
-}
-
-func decodeCurrentHandoff(value currentHandoffJSON) (CurrentHandoff, error) {
-	if value.Schema != CurrentWorkHandoffSchema || value.Trust != UntrustedInput {
-		return CurrentHandoff{}, &InvalidError{Field: "handoff.schema", Detail: "does not match the current Work Handoff"}
-	}
-	state, err := decodeClaims(value.State)
-	if err != nil {
-		return CurrentHandoff{}, err
-	}
-	var next *Claim
-	if value.NextAction != nil {
-		decoded, decodeErr := decodeClaim(*value.NextAction)
-		if decodeErr != nil {
-			return CurrentHandoff{}, decodeErr
-		}
-		next = &decoded
-	}
-	return NewCurrentHandoff(value.Objective, state, value.Disposition, next, value.Omissions)
-}
-
-func encodeTaskOutcome(value TaskOutcome) (taskOutcomeJSON, error) {
-	if err := value.Validate(); err != nil {
-		return taskOutcomeJSON{}, err
-	}
-	observations, err := encodeClaims(value.observations)
-	if err != nil {
-		return taskOutcomeJSON{}, err
-	}
-	checks := make([]taskCheckJSON, len(value.checks))
-	for index, check := range value.checks {
-		evidence, encodeErr := encodeCitations(check.evidence)
-		if encodeErr != nil {
-			return taskOutcomeJSON{}, encodeErr
-		}
-		checks[index] = taskCheckJSON{Name: check.name, Status: check.status, Details: cloneString(check.details), Basis: check.basis, Evidence: evidence}
-	}
-	artifacts := make([]artifactRefJSON, len(value.producedArtifacts))
-	for index, ref := range value.producedArtifacts {
-		artifacts[index] = encodeArtifactRef(ref)
-	}
-	var receipt *sourceRefJSON
-	if value.handoffReceiptRef != nil {
-		encoded := encodeSourceRef(*value.handoffReceiptRef)
-		receipt = &encoded
-	}
-	return taskOutcomeJSON{
-		Schema: TaskOutcomeSchema, Trust: UntrustedObservation, Objective: value.objective,
-		Status: value.status, Summary: value.summary, HandoffReceiptRef: receipt,
-		Observations: observations, Checks: checks, ProducedArtifacts: artifacts,
-		RemainingWork: nonNil(value.remainingWork),
-	}, nil
-}
-
-func decodeTaskOutcome(value taskOutcomeJSON) (TaskOutcome, error) {
-	if value.Schema != TaskOutcomeSchema || value.Trust != UntrustedObservation {
-		return TaskOutcome{}, &InvalidError{Field: "outcome.schema", Detail: "does not match the Task outcome"}
-	}
-	observations, err := decodeClaims(value.Observations)
-	if err != nil {
-		return TaskOutcome{}, err
-	}
-	checks := make([]TaskCheck, len(value.Checks))
-	for index, check := range value.Checks {
-		evidence, decodeErr := decodeCitations(check.Evidence)
-		if decodeErr != nil {
-			return TaskOutcome{}, decodeErr
-		}
-		checks[index], decodeErr = NewTaskCheck(check.Name, check.Status, check.Details, check.Basis, evidence)
-		if decodeErr != nil {
-			return TaskOutcome{}, decodeErr
-		}
-	}
-	artifacts := make([]artifact.Ref, len(value.ProducedArtifacts))
-	for index, ref := range value.ProducedArtifacts {
-		artifacts[index], err = decodeArtifactRef(ref)
-		if err != nil {
-			return TaskOutcome{}, err
-		}
-	}
-	var receipt *source.Ref
-	if value.HandoffReceiptRef != nil {
-		decoded, decodeErr := decodeSourceRef(*value.HandoffReceiptRef)
-		if decodeErr != nil {
-			return TaskOutcome{}, decodeErr
-		}
-		receipt = &decoded
-	}
-	return NewTaskOutcome(value.Objective, value.Status, value.Summary, receipt, observations, checks, artifacts, value.RemainingWork)
-}
-
-func encodeHandoffReceipt(value HandoffReceipt) (handoffReceiptJSON, error) {
-	if err := value.Validate(); err != nil {
-		return handoffReceiptJSON{}, err
-	}
-	var selected *artifactRefJSON
-	if value.selectedRevision != nil {
-		encoded := encodeArtifactRef(*value.selectedRevision)
-		selected = &encoded
-	}
-	var checks *receiverChecksJSON
-	if value.receiverChecks != nil {
-		checks = &receiverChecksJSON{
-			LiveState: value.receiverChecks.liveState, Capability: value.receiverChecks.capability,
-			Authorization: value.receiverChecks.authorization,
-		}
-	}
-	evidence, err := encodeCitations(value.unavailableEvidence)
-	if err != nil {
-		return handoffReceiptJSON{}, err
-	}
-	return handoffReceiptJSON{
-		Schema: HandoffReceiptSchema, Trust: UntrustedObservation, Receiver: value.receiver,
-		Status: value.status, Selection: value.selection, SelectedRevision: selected,
-		PreparedDigest: cloneString(value.preparedDigest), ReceiverChecks: checks,
-		EvidenceStatus: value.evidenceStatus, UnavailableEvidence: evidence, Message: cloneString(value.message),
-	}, nil
-}
-
-func decodeHandoffReceipt(value handoffReceiptJSON) (HandoffReceipt, error) {
-	if value.Schema != HandoffReceiptSchema || value.Trust != UntrustedObservation {
-		return HandoffReceipt{}, &InvalidError{Field: "receipt.schema", Detail: "does not match the Handoff receipt"}
-	}
-	var selected *artifact.Ref
-	if value.SelectedRevision != nil {
-		decoded, err := decodeArtifactRef(*value.SelectedRevision)
-		if err != nil {
-			return HandoffReceipt{}, err
-		}
-		selected = &decoded
-	}
-	var checks *ReceiverChecks
-	if value.ReceiverChecks != nil {
-		decoded, err := NewReceiverChecks(value.ReceiverChecks.LiveState, value.ReceiverChecks.Capability, value.ReceiverChecks.Authorization)
-		if err != nil {
-			return HandoffReceipt{}, err
-		}
-		checks = &decoded
-	}
-	evidence, err := decodeCitations(value.UnavailableEvidence)
-	if err != nil {
-		return HandoffReceipt{}, err
-	}
-	return NewHandoffReceipt(
-		value.Receiver, value.Status, value.Selection, selected, value.PreparedDigest,
-		checks, value.EvidenceStatus, evidence, value.Message,
-	)
 }
 
 func encodeClaims(values []Claim) ([]claimJSON, error) {

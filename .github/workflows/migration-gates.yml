@@ -1,39 +1,28 @@
-name: CI
+name: Go migration assurance
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
-
-concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 env:
   GOTOOLCHAIN: local
 
 jobs:
   quality:
-    name: Contract, race, and static checks
+    name: Contract, race, fuzz, and module integrity
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
-      - name: Download locked modules
-        run: go mod download
+      - name: Lint GitHub Actions workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 
       - name: Verify generated contracts
         run: make check-generated
@@ -60,6 +49,9 @@ jobs:
           go mod tidy
           git diff --exit-code -- go.mod go.sum
 
+      - name: Build the standard Docker image
+        run: docker build --pull --target powercontext -t powercontext:ci .
+
   frozen-oracle:
     name: Frozen Python Oracle and differential fixtures
     runs-on: ubuntu-24.04
@@ -78,11 +70,8 @@ jobs:
       - name: Verify Oracle identity
         run: test "$(git -C _oracle rev-parse HEAD)" = 3a6cb0151670eaff7dc0293466edd673124e80da
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
@@ -113,25 +102,14 @@ jobs:
             "$fixture_root/domain-contract.json"
           _oracle/.venv/bin/python test/conformance/python_handoff_report_v002_fixture.py \
             "$fixture_root/handoff-report-digests.json"
-          # SQLite storage bytes and JSON line endings vary by host. Freeze the
-          # schema, rows, and scheduler jobs that consumers can actually observe.
-          _oracle/.venv/bin/python - "$fixture_root" <<'PY'
-          import json
-          import sys
-          from pathlib import Path
-
-          generated_root = Path(sys.argv[1])
-          committed_root = Path("test/conformance/testdata/python-v0.0.2")
-          for name in ("authority-rows.json", "domain-contract.json", "handoff-report-digests.json"):
-              generated = json.loads((generated_root / name).read_text(encoding="utf-8"))
-              committed = json.loads((committed_root / name).read_text(encoding="utf-8"))
-              if generated != committed:
-                  raise SystemExit(f"{name} differs semantically")
-          PY
+          # SQLite headers record the writer library version. The committed
+          # databases remain SHA-pinned; regeneration compares portable data.
+          for name in authority-rows.json domain-contract.json handoff-report-digests.json; do
+            cmp "$fixture_root/$name" "test/conformance/testdata/python-v0.0.2/$name"
+          done
           _oracle/.venv/bin/python test/conformance/python_scheduler_fixture.py \
-            verify "$fixture_root/scheduler.db"
-          _oracle/.venv/bin/python test/conformance/python_scheduler_fixture.py \
-            verify test/conformance/testdata/python-v0.0.2/scheduler.db
+            compare "$fixture_root/scheduler.db" \
+            --expected test/conformance/testdata/python-v0.0.2/scheduler.db
           go run ./tools/fixture-generate -python _oracle -check
           go run ./tools/traceability-generate -check
 
@@ -176,11 +154,8 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Run real OceanBase schema and cursor tests
         env:
@@ -207,11 +182,8 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Verify native target
         env:
@@ -243,26 +215,18 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
-      - name: Download and verify the native tokenizer library
-        env:
-          TARGET: ${{ matrix.target }}
-        run: |
-          url="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field url)"
-          expected="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field sha256)"
-          mkdir -p "$RUNNER_TEMP/tokenizers"
-          curl --fail --location --retry 3 --output "$RUNNER_TEMP/tokenizers.tar.gz" "$url"
-          go run ./tools/release verify -sha256 "$expected" "$RUNNER_TEMP/tokenizers.tar.gz"
-          tar -xzf "$RUNNER_TEMP/tokenizers.tar.gz" -C "$RUNNER_TEMP/tokenizers" libtokenizers.a
+      - name: Set up the verified native tokenizer
+        id: native
+        uses: ./.github/actions/setup-native-assets
+        with:
+          target: ${{ matrix.target }}
 
       - name: Test and build the Full binary
         env:
-          TOKENIZERS_LIB_DIR: ${{ runner.temp }}/tokenizers
+          TOKENIZERS_LIB_DIR: ${{ steps.native.outputs.tokenizers-lib-dir }}
         run: |
           make test-full
           make smoke-full VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
@@ -281,10 +245,7 @@ jobs:
           python-version: "3.12"
 
       - name: Set up Go for the DSH call-through test
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+        uses: ./.github/actions/setup-go-env
 
       - name: Set up uv
         uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0
@@ -317,7 +278,7 @@ jobs:
             integrations/opencode/plugins/powercontext/pnpm-lock.yaml
             integrations/openclaw/plugins/memory-powercontext/pnpm-lock.yaml
 
-      - name: Build the Go Server for the DSH call-through test
+      - name: Build the PowerContext Server for DSH end-to-end tests
         run: go build -tags sqlite_fts5 -o "$RUNNER_TEMP/powercontext-dsh-e2e" ./cmd/powercontext
 
       - name: Test and rebuild the DSH adapter

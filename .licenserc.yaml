@@ -1,0 +1,67 @@
+#
+# Copyright (c) 2026 OceanBase.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+header:
+  license:
+    spdx-id: Apache-2.0
+    copyright-owner: OceanBase
+    content: |
+      Copyright (c) 2026 OceanBase.
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+
+  # Keep the checked surface explicit. Prompt text, Markdown, JSON fixtures,
+  # lock files, databases, and other data formats are intentionally excluded.
+  paths:
+    - '**/*.c'
+    - '**/*.css'
+    - '**/*.go'
+    - '**/*.h'
+    - '**/*.html'
+    - '**/*.js'
+    - '**/*.mjs'
+    - '**/*.py'
+    - '**/*.sh'
+    - '**/*.toml'
+    - '**/*.ts'
+    - '**/*.tsx'
+    - '**/*.yaml'
+    - '**/*.yml'
+    - 'Dockerfile'
+
+  paths-ignore:
+    # Workflows are supply-chain configuration rather than shipped source.
+    - '.github/**'
+
+    # Generated Go files are reproducible and must not be edited after their
+    # generators run. Generators with checked-in non-Go output emit a header.
+    - '**/*_gen.go'
+
+    # The sqlite-vec amalgamation is retained byte-for-byte under its upstream
+    # Apache-2.0/MIT dual license. The Go wrapper remains in the checked set.
+    - 'internal/sqlstore/sqlitevec/sqlite-vec.c'
+    - 'internal/sqlstore/sqlitevec/sqlite-vec.h'
+
+  comment: never

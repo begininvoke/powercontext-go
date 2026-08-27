@@ -50,10 +50,8 @@ powercontext-go/
 │   │   ├── oceanbase/         OceanBase FTS/vector indexes
 │   │   ├── schema/            embedded Python-compatible relational DDL
 │   │   ├── seekdb/            embedded seekDB native loader
-│   │   ├── sqlite/            SQLite profile marker
 │   │   └── sqlitevec/         embedded sqlite-vec extension
 │   ├── stats/                 statistics domain assembly
-│   ├── testkit/               internal deterministic test doubles
 │   ├── webui/                 embedded Dashboard templates and assets
 │   └── work/                  Work records and continuity projection
 ├── openapi/                   authoritative HTTP contract and generation hook
@@ -131,13 +129,22 @@ only to shorten files. Examples:
 
 - Memory separates write orchestration, search/read behavior, and immutable
   value helpers.
-- Handoff separates content/evidence from prepared-resolution semantics.
+- Handoff separates citations, resolved evidence, generation requests, content,
+  and activation state while keeping their invariants in one domain package.
+- Work keeps each immutable record beside its schema-specific codec; shared
+  citation and validation rules remain package-local.
 - Handoff Report separates catalog models, activity events, validation, JSON
   projection, selection, and rendering.
+- External Skill separates configured targets, provider discovery, bounded
+  frontmatter parsing, and TOCTOU-safe filesystem fingerprinting.
+- LoCoMo separates ingestion, evaluation, checkpoint storage, metrics, and
+  bounded concurrent execution.
+- Model provider construction separates routing from OpenAI-compatible,
+  native-SDK, and narrow HTTP protocol configuration.
 - Scheduler separates the allowlisted Pickle job model, bounded reader, and
   protocol-5 writer.
-- Server separates process composition, provider dependency assembly, and
-  process support/observability.
+- Server separates storage opening, process foundations, repositories, service
+  assembly, and high-level application orchestration.
 
 This keeps unexported invariants shared without adding import cycles or
 artificial `common`, `models`, `services`, or `repositories` packages.
@@ -156,5 +163,8 @@ artificial `common`, `models`, `services`, or `repositories` packages.
   `internal/benchmark/locomo`.
 - Generated-contract checks fail on OpenAPI, MCP schema, client invocation, DSH
   operation, or traceability drift.
+- Repository conformance checks reject accidental public packages and imports
+  that reverse the documented domain, runtime, persistence, endpoint, or
+  transport dependency direction.
 - Compatibility changes to persistence, lifecycle, package direction, or host
   boundaries require an ADR.

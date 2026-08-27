@@ -1,0 +1,78 @@
+# Copyright (c) 2026 OceanBase.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[project]
+site_name = "PowerContext Go"
+site_url = "https://ob-labs.github.io/powercontext-go"
+site_description = "The Go implementation of PowerContext."
+site_author = "PowerContext Team"
+repo_url = "https://github.com/ob-labs/powercontext-go"
+repo_name = "ob-labs/powercontext-go"
+edit_uri = "edit/main/docs/"
+copyright = 'Maintained by <a href="https://oceanbase.com">OceanBase</a>.'
+
+nav = [
+    { "Overview" = "index.md" },
+    { "Architecture" = "architecture/README.md" },
+    { "Architecture decisions" = [
+        { "Overview" = "adr/README.md" },
+        { "Mistral transport" = "adr/0001-mistral-go-transport.md" },
+        { "Internal product packages" = "adr/0002-internal-product-packages.md" },
+    ] },
+    { "RFCs" = "rfcs/README.md" },
+    { "Release installation" = "release/INSTALL.md" },
+]
+
+[project.plugins.search]
+lang = ["en"]
+
+[project.theme]
+language = "en"
+features = [
+    "content.code.copy",
+    "navigation.footer",
+    "navigation.path",
+    "navigation.top",
+    "search.highlight",
+]
+
+[project.theme.icon]
+previous = "fontawesome/solid/angle-left"
+next = "fontawesome/solid/angle-right"
+repo = "fontawesome/brands/github"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+primary = "white"
+accent = "blue"
+toggle.icon = "material/brightness-7"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+primary = "black"
+accent = "blue"
+toggle.icon = "material/brightness-4"
+toggle.name = "Switch to system preference"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/ob-labs/powercontext-go"
+
+[project.markdown_extensions.pymdownx.superfences]
+
+[project.markdown_extensions.toc]
+permalink = true

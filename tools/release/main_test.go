@@ -1,3 +1,17 @@
+// Copyright (c) 2026 OceanBase.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -381,14 +395,17 @@ func TestReleaseWorkflowPublishesCompleteAssetsAndAllowsPrereleases(t *testing.T
 	workflow := string(payload)
 	for _, required := range []string{
 		"types: [published]",
-		"needs: [binaries, images]",
+		"needs: [prepare, binaries, images]",
 		"make package-standard",
 		"make package-full",
+		"Smoke test both released process surfaces",
 		`test "$(find dist -name '*.tar.gz' | wc -l | tr -d ' ')" = 8`,
 		`test "$(find dist -name '*.spdx.json' | wc -l | tr -d ' ')" = 8`,
+		`test "$(wc -l < dist/SHA256SUMS | tr -d ' ')" = 17`,
 		"dist/IMAGE-DIGESTS.json",
 		"dist/SHA256SUMS",
 		"fail_on_unmatched_files: true",
+		"uses: ./.github/workflows/release-verify.yml",
 	} {
 		if !strings.Contains(workflow, required) {
 			t.Errorf("release workflow is missing %q", required)

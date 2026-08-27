@@ -2,6 +2,8 @@
 /bin/
 /dist/
 /coverage/
+/site/
+.powercontext-e2e/
 *.coverprofile
 *.test
 

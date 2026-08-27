@@ -1,0 +1,263 @@
+name: Verify release
+
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Published PowerContext release tag to verify
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published PowerContext release tag to verify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  GOTOOLCHAIN: local
+
+jobs:
+  verify:
+    name: GitHub Release and GHCR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the released verification tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.release_tag }}
+          fetch-depth: 0
+
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve release identity
+        id: release
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          version="${RELEASE_TAG#powercontext-v}"
+          version="${version#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "release_tag must use vX.Y.Z, powercontext-vX.Y.Z, or X.Y.Z semantic versioning" >&2
+            exit 2
+          fi
+          test "${#version}" -le 80
+          commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          test "${#commit}" = 40
+          epoch="$(git show -s --format=%ct "$commit")"
+          build_date="$(date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ)"
+          {
+            echo "version=$version"
+            echo "commit=$commit"
+            echo "build_date=$build_date"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download and verify the complete GitHub Release
+        id: assets
+        shell: bash
+        env:
+          ASSET_DIR: ${{ runner.temp }}/powercontext-release-assets
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          mkdir -p "$ASSET_DIR"
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --dir "$ASSET_DIR"
+          test -f "$ASSET_DIR/SHA256SUMS"
+          test -f "$ASSET_DIR/IMAGE-DIGESTS.json"
+          checksum_has_exactly_once() {
+            awk -v expected="$1" \
+              '$2 == expected && $1 ~ /^[0-9a-f]{64}$/ { count++ } END { exit count == 1 ? 0 : 1 }' \
+              "$ASSET_DIR/SHA256SUMS"
+          }
+          checksum_has_exactly_once IMAGE-DIGESTS.json
+          for target in linux-amd64 linux-arm64 darwin-amd64 darwin-arm64; do
+            for product in powercontext powercontext-full; do
+              archive="${product}-${VERSION}-${target}.tar.gz"
+              sbom="${product}-${VERSION}-${target}.spdx.json"
+              test -f "$ASSET_DIR/$archive"
+              test -f "$ASSET_DIR/$sbom"
+              checksum_has_exactly_once "$archive"
+              checksum_has_exactly_once "$sbom"
+            done
+          done
+          test "$(wc -l < "$ASSET_DIR/SHA256SUMS" | tr -d ' ')" = 17
+          cd "$ASSET_DIR"
+          sha256sum --check --strict SHA256SUMS
+
+      - name: Verify extracted Linux release contracts
+        id: archives
+        shell: bash
+        env:
+          ASSET_DIR: ${{ runner.temp }}/powercontext-release-assets
+          BUILD_DATE: ${{ steps.release.outputs.build_date }}
+          COMMIT: ${{ steps.release.outputs.commit }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          verify_archive() {
+            edition="$1"
+            product=powercontext
+            if [ "$edition" = full ]; then
+              product=powercontext-full
+            fi
+            archive="$ASSET_DIR/${product}-${VERSION}-linux-amd64.tar.gz"
+            extract_root="$RUNNER_TEMP/extracted-${edition}"
+            mkdir -p "$extract_root"
+            if tar -tzf "$archive" | grep -Eq '(^/|(^|/)\.\.(/|$))'; then
+              echo "archive contains an unsafe path: $archive" >&2
+              return 1
+            fi
+            tar -xzf "$archive" -C "$extract_root"
+            mapfile -t roots < <(find "$extract_root" -mindepth 1 -maxdepth 1 -type d -print)
+            test "${#roots[@]}" = 1
+            root="${roots[0]}"
+            (
+              cd "$root"
+              sha256sum --check --strict SHA256SUMS
+            )
+            jq -e \
+              --arg commit "$COMMIT" \
+              --arg build_date "$BUILD_DATE" \
+              --arg edition "$edition" \
+              --arg version "$VERSION" \
+              '.schema_version == 1 and .product == "PowerContext" and .edition == $edition and .version == $version and .commit == $commit and .build_date == $build_date and .target == "linux-amd64" and .cgo_enabled == true' \
+              "$root/BUILD-INFO.json" >/dev/null
+            test "$("$root/bin/powercontext" --version)" = "$VERSION"
+            echo "${edition}_root=$root" >> "$GITHUB_OUTPUT"
+          }
+
+          verify_archive standard
+          verify_archive full
+
+      - name: Exercise the released standard binary
+        id: standard_smoke
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          go run ./tools/process-smoke \
+            -binary "${{ steps.archives.outputs.standard_root }}/bin/powercontext" \
+            -version "$VERSION"
+
+      - name: Exercise the released Full binary
+        id: full_smoke
+        env:
+          POWERCONTEXT_ONNXRUNTIME_LIBRARY_DIR: ${{ steps.archives.outputs.full_root }}/lib/onnxruntime
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          go run ./tools/process-smoke \
+            -binary "${{ steps.archives.outputs.full_root }}/bin/powercontext" \
+            -version "$VERSION"
+
+      - name: Verify immutable GHCR image manifests
+        id: images
+        shell: bash
+        env:
+          DIGESTS: ${{ runner.temp }}/powercontext-release-assets/IMAGE-DIGESTS.json
+          OWNER: ${{ github.repository_owner }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          owner="$(printf '%s' "$OWNER" | tr '[:upper:]' '[:lower:]')"
+          image_tag="${VERSION//+/-}"
+          jq -e '.schema_version == 1 and .sbom_attestations == true' "$DIGESTS" >/dev/null
+          standard="$(jq -er '.images.standard' "$DIGESTS")"
+          full="$(jq -er '.images.full' "$DIGESTS")"
+          for value in "$standard" "$full"; do
+            digest="${value##*@}"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            docker buildx imagetools inspect "$value" >/dev/null
+          done
+          case "$standard" in
+            "ghcr.io/$owner/powercontext:$image_tag@"*) ;;
+            *) echo "unexpected standard image reference: $standard" >&2; exit 2 ;;
+          esac
+          case "$full" in
+            "ghcr.io/$owner/powercontext-full:$image_tag@"*) ;;
+            *) echo "unexpected Full image reference: $full" >&2; exit 2 ;;
+          esac
+          {
+            echo "standard=$standard"
+            echo "full=$full"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run the published standard image by digest
+        id: image_runtime
+        shell: bash
+        env:
+          BUILD_DATE: ${{ steps.release.outputs.build_date }}
+          COMMIT: ${{ steps.release.outputs.commit }}
+          IMAGE: ${{ steps.images.outputs.standard }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          container="powercontext-release-verify-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cleanup() {
+            docker rm --force "$container" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker pull "$IMAGE"
+          test "$(docker image inspect "$IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.version" }}')" = "$VERSION"
+          test "$(docker image inspect "$IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}')" = "$COMMIT"
+          test "$(docker image inspect "$IMAGE" --format '{{ index .Config.Labels "org.opencontainers.image.created" }}')" = "$BUILD_DATE"
+          docker run \
+            --detach \
+            --name "$container" \
+            --env POWERCONTEXT_SERVER_HTTP_HOST=0.0.0.0 \
+            --env POWERCONTEXT_SERVER_HTTP_PORT=8000 \
+            --publish 127.0.0.1::8000 \
+            "$IMAGE" server run
+          endpoint="$(docker port "$container" 8000/tcp | head -n 1)"
+          ready=false
+          for _ in $(seq 1 45); do
+            if curl --fail --silent --show-error "http://${endpoint}/health/ready" >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            docker logs "$container"
+            exit 1
+          fi
+
+      - name: Summarize release health
+        if: always()
+        env:
+          ARCHIVES: ${{ steps.archives.outcome }}
+          ASSETS: ${{ steps.assets.outcome }}
+          FULL_SMOKE: ${{ steps.full_smoke.outcome }}
+          IMAGE_RUNTIME: ${{ steps.image_runtime.outcome }}
+          IMAGES: ${{ steps.images.outcome }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          STANDARD_SMOKE: ${{ steps.standard_smoke.outcome }}
+        run: |
+          {
+            echo "## Release health"
+            echo
+            echo "- Release tag: \`$RELEASE_TAG\`"
+            echo "- Version: \`$VERSION\`"
+            echo "- Checksummed GitHub Release inventory: **$ASSETS**"
+            echo "- Archive inventory and metadata: **$ARCHIVES**"
+            echo "- Standard process contract: **$STANDARD_SMOKE**"
+            echo "- Full process contract: **$FULL_SMOKE**"
+            echo "- Immutable GHCR manifests: **$IMAGES**"
+            echo "- Published image runtime: **$IMAGE_RUNTIME**"
+          } >> "$GITHUB_STEP_SUMMARY"

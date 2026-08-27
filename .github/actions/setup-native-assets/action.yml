@@ -1,0 +1,86 @@
+name: Setup native release assets
+description: Download and verify the pinned tokenizer and optional ONNX Runtime assets for one native target
+
+inputs:
+  target:
+    description: Native release target in GOOS-GOARCH form
+    required: true
+  include-onnxruntime:
+    description: Acquire the ONNX Runtime payload used by Full release bundles
+    required: false
+    default: "false"
+
+outputs:
+  tokenizers-lib-dir:
+    description: Directory containing the verified libtokenizers.a
+    value: ${{ steps.assets.outputs.tokenizers_lib_dir }}
+  onnxruntime-lib-dir:
+    description: Directory containing verified ONNX Runtime shared libraries, when requested
+    value: ${{ steps.assets.outputs.onnxruntime_lib_dir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Acquire verified native assets
+      id: assets
+      shell: bash
+      env:
+        INCLUDE_ONNXRUNTIME: ${{ inputs.include-onnxruntime }}
+        TARGET: ${{ inputs.target }}
+      run: |
+        case "$TARGET" in
+          linux-amd64|linux-arm64|darwin-amd64|darwin-arm64) ;;
+          *) echo "unsupported native target: $TARGET" >&2; exit 2 ;;
+        esac
+
+        tokenizers_root="$RUNNER_TEMP/powercontext-native/$TARGET/tokenizers"
+        tokenizers_archive="$RUNNER_TEMP/powercontext-native/$TARGET/tokenizers.tar.gz"
+        mkdir -p "$tokenizers_root"
+        tokenizers_url="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field url)"
+        tokenizers_sha="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field sha256)"
+        curl --fail --location --retry 3 --output "$tokenizers_archive" "$tokenizers_url"
+        go run ./tools/release verify -sha256 "$tokenizers_sha" "$tokenizers_archive"
+        tar -xzf "$tokenizers_archive" -C "$tokenizers_root" libtokenizers.a
+        test -f "$tokenizers_root/libtokenizers.a"
+        echo "tokenizers_lib_dir=$tokenizers_root" >> "$GITHUB_OUTPUT"
+
+        if [ "$INCLUDE_ONNXRUNTIME" != "true" ]; then
+          echo "onnxruntime_lib_dir=" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        onnx_root="$RUNNER_TEMP/powercontext-native/$TARGET/onnxruntime"
+        mkdir -p "$onnx_root/lib"
+        from_source="$(go run ./tools/release asset -component onnxruntime -target "$TARGET" -field build-from-source)"
+        if [ "$from_source" = "true" ]; then
+          test "$TARGET" = "darwin-amd64"
+          commit="$(go run ./tools/release asset -component onnxruntime -field commit)"
+          source_root="$RUNNER_TEMP/powercontext-native/$TARGET/onnxruntime-source"
+          build_root="$RUNNER_TEMP/powercontext-native/$TARGET/onnxruntime-build"
+          git init "$source_root"
+          git -C "$source_root" remote add origin https://github.com/microsoft/onnxruntime.git
+          git -C "$source_root" fetch --depth=1 origin "$commit"
+          git -C "$source_root" checkout --detach FETCH_HEAD
+          test "$(git -C "$source_root" rev-parse HEAD)" = "$commit"
+          "$source_root/build.sh" \
+            --config Release --build_shared_lib --parallel --skip_tests \
+            --build_dir "$build_root" \
+            --compile_no_warning_as_error \
+            --cmake_extra_defines CMAKE_OSX_ARCHITECTURES=x86_64
+          test -f "$build_root/Release/CMakeCache.txt"
+          cmake --install "$build_root/Release" --prefix "$onnx_root"
+        else
+          onnx_archive="$RUNNER_TEMP/powercontext-native/$TARGET/onnxruntime.tgz"
+          onnx_extract="$RUNNER_TEMP/powercontext-native/$TARGET/onnxruntime-extract"
+          onnx_url="$(go run ./tools/release asset -component onnxruntime -target "$TARGET" -field url)"
+          onnx_sha="$(go run ./tools/release asset -component onnxruntime -target "$TARGET" -field sha256)"
+          curl --fail --location --retry 3 --output "$onnx_archive" "$onnx_url"
+          go run ./tools/release verify -sha256 "$onnx_sha" "$onnx_archive"
+          mkdir -p "$onnx_extract"
+          tar -xzf "$onnx_archive" -C "$onnx_extract"
+          source_lib="$(find "$onnx_extract" -type d -name lib -print -quit)"
+          test -n "$source_lib"
+          cp -a "$source_lib/." "$onnx_root/lib/"
+        fi
+        test -n "$(find "$onnx_root/lib" -type f -name 'libonnxruntime*' -print -quit)"
+        echo "onnxruntime_lib_dir=$onnx_root/lib" >> "$GITHUB_OUTPUT"
