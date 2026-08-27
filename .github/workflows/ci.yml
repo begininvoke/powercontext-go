@@ -113,9 +113,25 @@ jobs:
             "$fixture_root/domain-contract.json"
           _oracle/.venv/bin/python test/conformance/python_handoff_report_v002_fixture.py \
             "$fixture_root/handoff-report-digests.json"
-          for name in authority.db authority-rows.json scheduler.db domain-contract.json handoff-report-digests.json; do
-            cmp "$fixture_root/$name" "test/conformance/testdata/python-v0.0.2/$name"
-          done
+          # SQLite storage bytes and JSON line endings vary by host. Freeze the
+          # schema, rows, and scheduler jobs that consumers can actually observe.
+          _oracle/.venv/bin/python - "$fixture_root" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          generated_root = Path(sys.argv[1])
+          committed_root = Path("test/conformance/testdata/python-v0.0.2")
+          for name in ("authority-rows.json", "domain-contract.json", "handoff-report-digests.json"):
+              generated = json.loads((generated_root / name).read_text(encoding="utf-8"))
+              committed = json.loads((committed_root / name).read_text(encoding="utf-8"))
+              if generated != committed:
+                  raise SystemExit(f"{name} differs semantically")
+          PY
+          _oracle/.venv/bin/python test/conformance/python_scheduler_fixture.py \
+            verify "$fixture_root/scheduler.db"
+          _oracle/.venv/bin/python test/conformance/python_scheduler_fixture.py \
+            verify test/conformance/testdata/python-v0.0.2/scheduler.db
           go run ./tools/fixture-generate -python _oracle -check
           go run ./tools/traceability-generate -check
 
@@ -301,8 +317,13 @@ jobs:
             integrations/opencode/plugins/powercontext/pnpm-lock.yaml
             integrations/openclaw/plugins/memory-powercontext/pnpm-lock.yaml
 
+      - name: Build the Go Server for the DSH call-through test
+        run: go build -tags sqlite_fts5 -o "$RUNNER_TEMP/powercontext-dsh-e2e" ./cmd/powercontext
+
       - name: Test and rebuild the DSH adapter
         working-directory: integrations/dsh/plugins/powercontext
+        env:
+          POWERCONTEXT_GO_BINARY: ${{ runner.temp }}/powercontext-dsh-e2e
         run: |
           pnpm install --frozen-lockfile
           pnpm run gen:check
