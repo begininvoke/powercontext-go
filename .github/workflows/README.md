@@ -15,10 +15,16 @@ counterpart or enforces a Go release constraint that does not exist in Python.
 | `release.yml` | `release.yml` | GitHub binary assets and GHCR replace PyPI; release verification and documentation deployment keep the same gates. |
 | `release-verify.yml` | `release-verify.yml` | Verification exercises published Go archives and image digests instead of Python distributions. |
 
-`master.yml` intentionally does not clone or execute the Python repository. Frozen Python data remains committed under
-`test/conformance/testdata` and is exercised by normal Go tests. Regenerating that data is a maintainer operation, not
-a dependency of every pull request.
+Two Go-specific workflows extend, rather than replace, that Python topology:
 
-Credentialed provider smoke tests remain opt-in through `make real-provider-test`, matching Python's local
-`real-e2e-test` policy. Four-platform standard/Full builds remain in candidate and release workflows, where they verify
-the actual Go delivery surface without expanding default CI.
+| Go workflow | Purpose |
+| --- | --- |
+| `migration-gates.yml` | Reusable PR assurance called by `master.yml`: frozen Python Oracle regeneration, Python↔Go interoperability, HTTP differential, race/fuzz, live OceanBase, host adapters, evaluation, and four-platform standard/Full builds. |
+| `provider-smoke.yml` | Explicitly dispatched, credentialed, bounded real-provider verification; never required on an ordinary pull request. |
+
+The committed `test/conformance/testdata/python-v0.0.2` baseline remains immutable. Pull requests execute the pinned
+Python Oracle to prove that regenerated portable fixtures, database interoperability, and HTTP behavior still match;
+they do not silently replace the committed baseline.
+
+All third-party GitHub Actions are pinned to reviewed 40-character commit SHAs. The adjacent version comments retain
+the human-readable update intent while preventing a mutable tag from changing executable CI code.
