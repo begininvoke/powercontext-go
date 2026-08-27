@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 env:
-  TRUFFLEHOG_IMAGE: ghcr.io/trufflesecurity/trufflehog:3.96.0
+  TRUFFLEHOG_IMAGE: ghcr.io/trufflesecurity/trufflehog@sha256:aa821cf4ace8861c7d096d83818cdf7bb9719028a52d37a52eaad44086a52577 # v3.96.0
 
 concurrency:
   group: e2e-harness-${{ github.event.pull_request.number || github.ref }}-${{ github.sha }}
@@ -99,6 +99,7 @@ jobs:
 
           set +e
           docker run --rm \
+            --network none \
             --volume "${EVIDENCE_PATH}:/evidence:ro" \
             "${TRUFFLEHOG_IMAGE}" \
             filesystem /evidence \

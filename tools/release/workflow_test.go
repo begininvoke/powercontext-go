@@ -79,7 +79,9 @@ func TestContinuousIntegrationPreservesPythonTopologyAndGoAssurance(t *testing.T
 			"name: E2E harness", "validate:", "acceptance:", "database: [sqlite, oceanbase]",
 			"make harness-compose-acceptance", "Scan acceptance evidence",
 			"Upload sanitized acceptance diagnostics", "Enforce acceptance evidence policy",
-			"scenario_outcome=", "steps.evidence_scan.outcome != 'success'", "retention-days: 14",
+			"scenario_outcome=", "--network none",
+			"ghcr.io/trufflesecurity/trufflehog@sha256:",
+			"steps.evidence_scan.outcome != 'success'", "retention-days: 14",
 		},
 		"deploy-docs.yml": {
 			"name: Deploy documentation", "workflow_call:", "workflow_dispatch:",
@@ -111,12 +113,20 @@ func TestContinuousIntegrationPreservesPythonTopologyAndGoAssurance(t *testing.T
 	}
 }
 
-func TestGitHubActionsArePinnedToImmutableCommits(t *testing.T) {
+func TestCIThirdPartyExecutablesUseImmutableReferences(t *testing.T) {
 	repository := filepath.Clean(filepath.Join("..", ".."))
 	actionUse := regexp.MustCompile(
 		"(?m)^[\\t ]*(?:-[\\t ]*)?uses:[\\t ]+([^@\\s]+)@([^\\s#]+)([^\\r\\n]*)$",
 	)
+	containerUse := regexp.MustCompile(
+		"(?m)^[\\t ]*(?:container|image|[A-Z][A-Z0-9_]*_IMAGE):[\\t ]+([^\\s#]+)",
+	)
+	dockerActionUse := regexp.MustCompile(
+		"(?m)^[\\t ]*(?:-[\\t ]*)?uses:[\\t ]+docker://([^\\s#]+)",
+	)
 	commit := regexp.MustCompile("^[0-9a-f]{40}$")
+	containerDigest := regexp.MustCompile("^[^@\\s]+@sha256:[0-9a-f]{64}$")
+	staticContainerReferences := 0
 
 	err := filepath.WalkDir(filepath.Join(repository, ".github"), func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -141,10 +151,30 @@ func TestGitHubActionsArePinnedToImmutableCommits(t *testing.T) {
 				t.Errorf("%s must keep a human-readable version comment for %s@%s", filepath.ToSlash(path), action, ref)
 			}
 		}
+		for _, match := range containerUse.FindAllStringSubmatch(string(payload), -1) {
+			reference := strings.Trim(match[1], "\"'")
+			if strings.Contains(reference, "$"+"{{") {
+				continue
+			}
+			staticContainerReferences++
+			if !containerDigest.MatchString(reference) {
+				t.Errorf("%s uses mutable container image %s", filepath.ToSlash(path), reference)
+			}
+		}
+		for _, match := range dockerActionUse.FindAllStringSubmatch(string(payload), -1) {
+			reference := strings.Trim(match[1], "\"'")
+			staticContainerReferences++
+			if !containerDigest.MatchString(reference) {
+				t.Errorf("%s uses mutable Docker action image %s", filepath.ToSlash(path), reference)
+			}
+		}
 		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if staticContainerReferences == 0 {
+		t.Fatal("no static CI container references were checked")
 	}
 }
 
