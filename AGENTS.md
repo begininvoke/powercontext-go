@@ -2,9 +2,9 @@
 
 ## Research and evidence before execution
 
-- Before executing any task, perform a bounded network search for the facts
-  that can affect the decision, even when the answer seems familiar. Do not
-  rely only on model memory.
+- When a task depends on external or version-sensitive facts, perform a bounded
+  network search for the facts that can affect the decision, even when the
+  answer seems familiar. Do not rely only on model memory.
 - Start with primary, official sources: Go documentation and release notes,
   upstream package documentation and repositories, GitHub Actions
   documentation and action repositories, protocol specifications, and vendor
