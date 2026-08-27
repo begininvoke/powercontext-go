@@ -278,8 +278,13 @@ jobs:
             integrations/opencode/plugins/powercontext/pnpm-lock.yaml
             integrations/openclaw/plugins/memory-powercontext/pnpm-lock.yaml
 
+      - name: Build the PowerContext Server for DSH end-to-end tests
+        run: go build -tags sqlite_fts5 -o "$RUNNER_TEMP/powercontext-dsh-e2e" ./cmd/powercontext
+
       - name: Test and rebuild the DSH adapter
         working-directory: integrations/dsh/plugins/powercontext
+        env:
+          POWERCONTEXT_GO_BINARY: ${{ runner.temp }}/powercontext-dsh-e2e
         run: |
           pnpm install --frozen-lockfile
           pnpm run gen:check
