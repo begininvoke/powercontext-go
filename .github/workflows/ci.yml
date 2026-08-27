@@ -107,9 +107,14 @@ jobs:
             "$fixture_root/domain-contract.json"
           _oracle/.venv/bin/python test/conformance/python_handoff_report_v002_fixture.py \
             "$fixture_root/handoff-report-digests.json"
-          for name in authority.db authority-rows.json scheduler.db domain-contract.json handoff-report-digests.json; do
+          # SQLite headers record the writer library version. The committed
+          # databases remain SHA-pinned; regeneration compares portable data.
+          for name in authority-rows.json domain-contract.json handoff-report-digests.json; do
             cmp "$fixture_root/$name" "test/conformance/testdata/python-v0.0.2/$name"
           done
+          _oracle/.venv/bin/python test/conformance/python_scheduler_fixture.py \
+            compare "$fixture_root/scheduler.db" \
+            --expected test/conformance/testdata/python-v0.0.2/scheduler.db
           go run ./tools/fixture-generate -python _oracle -check
           go run ./tools/traceability-generate -check
 
