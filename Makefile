@@ -2,6 +2,8 @@ GO ?= go
 GOFMT ?= gofmt
 GOCACHE ?=
 GOMODCACHE ?=
+PNPM ?= pnpm
+UV ?= uv
 LICENSE_EYE ?= $(GO) run github.com/apache/skywalking-eyes/cmd/license-eye@v0.8.0
 
 STANDARD_TAGS := sqlite_fts5
@@ -11,8 +13,11 @@ COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || printf unknown)
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(BUILD_DATE)
 
-.PHONY: generate check-generated license-check license-fix fmt fmt-check vet test test-sqlite test-race test-full test-oceanbase-live \
-	build build-full smoke smoke-full check package-standard package-full clean
+.PHONY: generate check-generated module-check contract-test license-check license-fix fmt fmt-check vet \
+	test unit-test e2e-test test-sqlite test-race test-full test-oceanbase-live real-provider-test \
+	pi-test docs-sync docs-test docs-build harness-sync harness-check harness-compose-check \
+	harness-compose-acceptance harness-compose-down build build-full smoke smoke-full check \
+	package-standard package-full clean
 
 generate:
 	$(GO) generate ./openapi
@@ -23,6 +28,14 @@ check-generated:
 	$(GO) run ./tools/mcp-schema-generate
 	$(GO) run ./tools/traceability-generate -check
 	git diff --exit-code -- openapi api/v1 client/invoker_gen.go internal/mcpapi/schemas_gen.go integrations/dsh/plugins/powercontext/src/operations.generated.ts
+
+module-check:
+	$(GO) mod tidy -diff
+	$(GO) mod verify
+
+contract-test: check-generated
+	CGO_ENABLED=1 $(GO) test -tags '$(STANDARD_TAGS)' \
+		./openapi ./api/v1 ./client ./internal/httpapi ./internal/mcpapi ./server
 
 license-check:
 	$(LICENSE_EYE) -c .licenserc.yaml header check
@@ -41,8 +54,15 @@ fmt-check:
 vet:
 	$(GO) vet ./...
 
-test:
-	$(GO) test ./...
+test: unit-test e2e-test
+
+unit-test:
+	CGO_ENABLED=1 $(GO) test -tags '$(STANDARD_TAGS)' \
+		$$(go list ./... | grep -v '/test/e2e$$')
+
+e2e-test:
+	CGO_ENABLED=1 $(GO) test -count=1 -tags '$(STANDARD_TAGS)' ./test/e2e
+	$(MAKE) smoke VERSION=ci COMMIT=$$(git rev-parse HEAD) BUILD_DATE=1970-01-01T00:00:00Z
 
 test-sqlite:
 	CGO_ENABLED=1 $(GO) test -tags '$(STANDARD_TAGS)' ./...
@@ -58,6 +78,43 @@ test-full:
 test-oceanbase-live:
 	@test -n "$$POWERCONTEXT_TEST_OCEANBASE_URL" || { echo 'POWERCONTEXT_TEST_OCEANBASE_URL must name a dedicated OceanBase MySQL-mode database' >&2; exit 2; }
 	$(GO) test -count=1 -run TestLiveOceanBaseProfileSmoke -v ./test/e2e
+
+real-provider-test:
+	@test -n "$$POWERCONTEXT_REAL_SMOKE_GENERATION_MODEL$$POWERCONTEXT_REAL_SMOKE_EMBEDDING_MODEL" || \
+		{ echo 'set at least one POWERCONTEXT_REAL_SMOKE_*_MODEL variable' >&2; exit 2; }
+	$(GO) test -count=1 -run '^TestRealProviderSmoke$$' ./internal/modelprovider
+
+pi-test:
+	$(PNPM) --dir integrations/pi/plugins/powercontext install --frozen-lockfile
+	$(PNPM) --dir integrations/pi/plugins/powercontext test
+	$(PNPM) --dir integrations/pi/plugins/powercontext run typecheck
+
+docs-sync:
+	$(UV) sync --project tools/docs --frozen
+
+docs-test:
+	$(UV) run --project tools/docs --frozen zensical build -s
+
+docs-build:
+	$(UV) run --project tools/docs --frozen zensical build --clean
+
+harness-sync:
+	$(GO) mod download
+	$(GO) mod verify
+
+harness-check:
+	sh -n test/e2e/run.sh
+	CGO_ENABLED=1 $(GO) test -run '^$$' -tags '$(STANDARD_TAGS)' ./test/e2e
+
+harness-compose-check:
+	POWERCONTEXT_E2E_DATABASE=sqlite test/e2e/run.sh check
+	POWERCONTEXT_E2E_DATABASE=oceanbase test/e2e/run.sh check
+
+harness-compose-acceptance:
+	test/e2e/run.sh acceptance
+
+harness-compose-down:
+	test/e2e/run.sh down
 
 build:
 	mkdir -p bin
@@ -91,7 +148,7 @@ package-full: build-full
 		-version "$(VERSION)" -commit "$(COMMIT)" -build-date "$(BUILD_DATE)" \
 		-output dist -syft "$(SYFT)"
 
-check: check-generated fmt-check vet test test-sqlite
+check: module-check fmt-check vet
 
 clean:
-	$(RM) -r bin dist coverage
+	$(RM) -r bin dist coverage site

@@ -1,33 +1,26 @@
-name: License check
+name: License Check
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
-
-permissions:
-  contents: read
 
 concurrency:
   group: license-check-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-env:
-  GOTOOLCHAIN: local
-
 jobs:
   license:
-    name: Check source license headers
-    runs-on: ubuntu-24.04
+    name: Check License Header
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7
 
-      - name: Set up the Go environment
-        uses: ./.github/actions/setup-go-env
-
-      - name: Check license headers
-        run: make license-check
+      - name: Check License Header
+        uses: apache/skywalking-eyes/header@v0.8.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          config: .licenserc.yaml
+          mode: check

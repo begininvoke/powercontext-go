@@ -53,6 +53,9 @@ The standard build uses CGO and statically embeds the same sqlite-vec 0.1.9
 
 ```sh
 make check
+make contract-test
+make unit-test
+make e2e-test
 make build
 ```
 
@@ -73,8 +76,9 @@ SQLite remains the zero-dependency default.
 Useful verification targets:
 
 ```sh
-make check-generated
 make license-check
+make pi-test
+make docs-test
 make test-race
 make test-full TOKENIZERS_LIB_DIR=/path/to/tokenizers/lib
 POWERCONTEXT_TEST_OCEANBASE_URL='mysql+aoceanbase://root%40tenant:password@127.0.0.1:2881/powercontext?charset=utf8mb4' \

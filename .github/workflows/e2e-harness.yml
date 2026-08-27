@@ -1,0 +1,104 @@
+name: E2E harness
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TRUFFLEHOG_IMAGE: ghcr.io/trufflesecurity/trufflehog:3.96.0
+
+concurrency:
+  group: e2e-harness-${{ github.event.pull_request.number || github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-go-env
+
+      - name: Validate harness and runtime definitions
+        run: |
+          make harness-sync
+          make harness-check
+          make harness-compose-check
+
+  acceptance:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, oceanbase]
+    name: Acceptance (${{ matrix.database }})
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up the environment
+        uses: ./.github/actions/setup-go-env
+
+      - name: Run deterministic scenarios
+        env:
+          POWERCONTEXT_E2E_DATABASE: ${{ matrix.database }}
+          POWERCONTEXT_E2E_OUTPUT: ${{ github.workspace }}/.powercontext-e2e/${{ matrix.database }}/acceptance
+        run: make harness-compose-acceptance
+
+      - name: Scan acceptance evidence
+        id: evidence_scan
+        if: always()
+        continue-on-error: true
+        env:
+          EVIDENCE_PATH: ${{ github.workspace }}/.powercontext-e2e/${{ matrix.database }}/acceptance
+        run: |
+          test -d "${EVIDENCE_PATH}"
+          if ! find "${EVIDENCE_PATH}" -type f -print -quit | grep -q .; then
+            echo "No acceptance evidence was produced." >&2
+            exit 1
+          fi
+          docker run --rm \
+            --volume "${EVIDENCE_PATH}:/evidence:ro" \
+            "${TRUFFLEHOG_IMAGE}" \
+            filesystem /evidence \
+            --no-verification \
+            --results=verified,unknown,unverified \
+            --fail \
+            --fail-on-scan-errors \
+            --no-update \
+            --json > "${RUNNER_TEMP}/trufflehog-acceptance-${{ matrix.database }}.jsonl"
+
+      - name: Report suppressed acceptance evidence
+        if: always() && steps.evidence_scan.outcome != 'success'
+        run: echo "::warning::Acceptance evidence was missing or secret scanning did not complete cleanly."
+
+      - name: Upload acceptance evidence
+        if: always() && steps.evidence_scan.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-acceptance-${{ matrix.database }}-${{ github.sha }}
+          path: .powercontext-e2e/${{ matrix.database }}/acceptance
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Stop harness environment
+        if: always()
+        env:
+          POWERCONTEXT_E2E_DATABASE: ${{ matrix.database }}
+        run: make harness-compose-down

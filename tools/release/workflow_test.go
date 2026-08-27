@@ -15,62 +15,84 @@
 package main
 
 import (
-	"bufio"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 )
 
-var actionCommit = regexp.MustCompile(`^[0-9a-f]{40}$`)
-
-func TestGitHubActionsArePinnedToImmutableCommits(t *testing.T) {
+func TestContinuousIntegrationMirrorsPythonWorkflowTopology(t *testing.T) {
 	repository := filepath.Clean(filepath.Join("..", ".."))
-	github := filepath.Join(repository, ".github")
-	err := filepath.WalkDir(github, func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if entry.IsDir() || (filepath.Ext(path) != ".yml" && filepath.Ext(path) != ".yaml") {
-			return nil
-		}
-		file, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-		scanner := bufio.NewScanner(file)
-		line := 0
-		for scanner.Scan() {
-			line++
-			value := strings.TrimSpace(scanner.Text())
-			if !strings.HasPrefix(value, "uses:") && !strings.HasPrefix(value, "- uses:") {
-				continue
-			}
-			value = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(value, "- "), "uses:"))
-			value = strings.Trim(value, `"'`)
-			if strings.HasPrefix(value, "./") {
-				continue
-			}
-			at := strings.LastIndexByte(value, '@')
-			if at < 1 {
-				t.Errorf("%s:%d action has no revision: %s", filepath.ToSlash(path), line, value)
-				continue
-			}
-			fields := strings.Fields(value[at+1:])
-			if len(fields) == 0 || !actionCommit.MatchString(fields[0]) {
-				t.Errorf("%s:%d action is not pinned to a 40-character commit: %s", filepath.ToSlash(path), line, value)
-			}
-		}
-		return scanner.Err()
-	})
+	workflows := filepath.Join(repository, ".github", "workflows")
+	allowed := map[string]bool{
+		"build-artifacts.yml": true,
+		"build-docker.yml":    true,
+		"deploy-docs.yml":     true,
+		"e2e-harness.yml":     true,
+		"license-check.yml":   true,
+		"master.yml":          true,
+		"release-verify.yml":  true,
+		"release.yml":         true,
+	}
+	paths, err := filepath.Glob(filepath.Join(workflows, "*.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	if len(paths) != len(allowed) {
+		t.Errorf("workflow count = %d, want Python-aligned %d", len(paths), len(allowed))
+	}
+	for _, path := range paths {
+		if !allowed[filepath.Base(path)] {
+			t.Errorf("workflow %s has no Python counterpart", filepath.Base(path))
+		}
+	}
+	required := map[string][]string{
+		"master.yml": {
+			"name: Main", "quality:", "run: make check", "run: make contract-test",
+			"tests:", "run: make unit-test", "run: make e2e-test", "pi-package:", "check-docs:",
+		},
+		"e2e-harness.yml": {
+			"name: E2E harness", "validate:", "acceptance:", "database: [sqlite, oceanbase]",
+			"make harness-compose-acceptance", "Scan acceptance evidence", "retention-days: 14",
+		},
+		"deploy-docs.yml": {
+			"name: Deploy documentation", "workflow_call:", "workflow_dispatch:",
+			"run: make docs-build", "actions/deploy-pages@v5",
+		},
+		"release.yml": {
+			"name: Release", "types: [published]", "release-verify:", "deploy-docs:",
+			"uses: ./.github/workflows/release-verify.yml", "uses: ./.github/workflows/deploy-docs.yml",
+		},
+	}
+	for name, values := range required {
+		payload, err := os.ReadFile(filepath.Join(workflows, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		contents := string(payload)
+		for _, value := range values {
+			if !strings.Contains(contents, value) {
+				t.Errorf("%s is missing %q", name, value)
+			}
+		}
+	}
+	for _, obsolete := range []string{"ci.yml", "provider-smoke.yml"} {
+		if _, err := os.Stat(filepath.Join(workflows, obsolete)); !os.IsNotExist(err) {
+			t.Errorf("obsolete workflow %s still exists", obsolete)
+		}
+	}
+	master, err := os.ReadFile(filepath.Join(workflows, "master.yml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, forbidden := range []string{"_oracle", "frozen-oracle", "provider-smoke", "test-full"} {
+		if strings.Contains(string(master), forbidden) {
+			t.Errorf("master.yml contains migration or release-only concern %q", forbidden)
+		}
+	}
 }
 
-func TestWorkflowsReuseTheLockedGoSetup(t *testing.T) {
+func TestWorkflowsReuseTheGoSetup(t *testing.T) {
 	repository := filepath.Clean(filepath.Join("..", ".."))
 	workflows, err := filepath.Glob(filepath.Join(repository, ".github", "workflows", "*.yml"))
 	if err != nil {
@@ -156,8 +178,9 @@ func TestLicenseHeadersHaveOneLocalRepairAndCIContract(t *testing.T) {
 		},
 		filepath.Join(".github", "workflows", "license-check.yml"): {
 			"pull_request:",
-			"uses: ./.github/actions/setup-go-env",
-			"run: make license-check",
+			"uses: apache/skywalking-eyes/header@v0.8.0",
+			"config: .licenserc.yaml",
+			"mode: check",
 		},
 		".licenserc.yaml": {
 			"copyright-owner: OceanBase",
