@@ -1,6 +1,6 @@
 module github.com/ob-labs/powercontext-go
 
-go 1.25.0
+go 1.27.0
 
 require (
 	github.com/anthropics/anthropic-sdk-go v1.63.1

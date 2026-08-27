@@ -3528,7 +3528,7 @@ def test_go_server_and_plugin_environment_are_prewarmed_independently(tmp_path: 
         )
     )
     assert go_build[go_build.index("--entrypoint") + 1] == "/usr/local/go/bin/go"
-    assert "golang:1.25.0-bookworm" in go_build
+    assert "golang:1.27.0-bookworm" in go_build
     assert "CGO_ENABLED=1" in go_build
     assert "GOTOOLCHAIN=local" in go_build
     assert f"type=bind,src={config.source_checkout},dst=/source,readonly" in go_build

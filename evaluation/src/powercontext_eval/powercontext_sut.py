@@ -73,7 +73,7 @@ from powercontext_eval.tokensflow import (
 )
 
 PLUGIN_ID = "powercontext@powercontext"
-_GO_BUILDER_IMAGE = "golang:1.25.0-bookworm"
+_GO_BUILDER_IMAGE = "golang:1.27.0-bookworm"
 _CONTAINER_POWERCONTEXT = "/runtime/bin/powercontext"
 _SAFE_RUN_ID = re.compile(r"[a-z0-9][a-z0-9-]{0,62}")
 _SAFE_DOCKER_NETWORK = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}")

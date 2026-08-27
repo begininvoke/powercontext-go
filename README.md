@@ -1,7 +1,7 @@
 # PowerContext Go
 
-PowerContext Go is the Go 1.25 implementation of PowerContext. It preserves
-the frozen Python `v0.0.2` observable contract while using Go-native domain
+PowerContext Go requires Go 1.27.0 or newer. It preserves the frozen Python
+`v0.0.2` observable contract while using Go-native domain
 types, lifecycle ownership, concurrency, persistence, transports, and release
 packaging.
 
