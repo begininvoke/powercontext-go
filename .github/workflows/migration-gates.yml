@@ -49,6 +49,9 @@ jobs:
           go mod tidy
           git diff --exit-code -- go.mod go.sum
 
+      - name: Build the standard Docker image
+        run: docker build --pull --target powercontext -t powercontext:ci .
+
   frozen-oracle:
     name: Frozen Python Oracle and differential fixtures
     runs-on: ubuntu-24.04

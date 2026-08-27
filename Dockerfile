@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG GO_VERSION=1.25.0
+ARG GO_VERSION=1.27.0
 ARG GO_IMAGE=golang
 ARG DEBIAN_VERSION=bookworm-slim
 ARG DEBIAN_IMAGE=debian

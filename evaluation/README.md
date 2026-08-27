@@ -11,7 +11,7 @@ production environment file or a ready-to-install host-specific systemd unit.
 
 - Linux, Git, Python 3.11 or newer, `uv`, and Node.js/npm
 - Docker with permission to pull images, create isolated bridge networks, and run evaluation containers
-- access to `golang:1.25.0-bookworm`; every arm builds the checked-out Go Server with CGO and the
+- access to `golang:1.27.0-bookworm`; every arm builds the checked-out Go Server with CGO and the
   `sqlite_fts5` tag inside this isolated builder image
 - Codex CLI and a valid Codex `auth.json`
 - [`regctl`](https://github.com/regclient/regclient) for importing task images that are not already present
