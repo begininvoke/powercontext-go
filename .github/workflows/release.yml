@@ -7,12 +7,57 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
 env:
   GOTOOLCHAIN: local
 
 jobs:
+  prepare:
+    name: Freeze release identity
+    runs-on: ubuntu-24.04
+    outputs:
+      build_date: ${{ steps.release.outputs.build_date }}
+      commit: ${{ steps.release.outputs.commit }}
+      image_tag: ${{ steps.release.outputs.image_tag }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Check out the released commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Resolve and validate immutable release metadata
+        id: release
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="${RELEASE_TAG#powercontext-v}"
+          version="${version#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "release tag must use vX.Y.Z, powercontext-vX.Y.Z, or X.Y.Z semantic versioning" >&2
+            exit 2
+          fi
+          test "${#version}" -le 80
+          commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
+          [[ "$commit" =~ ^[0-9a-f]{40}$ ]]
+          epoch="$(git show -s --format=%ct "$commit")"
+          build_date="$(date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ)"
+          image_tag="${version//+/-}"
+          {
+            echo "version=$version"
+            echo "commit=$commit"
+            echo "build_date=$build_date"
+            echo "image_tag=$image_tag"
+          } >> "$GITHUB_OUTPUT"
+
   binaries:
     name: Binary archives (${{ matrix.target }})
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
@@ -34,11 +79,8 @@ jobs:
           ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Set up pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
@@ -52,27 +94,15 @@ jobs:
           cache: pnpm
           cache-dependency-path: integrations/dsh/plugins/powercontext/pnpm-lock.yaml
 
-      - name: Resolve immutable release metadata
-        id: release
+      - name: Verify the native release target
+        id: platform
+        shell: bash
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
           EXPECTED_TARGET: ${{ matrix.target }}
         run: |
-          version="${RELEASE_TAG#v}"
-          case "$version" in
-            ''|*[!0-9A-Za-z.+-]*) echo "invalid release version" >&2; exit 2 ;;
-          esac
-          commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
-          epoch="$(git show -s --format=%ct "$commit")"
-          build_date="$(python3 -c 'import datetime,sys; print(datetime.datetime.fromtimestamp(int(sys.argv[1]), datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"))' "$epoch")"
           target="$(go env GOOS)-$(go env GOARCH)"
           test "$target" = "$EXPECTED_TARGET"
-          {
-            echo "version=$version"
-            echo "commit=$commit"
-            echo "build_date=$build_date"
-            echo "target=$target"
-          } >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
 
       - name: Build the DSH runtime adapter
         working-directory: integrations/dsh/plugins/powercontext
@@ -80,94 +110,70 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
 
-      - name: Download and verify the native tokenizer library
-        env:
-          TARGET: ${{ steps.release.outputs.target }}
-        run: |
-          url="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field url)"
-          expected="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field sha256)"
-          mkdir -p "$RUNNER_TEMP/tokenizers"
-          curl --fail --location --retry 3 --output "$RUNNER_TEMP/tokenizers.tar.gz" "$url"
-          go run ./tools/release verify -sha256 "$expected" "$RUNNER_TEMP/tokenizers.tar.gz"
-          tar -xzf "$RUNNER_TEMP/tokenizers.tar.gz" -C "$RUNNER_TEMP/tokenizers" libtokenizers.a
-          echo "TOKENIZERS_LIB_DIR=$RUNNER_TEMP/tokenizers" >> "$GITHUB_ENV"
-
-      - name: Acquire verified ONNX Runtime
-        env:
-          TARGET: ${{ steps.release.outputs.target }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/onnxruntime/lib"
-          from_source="$(go run ./tools/release asset -component onnxruntime -target "$TARGET" -field build-from-source)"
-          if [ "$from_source" = true ]; then
-            commit="$(go run ./tools/release asset -component onnxruntime -field commit)"
-            build_root="$RUNNER_TEMP/onnxruntime-build"
-            git init "$RUNNER_TEMP/onnxruntime-source"
-            git -C "$RUNNER_TEMP/onnxruntime-source" remote add origin https://github.com/microsoft/onnxruntime.git
-            git -C "$RUNNER_TEMP/onnxruntime-source" fetch --depth=1 origin "$commit"
-            git -C "$RUNNER_TEMP/onnxruntime-source" checkout --detach FETCH_HEAD
-            test "$(git -C "$RUNNER_TEMP/onnxruntime-source" rev-parse HEAD)" = "$commit"
-            "$RUNNER_TEMP/onnxruntime-source/build.sh" \
-              --config Release --build_shared_lib --parallel --skip_tests \
-              --build_dir "$build_root" \
-              --compile_no_warning_as_error \
-              --cmake_extra_defines CMAKE_OSX_ARCHITECTURES=x86_64
-            test -f "$build_root/Release/CMakeCache.txt"
-            cmake --install "$build_root/Release" --prefix "$RUNNER_TEMP/onnxruntime"
-          else
-            url="$(go run ./tools/release asset -component onnxruntime -target "$TARGET" -field url)"
-            expected="$(go run ./tools/release asset -component onnxruntime -target "$TARGET" -field sha256)"
-            curl --fail --location --retry 3 --output "$RUNNER_TEMP/onnxruntime.tgz" "$url"
-            go run ./tools/release verify -sha256 "$expected" "$RUNNER_TEMP/onnxruntime.tgz"
-            mkdir -p "$RUNNER_TEMP/onnxruntime-extract"
-            tar -xzf "$RUNNER_TEMP/onnxruntime.tgz" -C "$RUNNER_TEMP/onnxruntime-extract"
-            source_lib="$(find "$RUNNER_TEMP/onnxruntime-extract" -type d -name lib -print -quit)"
-            test -n "$source_lib"
-            cp -a "$source_lib/." "$RUNNER_TEMP/onnxruntime/lib/"
-          fi
-          test -n "$(find "$RUNNER_TEMP/onnxruntime/lib" -type f -name 'libonnxruntime*' -print -quit)"
-          echo "ONNXRUNTIME_LIB_DIR=$RUNNER_TEMP/onnxruntime/lib" >> "$GITHUB_ENV"
+      - name: Acquire verified native release assets
+        id: native
+        uses: ./.github/actions/setup-native-assets
+        with:
+          target: ${{ matrix.target }}
+          include-onnxruntime: "true"
 
       - name: Install the pinned SBOM generator
         run: |
           version="$(go run ./tools/release asset -component syft -field version)"
           mkdir -p "$RUNNER_TEMP/tools"
           GOBIN="$RUNNER_TEMP/tools" go install "github.com/anchore/syft/cmd/syft@v$version"
-          echo "$RUNNER_TEMP/tools" >> "$GITHUB_PATH"
 
       - name: Build and package both editions
         env:
-          VERSION: ${{ steps.release.outputs.version }}
-          COMMIT: ${{ steps.release.outputs.commit }}
-          BUILD_DATE: ${{ steps.release.outputs.build_date }}
+          BUILD_DATE: ${{ needs.prepare.outputs.build_date }}
+          COMMIT: ${{ needs.prepare.outputs.commit }}
+          ONNXRUNTIME_LIB_DIR: ${{ steps.native.outputs.onnxruntime-lib-dir }}
           SYFT: ${{ runner.temp }}/tools/syft
+          TOKENIZERS_LIB_DIR: ${{ steps.native.outputs.tokenizers-lib-dir }}
+          VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           make package-standard
           make package-full
-          go run ./tools/release checksum -output "dist/SHA256SUMS-${{ steps.release.outputs.target }}" \
+
+      - name: Smoke test both released process surfaces
+        env:
+          POWERCONTEXT_ONNXRUNTIME_LIBRARY_DIR: ${{ steps.native.outputs.onnxruntime-lib-dir }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          go run ./tools/process-smoke -binary bin/powercontext -version "$VERSION"
+          go run ./tools/process-smoke -binary bin/powercontext-full -version "$VERSION"
+
+      - name: Build the platform checksum manifest
+        run: |
+          go run ./tools/release checksum \
+            -output "dist/SHA256SUMS-${{ steps.platform.outputs.target }}" \
             dist/*.tar.gz dist/*.spdx.json
 
       - name: Upload platform release assets
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: release-${{ steps.release.outputs.target }}
+          name: release-${{ steps.platform.outputs.target }}
           path: dist/*
           if-no-files-found: error
           retention-days: 14
 
   images:
     name: Multi-platform OCI images
+    needs: prepare
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
       contents: read
       packages: write
-      id-token: write
     steps:
       - name: Check out the released commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
+
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
@@ -182,23 +188,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Resolve image metadata
+      - name: Resolve image names
         id: metadata
+        shell: bash
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
           OWNER: ${{ github.repository_owner }}
         run: |
-          version="${RELEASE_TAG#v}"
-          commit="$(git rev-parse "${RELEASE_TAG}^{commit}")"
-          epoch="$(git show -s --format=%ct "$commit")"
-          build_date="$(python3 -c 'import datetime,sys; print(datetime.datetime.fromtimestamp(int(sys.argv[1]), datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"))' "$epoch")"
           image_owner="$(printf '%s' "$OWNER" | tr '[:upper:]' '[:lower:]')"
           {
-            echo "version=$version"
-            echo "commit=$commit"
-            echo "build_date=$build_date"
-            echo "standard=ghcr.io/$image_owner/powercontext:$version"
-            echo "full=ghcr.io/$image_owner/powercontext-full:$version"
+            echo "standard=ghcr.io/$image_owner/powercontext:$IMAGE_TAG"
+            echo "full=ghcr.io/$image_owner/powercontext-full:$IMAGE_TAG"
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and push the standard image
@@ -214,9 +214,9 @@ jobs:
           sbom: true
           provenance: mode=max
           build-args: |
-            VERSION=${{ steps.metadata.outputs.version }}
-            COMMIT=${{ steps.metadata.outputs.commit }}
-            BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+            VERSION=${{ needs.prepare.outputs.version }}
+            COMMIT=${{ needs.prepare.outputs.commit }}
+            BUILD_DATE=${{ needs.prepare.outputs.build_date }}
           cache-from: type=gha,scope=powercontext-standard
           cache-to: type=gha,mode=max,scope=powercontext-standard
 
@@ -233,18 +233,18 @@ jobs:
           sbom: true
           provenance: mode=max
           build-args: |
-            VERSION=${{ steps.metadata.outputs.version }}
-            COMMIT=${{ steps.metadata.outputs.commit }}
-            BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+            VERSION=${{ needs.prepare.outputs.version }}
+            COMMIT=${{ needs.prepare.outputs.commit }}
+            BUILD_DATE=${{ needs.prepare.outputs.build_date }}
           cache-from: type=gha,scope=powercontext-full
           cache-to: type=gha,mode=max,scope=powercontext-full
 
       - name: Record immutable image digests
         env:
-          STANDARD_IMAGE: ${{ steps.metadata.outputs.standard }}
-          STANDARD_DIGEST: ${{ steps.standard.outputs.digest }}
-          FULL_IMAGE: ${{ steps.metadata.outputs.full }}
           FULL_DIGEST: ${{ steps.full.outputs.digest }}
+          FULL_IMAGE: ${{ steps.metadata.outputs.full }}
+          STANDARD_DIGEST: ${{ steps.standard.outputs.digest }}
+          STANDARD_IMAGE: ${{ steps.metadata.outputs.standard }}
         run: |
           mkdir -p image-release
           jq -n \
@@ -263,19 +263,18 @@ jobs:
 
   publish:
     name: Attach checksummed release assets
-    needs: [binaries, images]
+    needs: [prepare, binaries, images]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - name: Check out
+      - name: Check out the released commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
-          go-version-file: go.mod
-          cache: true
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Download all release artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -290,6 +289,7 @@ jobs:
             dist/*.tar.gz dist/*.spdx.json dist/IMAGE-DIGESTS.json
           test "$(find dist -name '*.tar.gz' | wc -l | tr -d ' ')" = 8
           test "$(find dist -name '*.spdx.json' | wc -l | tr -d ' ')" = 8
+          test "$(wc -l < dist/SHA256SUMS | tr -d ' ')" = 17
 
       - name: Upload GitHub Release assets
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
@@ -301,3 +301,22 @@ jobs:
             dist/IMAGE-DIGESTS.json
             dist/SHA256SUMS
           fail_on_unmatched_files: true
+
+  release-verify:
+    name: Verify the published release
+    needs: publish
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/release-verify.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name }}
+
+  deploy-docs:
+    name: Deploy documentation
+    needs: release-verify
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy-docs.yml

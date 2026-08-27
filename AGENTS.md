@@ -12,7 +12,7 @@
   primary evidence.
 - Verify version-sensitive facts at the time of the task, including supported
   Go versions, command and flag behavior, dependency APIs, action inputs,
-  operating-system support, and current Issue, PR, or CI state. Search-result
+  operating-system support, and current issue, PR, or CI state. Search-result
   snippets and remembered URLs are not verification.
 - Inspect the current repository, tests, generated contracts, configuration,
   logs, and working-tree state as well. Official documentation describes the
@@ -107,7 +107,7 @@ source / artifact / trigger / inference
   alternative verification used. Do not claim the root cause or fix is proven
   more strongly than the evidence supports.
 - A bug fix is not complete until the targeted regression proof passes after
-  the change and any required end-to-end or public-entrypoint verification has
+  the change and any required end-to-end or public entry point verification has
   completed, or the remaining validation gap and risk are explicitly reported.
 
 ## Learned bug-prevention rules

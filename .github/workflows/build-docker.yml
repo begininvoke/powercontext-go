@@ -1,0 +1,235 @@
+name: Build Docker image
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag, or commit SHA to package; blank uses the selected workflow ref
+        required: false
+        type: string
+      version:
+        description: Semantic version embedded in the image; blank creates an auditable development version
+        required: false
+        type: string
+      artifact_label:
+        description: Optional label used in the uploaded artifact name
+        required: false
+        type: string
+      edition:
+        description: PowerContext image edition to build
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - standard
+          - full
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOTOOLCHAIN: local
+
+jobs:
+  build:
+    name: Linux amd64 and arm64 / ${{ inputs.edition || 'both' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out requested source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Resolve immutable image metadata
+        id: metadata
+        shell: bash
+        env:
+          ARTIFACT_LABEL: ${{ inputs.artifact_label }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+          SOURCE_REF: ${{ inputs.ref || github.ref_name }}
+        run: |
+          commit="$(git rev-parse HEAD)"
+          test "${#commit}" = 40
+          version="${REQUESTED_VERSION#powercontext-v}"
+          version="${version#v}"
+          if [ -z "$version" ]; then
+            version="0.0.0-dev.${GITHUB_RUN_NUMBER}.${commit:0:12}"
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "version must use semantic versioning" >&2
+            exit 2
+          fi
+          test "${#version}" -le 80
+          epoch="$(git show -s --format=%ct "$commit")"
+          build_date="$(date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ)"
+          label="${ARTIFACT_LABEL:-${SOURCE_REF:-source}}"
+          slug="$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^[-.]+//; s/[-.]+$//' | cut -c1-48)"
+          slug="${slug:-source}"
+          safe_version="${version//+/-}"
+          image_tag="${safe_version}-${commit:0:12}"
+          artifact_name="powercontext-${slug}-${image_tag}-oci-${{ inputs.edition }}"
+          {
+            echo "version=$version"
+            echo "commit=$commit"
+            echo "build_date=$build_date"
+            echo "image_tag=$image_tag"
+            echo "artifact_name=$artifact_name"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Prepare image output directory
+        run: mkdir -p "$RUNNER_TEMP/docker-images"
+
+      - name: Build the standard multi-platform OCI archive
+        if: inputs.edition != 'full'
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          file: Dockerfile
+          target: powercontext
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: powercontext:${{ steps.metadata.outputs.image_tag }}
+          outputs: type=oci,dest=${{ runner.temp }}/docker-images/powercontext-${{ steps.metadata.outputs.image_tag }}.oci.tar
+          sbom: true
+          provenance: mode=max
+          build-args: |
+            VERSION=${{ steps.metadata.outputs.version }}
+            COMMIT=${{ steps.metadata.outputs.commit }}
+            BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+          cache-from: type=gha,scope=candidate-powercontext-standard
+          cache-to: type=gha,mode=max,scope=candidate-powercontext-standard
+
+      - name: Build the Full multi-platform OCI archive
+        if: inputs.edition != 'standard'
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          file: Dockerfile
+          target: powercontext-full
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: powercontext-full:${{ steps.metadata.outputs.image_tag }}
+          outputs: type=oci,dest=${{ runner.temp }}/docker-images/powercontext-full-${{ steps.metadata.outputs.image_tag }}.oci.tar
+          sbom: true
+          provenance: mode=max
+          build-args: |
+            VERSION=${{ steps.metadata.outputs.version }}
+            COMMIT=${{ steps.metadata.outputs.commit }}
+            BUILD_DATE=${{ steps.metadata.outputs.build_date }}
+          cache-from: type=gha,scope=candidate-powercontext-full
+          cache-to: type=gha,mode=max,scope=candidate-powercontext-full
+
+      - name: Smoke test selected Linux amd64 images
+        shell: bash
+        env:
+          BUILD_DATE: ${{ steps.metadata.outputs.build_date }}
+          COMMIT: ${{ steps.metadata.outputs.commit }}
+          EDITION: ${{ inputs.edition }}
+          IMAGE_TAG: ${{ steps.metadata.outputs.image_tag }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          active_container=""
+          cleanup() {
+            if [ -n "$active_container" ]; then
+              docker rm --force "$active_container" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup EXIT
+
+          smoke_image() {
+            target="$1"
+            image="$2"
+            cache_scope="candidate-${target}"
+            if [ "$target" = powercontext ]; then
+              cache_scope=candidate-powercontext-standard
+            fi
+            active_container="powercontext-${target}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            docker buildx build \
+              --file Dockerfile \
+              --platform linux/amd64 \
+              --target "$target" \
+              --tag "$image" \
+              --build-arg "VERSION=$VERSION" \
+              --build-arg "COMMIT=$COMMIT" \
+              --build-arg "BUILD_DATE=$BUILD_DATE" \
+              --cache-from "type=gha,scope=${cache_scope}" \
+              --load \
+              .
+            docker run \
+              --detach \
+              --name "$active_container" \
+              --env POWERCONTEXT_SERVER_HTTP_HOST=0.0.0.0 \
+              --env POWERCONTEXT_SERVER_HTTP_PORT=8000 \
+              --publish 127.0.0.1::8000 \
+              "$image" server run
+            endpoint="$(docker port "$active_container" 8000/tcp | head -n 1)"
+            ready=false
+            for _ in $(seq 1 45); do
+              if curl --fail --silent --show-error "http://${endpoint}/health/ready" >/dev/null; then
+                ready=true
+                break
+              fi
+              sleep 1
+            done
+            if [ "$ready" != true ]; then
+              docker logs "$active_container"
+              return 1
+            fi
+            docker rm --force "$active_container" >/dev/null
+            active_container=""
+          }
+
+          if [ "$EDITION" != full ]; then
+            smoke_image powercontext "powercontext:$IMAGE_TAG"
+          fi
+          if [ "$EDITION" != standard ]; then
+            smoke_image powercontext-full "powercontext-full:$IMAGE_TAG"
+          fi
+
+      - name: Build the OCI checksum manifest
+        run: |
+          cd "$RUNNER_TEMP/docker-images"
+          sha256sum -- *.oci.tar > SHA256SUMS
+
+      - name: Upload OCI archives
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: |
+            ${{ runner.temp }}/docker-images/*.oci.tar
+            ${{ runner.temp }}/docker-images/SHA256SUMS
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summarize the image bundle
+        env:
+          ARTIFACT_NAME: ${{ steps.metadata.outputs.artifact_name }}
+          SOURCE_SHA: ${{ steps.metadata.outputs.commit }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          {
+            echo "## Candidate OCI images"
+            echo
+            echo "- Version: \`$VERSION\`"
+            echo "- Source SHA: \`$SOURCE_SHA\`"
+            echo "- Artifact: \`$ARTIFACT_NAME\`"
+            echo "- Platforms: \`linux/amd64\`, \`linux/arm64\`"
+            echo "- Retention: 30 days"
+          } >> "$GITHUB_STEP_SUMMARY"
