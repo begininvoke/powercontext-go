@@ -4,7 +4,7 @@ import (
 	"context"
 
 	v1 "github.com/ob-labs/powercontext-go/api/v1"
-	"github.com/ob-labs/powercontext-go/contextpack"
+	"github.com/ob-labs/powercontext-go/internal/contextpack"
 )
 
 type ContextOperations interface {

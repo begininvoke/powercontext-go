@@ -11,8 +11,8 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact/skill"
 	"github.com/ob-labs/powercontext-go/inference"
 	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	"github.com/ob-labs/powercontext-go/internal/stats"
 	"github.com/ob-labs/powercontext-go/source"
-	"github.com/ob-labs/powercontext-go/stats"
 	"github.com/ob-labs/powercontext-go/trigger"
 )
 

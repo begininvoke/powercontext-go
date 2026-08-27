@@ -12,7 +12,7 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/skill"
 	"github.com/ob-labs/powercontext-go/internal/endpoint"
-	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/internal/review"
 )
 
 const maximumProjectionRequestBytes = 64 * 1024

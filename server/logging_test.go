@@ -16,7 +16,7 @@ import (
 	"github.com/ob-labs/powercontext-go/internal/endpoint"
 	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
 	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
-	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/internal/runtime"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )

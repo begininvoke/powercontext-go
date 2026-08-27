@@ -10,8 +10,8 @@ import (
 
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/internal/review"
 	"github.com/ob-labs/powercontext-go/internal/sqlstore"
-	"github.com/ob-labs/powercontext-go/review"
 )
 
 func TestMemoryServiceAppendReviseAndStateTransitionsUseAtomicRepository(t *testing.T) {

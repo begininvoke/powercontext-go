@@ -9,10 +9,10 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/handoff"
 	"github.com/ob-labs/powercontext-go/artifact/memory"
-	"github.com/ob-labs/powercontext-go/handoffreport"
 	"github.com/ob-labs/powercontext-go/inference"
-	"github.com/ob-labs/powercontext-go/review"
-	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/internal/handoffreport"
+	"github.com/ob-labs/powercontext-go/internal/review"
+	"github.com/ob-labs/powercontext-go/internal/runtime"
 )
 
 func TestMapErrorFrozenTaxonomy(t *testing.T) {

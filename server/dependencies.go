@@ -12,7 +12,7 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact/skill"
 	"github.com/ob-labs/powercontext-go/inference"
 	"github.com/ob-labs/powercontext-go/internal/modelprovider"
-	pcruntime "github.com/ob-labs/powercontext-go/runtime"
+	pcruntime "github.com/ob-labs/powercontext-go/internal/runtime"
 	"go.opentelemetry.io/otel/trace"
 )
 

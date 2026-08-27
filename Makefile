@@ -11,7 +11,7 @@ BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(BUILD_DATE)
 
 .PHONY: generate check-generated fmt fmt-check vet test test-sqlite test-race test-full test-oceanbase-live \
-	build build-full smoke smoke-full check package-standard package-full
+	build build-full smoke smoke-full check package-standard package-full clean
 
 generate:
 	$(GO) generate ./openapi
@@ -84,3 +84,6 @@ package-full: build-full
 		-output dist -syft "$(SYFT)"
 
 check: check-generated fmt-check vet test test-sqlite
+
+clean:
+	$(RM) -r bin dist coverage

@@ -15,7 +15,7 @@ import (
 	"github.com/ob-labs/powercontext-go/inference"
 	"github.com/ob-labs/powercontext-go/internal/benchmark/locomo"
 	benchmarkprompts "github.com/ob-labs/powercontext-go/internal/benchmark/locomo/prompts"
-	pcruntime "github.com/ob-labs/powercontext-go/runtime"
+	pcruntime "github.com/ob-labs/powercontext-go/internal/runtime"
 	"github.com/ob-labs/powercontext-go/source"
 )
 

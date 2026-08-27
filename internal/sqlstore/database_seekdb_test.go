@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	embeddedseekdb "github.com/ob-labs/powercontext-go/internal/seekdb"
+	embeddedseekdb "github.com/ob-labs/powercontext-go/internal/sqlstore/seekdb"
 )
 
 func TestSeekDBDriverConfigUsesLocalUnixSocket(t *testing.T) {

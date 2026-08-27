@@ -9,7 +9,7 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/experience"
 	"github.com/ob-labs/powercontext-go/artifact/skill"
-	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/internal/review"
 	"github.com/ob-labs/powercontext-go/source"
 )
 

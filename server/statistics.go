@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ob-labs/powercontext-go/contextpack"
 	"github.com/ob-labs/powercontext-go/inference"
+	"github.com/ob-labs/powercontext-go/internal/contextpack"
 	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
 	"github.com/ob-labs/powercontext-go/internal/sqlstore"
-	"github.com/ob-labs/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/internal/stats"
 )
 
 type relationalModelUsageRecorder struct {

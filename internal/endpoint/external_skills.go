@@ -5,8 +5,8 @@ import (
 
 	v1 "github.com/ob-labs/powercontext-go/api/v1"
 	"github.com/ob-labs/powercontext-go/artifact/skill"
-	"github.com/ob-labs/powercontext-go/review"
-	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/internal/review"
+	"github.com/ob-labs/powercontext-go/internal/runtime"
 )
 
 type ExternalSkillOperations interface {

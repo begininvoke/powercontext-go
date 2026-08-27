@@ -18,14 +18,18 @@ Python test cases are inventoried with resolvable Go or retained-host evidence.
 ## Repository shape
 
 - `source`, `artifact`, `trigger`, and `inference` are lifecycle-free public
-  domain contracts.
-- `artifact/{memory,experience,skill,handoff}`, `review`, `contextpack`,
-  `handoffreport`, and `stats` implement distinct domain capabilities.
-- `runtime` owns admission, Scope boundaries, same-Scope write serialization,
-  scheduled processing, and application use cases.
+  extension contracts; `artifact/{memory,experience,skill,handoff}` contains
+  the public typed Artifact families.
+- `internal/{review,contextpack,handoffreport,stats,work}` contains product
+  domains that are shared by the Server but are not part of the embedded Go
+  SDK surface.
+- `internal/runtime` owns admission, Scope boundaries, same-Scope write
+  serialization, scheduled processing, and application use cases.
 - `client` and `server` are public remote and process facades.
-- `internal` contains concrete adapters: SQL, providers, scheduler, endpoints,
-  HTTP, MCP, dashboard, CLI, and observability.
+- `internal` contains product-only domains and concrete adapters: SQL,
+  providers, scheduler, endpoints, HTTP, MCP, dashboard, CLI, and
+  observability. Native seekDB and sqlite-vec ownership lives below
+  `internal/sqlstore`.
 - `integrations` contains host-native adapters for Codex, Claude Code, Bub,
   DeepSeek Harness, Hermes, LangGraph, OpenClaw, OpenCode, and Pi. They
   communicate only with the Go Server.

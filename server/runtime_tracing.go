@@ -4,7 +4,7 @@ import (
 	"context"
 
 	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
-	pcruntime "github.com/ob-labs/powercontext-go/runtime"
+	pcruntime "github.com/ob-labs/powercontext-go/internal/runtime"
 	"go.opentelemetry.io/otel/trace"
 )
 

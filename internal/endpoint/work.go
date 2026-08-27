@@ -6,9 +6,9 @@ import (
 	v1 "github.com/ob-labs/powercontext-go/api/v1"
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/handoff"
-	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/internal/runtime"
+	"github.com/ob-labs/powercontext-go/internal/work"
 	"github.com/ob-labs/powercontext-go/source"
-	"github.com/ob-labs/powercontext-go/work"
 )
 
 type WorkOperations interface {

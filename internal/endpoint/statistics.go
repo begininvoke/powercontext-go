@@ -4,7 +4,7 @@ import (
 	"context"
 
 	v1 "github.com/ob-labs/powercontext-go/api/v1"
-	"github.com/ob-labs/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/internal/stats"
 )
 
 type StatisticsOperations interface {

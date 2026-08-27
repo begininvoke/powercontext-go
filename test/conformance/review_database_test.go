@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/ob-labs/powercontext-go/artifact/experience"
+	"github.com/ob-labs/powercontext-go/internal/review"
 	"github.com/ob-labs/powercontext-go/internal/sqlstore"
-	"github.com/ob-labs/powercontext-go/review"
 )
 
 const (

@@ -5,8 +5,8 @@ import (
 
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/skill"
-	"github.com/ob-labs/powercontext-go/review"
-	pcruntime "github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/internal/review"
+	pcruntime "github.com/ob-labs/powercontext-go/internal/runtime"
 )
 
 type webSkillProjectionOperations struct {

@@ -19,12 +19,12 @@ import (
 	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
 	servermetrics "github.com/ob-labs/powercontext-go/internal/observability/metrics"
 	servertracing "github.com/ob-labs/powercontext-go/internal/observability/tracing"
+	"github.com/ob-labs/powercontext-go/internal/review"
+	pcruntime "github.com/ob-labs/powercontext-go/internal/runtime"
 	"github.com/ob-labs/powercontext-go/internal/scheduler"
 	"github.com/ob-labs/powercontext-go/internal/sqlstore"
 	sqlstoreoceanbase "github.com/ob-labs/powercontext-go/internal/sqlstore/oceanbase"
 	"github.com/ob-labs/powercontext-go/internal/webui"
-	"github.com/ob-labs/powercontext-go/review"
-	pcruntime "github.com/ob-labs/powercontext-go/runtime"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -498,10 +498,6 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 
 func (a *Application) Endpoint() v1.Handler { return a.endpoint }
 
-func (a *Application) Runtime() *pcruntime.Runtime { return a.runtime }
-
-func (a *Application) Metrics() *servermetrics.Server { return a.metrics }
-
 func (a *Application) HTTPHandler() (http.Handler, error) {
 	if a == nil || a.endpoint == nil {
 		return nil, errors.New("server: application is not initialized")
@@ -526,9 +522,9 @@ func (a *Application) HTTPHandler() (http.Handler, error) {
 	}
 	return NewHTTPHandler(a.endpoint, HTTPOptions{
 		BearerToken: token, HandoffReportRoutes: a.config.HandoffReport.Enabled,
-		Metrics: a.metrics, TracerProvider: a.tracing, Logger: a.logger, AccessLog: a.config.Logging.Access,
+		metrics: a.metrics, TracerProvider: a.tracing, Logger: a.logger, AccessLog: a.config.Logging.Access,
 		MCP:   MCPOptions{Enabled: a.config.MCP.Enabled, Path: a.config.MCP.Path},
-		WebUI: webOptions,
+		webUI: webOptions,
 	})
 }
 

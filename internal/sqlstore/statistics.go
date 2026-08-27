@@ -10,7 +10,7 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/memory"
 	"github.com/ob-labs/powercontext-go/inference"
-	"github.com/ob-labs/powercontext-go/stats"
+	"github.com/ob-labs/powercontext-go/internal/stats"
 )
 
 // StatisticsRepository maintains bounded additive aggregates and reads current

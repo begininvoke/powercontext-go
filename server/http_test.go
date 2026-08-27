@@ -16,9 +16,9 @@ import (
 	"github.com/ob-labs/powercontext-go/internal/endpoint"
 	"github.com/ob-labs/powercontext-go/internal/httpapi"
 	servermetrics "github.com/ob-labs/powercontext-go/internal/observability/metrics"
+	"github.com/ob-labs/powercontext-go/internal/review"
+	"github.com/ob-labs/powercontext-go/internal/runtime"
 	"github.com/ob-labs/powercontext-go/internal/webui"
-	"github.com/ob-labs/powercontext-go/review"
-	"github.com/ob-labs/powercontext-go/runtime"
 )
 
 func repeatHTTPValue[T any](value T, count int) []T {
@@ -276,7 +276,7 @@ func TestHTTPAuthenticationAndUnboundReadiness(t *testing.T) {
 		t.Fatal(err)
 	}
 	server, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{
-		BearerToken: "server-secret", Metrics: observability,
+		BearerToken: "server-secret", metrics: observability,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -466,7 +466,7 @@ func TestDashboardPageIsPublicButScopeInventoryIsAuthenticated(t *testing.T) {
 	t.Parallel()
 	handler, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{
 		BearerToken: "dashboard-secret",
-		WebUI: &webui.Options{DashboardEnabled: true, AuthenticationRequired: true, Scopes: []webui.Scope{
+		webUI: &webui.Options{DashboardEnabled: true, AuthenticationRequired: true, Scopes: []webui.Scope{
 			{ScopeID: "project:powercontext", DisplayName: "PowerContext"},
 		}},
 	})
@@ -493,7 +493,7 @@ func TestDashboardPageIsPublicButScopeInventoryIsAuthenticated(t *testing.T) {
 func TestWebUIMountFailureDoesNotPreventServerStartup(t *testing.T) {
 	t.Parallel()
 	handler, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{
-		WebUI: &webui.Options{},
+		webUI: &webui.Options{},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -517,7 +517,7 @@ func TestHTTPAndMCPMetricsUseBoundedOperationLabels(t *testing.T) {
 		Memory: &serverMemoryOperations{},
 		Review: &serverReviewOperations{},
 	}), HTTPOptions{
-		Metrics: observability,
+		metrics: observability,
 		MCP:     MCPOptions{Enabled: true, JSONResponse: true},
 	})
 	if err != nil {

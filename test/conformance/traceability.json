@@ -97,7 +97,7 @@
         },
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderPreservesOrderAndFiltersDuplicateOrInvalidHits"
         }
       ]
@@ -2025,7 +2025,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/seekdb/seekdb_test.go",
+          "file": "internal/sqlstore/seekdb/seekdb_test.go",
           "test": "TestCanonicalPathRequiresNonEmptyTrimmedValue"
         }
       ]
@@ -2105,7 +2105,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "internal/seekdb/seekdb_test.go",
+          "file": "internal/sqlstore/seekdb/seekdb_test.go",
           "test": "TestOpenClosesNativeInstanceWhenCancellationRepeatsDuringHandshake"
         }
       ]
@@ -2238,7 +2238,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "review/generation_test.go",
+          "file": "internal/review/generation_test.go",
           "test": "TestGenerationWithoutModelFailsBeforeEvidenceOrCandidatePersistence"
         }
       ]
@@ -2254,7 +2254,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "review/generation_test.go",
+          "file": "internal/review/generation_test.go",
           "test": "TestExperienceGenerationUsesExactEvidenceTargetAndSupportsNoOp"
         }
       ]
@@ -2270,7 +2270,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "review/generation_test.go",
+          "file": "internal/review/generation_test.go",
           "test": "TestExperienceGenerationUsesExactEvidenceTargetAndSupportsNoOp"
         }
       ]
@@ -2286,7 +2286,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "review/generation_test.go",
+          "file": "internal/review/generation_test.go",
           "test": "TestManagedSkillGenerationEnforcesOriginSpecificLineage"
         }
       ]
@@ -2302,7 +2302,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "review/model_test.go",
+          "file": "internal/review/model_test.go",
           "test": "TestCandidateRequiresBoundedExactEvidence"
         }
       ]
@@ -2318,7 +2318,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "review/model_test.go",
+          "file": "internal/review/model_test.go",
           "test": "TestCandidateTerminalFieldsMatchStatus"
         }
       ]
@@ -2488,7 +2488,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
+          "file": "internal/runtime/experience_incubation_test.go",
           "test": "TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence"
         },
         {
@@ -2509,7 +2509,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
+          "file": "internal/runtime/experience_incubation_test.go",
           "test": "TestExperienceIncubationRetriesSameWindowAfterGenerationFailure"
         }
       ]
@@ -2525,7 +2525,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
+          "file": "internal/runtime/experience_incubation_test.go",
           "test": "TestScheduledExperienceIncubationUsesFixedSourceWindowBudget"
         }
       ]
@@ -2557,7 +2557,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/external_skill_application_test.go",
+          "file": "internal/runtime/external_skill_application_test.go",
           "test": "TestRuntimeExposesConfiguredExternalSkillRegistryWithoutModel"
         }
       ]
@@ -2573,7 +2573,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/external_skill_application_test.go",
+          "file": "internal/runtime/external_skill_application_test.go",
           "test": "TestRuntimeReportsUnconfiguredExternalSkillRegistry"
         }
       ]
@@ -2605,7 +2605,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/external_skill_application_test.go",
+          "file": "internal/runtime/external_skill_application_test.go",
           "test": "TestExternalSkillImportRequiresGenerationBeforeSnapshot"
         }
       ]
@@ -2642,7 +2642,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderPreservesOrderAndFiltersDuplicateOrInvalidHits"
         }
       ]
@@ -2658,7 +2658,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderTruncatesUnicodeDeterministicallyWithinFinalBudget"
         }
       ]
@@ -2674,7 +2674,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderRejectsTruncatedUnicodeBelowMinimumByteSize"
         }
       ]
@@ -2690,7 +2690,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderSkipsUnfittableEntryAndKeepsLaterShortEntry"
         }
       ]
@@ -2706,7 +2706,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderRejectsHitFromDifferentMemoryHead"
         }
       ]
@@ -2722,7 +2722,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderPreparesExperienceWithoutMemoryHead"
         }
       ]
@@ -2738,7 +2738,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderKeepsMemoryPrimaryAndBoundsExperienceShare"
         }
       ]
@@ -2754,7 +2754,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestBuilderRejectsNonExperienceRecallHit"
         }
       ]
@@ -2770,7 +2770,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestRequestValidationAndEmptyContext"
         }
       ]
@@ -2786,7 +2786,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "contextpack/builder_test.go",
+          "file": "internal/contextpack/builder_test.go",
           "test": "TestRequestValidationAndEmptyContext"
         }
       ]
@@ -2946,7 +2946,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/lifecycle_test.go",
+          "file": "internal/runtime/lifecycle_test.go",
           "test": "TestScopeCacheNeverEvictsLockWithHolderOrWaiter"
         }
       ]
@@ -3004,7 +3004,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "work/model_test.go",
+          "file": "internal/work/model_test.go",
           "test": "TestVerifiedWorkClaimsRequireExactEvidence"
         }
       ]
@@ -3020,7 +3020,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/work_application_test.go",
+          "file": "internal/runtime/work_application_test.go",
           "test": "TestAcknowledgementCannotAcceptUnavailableHandoffEvidence"
         }
       ]
@@ -3036,7 +3036,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "work/model_test.go",
+          "file": "internal/work/model_test.go",
           "test": "TestAcknowledgementRequiresInspectedTargetAndReceiverChecks"
         }
       ]
@@ -3052,7 +3052,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/work_application_test.go",
+          "file": "internal/runtime/work_application_test.go",
           "test": "TestWorkContractRejectsVerifiedClaimWithMissingEvidence"
         }
       ]
@@ -3084,7 +3084,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "work/continuity_test.go",
+          "file": "internal/work/continuity_test.go",
           "test": "TestContinuityDoesNotCoverAcceptanceWithUnlinkedOutcome"
         }
       ]
@@ -3100,7 +3100,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/work_application_test.go",
+          "file": "internal/runtime/work_application_test.go",
           "test": "TestTaskOutcomeRejectsNonReceiptResultLink"
         }
       ]
@@ -3116,7 +3116,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "work/continuity_test.go",
+          "file": "internal/work/continuity_test.go",
           "test": "TestContinuityExcludesMalformedWorkRecords"
         }
       ]
@@ -4204,7 +4204,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
+          "file": "internal/runtime/experience_incubation_test.go",
           "test": "TestExperienceIncubationUsesTwoStagesAndExactWindowEvidence"
         },
         {
@@ -4230,7 +4230,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/context_application_test.go",
+          "file": "internal/runtime/context_application_test.go",
           "test": "TestContextApplicationRecallsExperienceWithinOneScopedOperation"
         }
       ]
@@ -4262,7 +4262,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/lifecycle_test.go",
+          "file": "internal/runtime/lifecycle_test.go",
           "test": "TestScopedReadsForSameScopeCanOverlap"
         },
         {
@@ -4404,7 +4404,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/external_skill_application_test.go",
+          "file": "internal/runtime/external_skill_application_test.go",
           "test": "TestRuntimeExposesConfiguredExternalSkillRegistryWithoutModel"
         },
         {
@@ -4425,7 +4425,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/external_skill_application_test.go",
+          "file": "internal/runtime/external_skill_application_test.go",
           "test": "TestExternalSkillImportRequiresGenerationBeforeSnapshot"
         },
         {
@@ -4641,7 +4641,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/memory_search_concurrency_test.go",
+          "file": "internal/runtime/memory_search_concurrency_test.go",
           "test": "TestMemorySearchRetriesOneAdvancedHead"
         }
       ]
@@ -4657,7 +4657,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/memory_search_concurrency_test.go",
+          "file": "internal/runtime/memory_search_concurrency_test.go",
           "test": "TestMemorySearchKeepsCompletedRevisionWhenHeadAdvancesDuringReranking"
         }
       ]
@@ -4673,7 +4673,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/memory_search_concurrency_test.go",
+          "file": "internal/runtime/memory_search_concurrency_test.go",
           "test": "TestMemorySearchReturnsConflictAfterThreeAdvancedHeads"
         }
       ]
@@ -4747,7 +4747,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestMemoryReadStagesAreBoundedAndNestedWithinOneScopedOperation"
         }
       ]
@@ -4763,7 +4763,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestScopeLockStageReportsContentionAndEndsAtAcquisition"
         }
       ]
@@ -4779,7 +4779,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestScopeLockIsReleasedWhenTraceTeardownPanics"
         }
       ]
@@ -4800,7 +4800,7 @@
         },
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestMemoryReadStagesAreBoundedAndNestedWithinOneScopedOperation"
         }
       ]
@@ -4864,7 +4864,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "review/generation_test.go",
+          "file": "internal/review/generation_test.go",
           "test": "TestGenerationWithoutModelFailsBeforeEvidenceOrCandidatePersistence"
         },
         {
@@ -4969,7 +4969,7 @@
         },
         {
           "kind": "go",
-          "file": "runtime/work_application_test.go",
+          "file": "internal/runtime/work_application_test.go",
           "test": "TestAcknowledgementCannotAcceptUnavailableHandoffEvidence"
         }
       ]
@@ -5048,7 +5048,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/memory_search_concurrency_test.go",
+          "file": "internal/runtime/memory_search_concurrency_test.go",
           "test": "TestMemorySearchReturnsConflictAfterThreeAdvancedHeads"
         },
         {
@@ -5090,7 +5090,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/experience_incubation_test.go",
+          "file": "internal/runtime/experience_incubation_test.go",
           "test": "TestScheduledExperienceIncubationUsesFixedSourceWindowBudget"
         },
         {
@@ -7335,7 +7335,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_test.go",
+          "file": "internal/handoffreport/service_test.go",
           "test": "TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats"
         }
       ]
@@ -7351,7 +7351,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_test.go",
+          "file": "internal/handoffreport/service_test.go",
           "test": "TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats"
         }
       ]
@@ -7367,7 +7367,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_test.go",
+          "file": "internal/handoffreport/service_test.go",
           "test": "TestDigestFieldsStayStableWhenReportIsRevalidated"
         }
       ]
@@ -7495,7 +7495,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestProjectDescriptorIsVersionedImmutableAndSerializesSchemaAlias"
         }
       ]
@@ -7511,7 +7511,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestProjectDescriptorRejectsInvalidTimezone"
         }
       ]
@@ -7527,7 +7527,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestWorkstreamDescriptorReusesScopeIdentityAndBoundsMetadata"
         }
       ]
@@ -7543,7 +7543,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestActivityEventKeepsObservationUntrustedAndExplicitlyTimed"
         }
       ]
@@ -7559,7 +7559,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestActivityEventDoesNotInventPeriodTime"
         }
       ]
@@ -7575,7 +7575,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestActivityEventValidatesTimestampBasisAndUTCObservation"
         }
       ]
@@ -7591,7 +7591,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestReportSelectionEntryRequiresExactHandoffOrExplicitAbsence"
         }
       ]
@@ -7607,7 +7607,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestStableSortHelpersUseNormalizedTitleScopeAndEffectiveTime"
         }
       ]
@@ -7751,7 +7751,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/selection_test.go",
+          "file": "internal/handoffreport/selection_test.go",
           "test": "TestOptimisticSelectionFreezesStableHeadsInScopeOrder"
         }
       ]
@@ -7767,7 +7767,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/selection_test.go",
+          "file": "internal/handoffreport/selection_test.go",
           "test": "TestOptimisticSelectionPreservesExplicitNoHandoff"
         }
       ]
@@ -7783,7 +7783,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/selection_test.go",
+          "file": "internal/handoffreport/selection_test.go",
           "test": "TestOptimisticSelectionRetriesChangeThenFreezesStableHeads"
         }
       ]
@@ -7799,7 +7799,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_test.go",
+          "file": "internal/handoffreport/service_test.go",
           "test": "TestOptimisticSelectionFailsAfterBoundedInstability"
         }
       ]
@@ -7815,7 +7815,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/selection_test.go",
+          "file": "internal/handoffreport/selection_test.go",
           "test": "TestOptimisticSelectionRequiresStrictBoundedAttemptCount"
         }
       ]
@@ -7831,7 +7831,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/selection_test.go",
+          "file": "internal/handoffreport/selection_test.go",
           "test": "TestRuntimeHandoffReportReaderMapsOnlyExistingReadBehaviors"
         }
       ]
@@ -7847,7 +7847,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_contract_test.go",
+          "file": "internal/handoffreport/service_contract_test.go",
           "test": "TestReportServiceAssemblesExactReadOnlyReportAndBilingualMarkdown"
         }
       ]
@@ -7863,7 +7863,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_test.go",
+          "file": "internal/handoffreport/service_test.go",
           "test": "TestServiceProjectsRevisionHistoryOnlyThroughFrozenSelection"
         }
       ]
@@ -7879,7 +7879,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_test.go",
+          "file": "internal/handoffreport/service_test.go",
           "test": "TestServiceBoundsRevisionHistoryAndPreservesTotalCount"
         }
       ]
@@ -7895,7 +7895,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_contract_test.go",
+          "file": "internal/handoffreport/service_contract_test.go",
           "test": "TestReportServiceCanSkipEvidenceChecksWithoutClaimingAvailability"
         }
       ]
@@ -7911,7 +7911,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_contract_test.go",
+          "file": "internal/handoffreport/service_contract_test.go",
           "test": "TestReportServiceDegradesUnavailableEvidenceChecksPerWorkstream"
         }
       ]
@@ -7927,7 +7927,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_contract_test.go",
+          "file": "internal/handoffreport/service_contract_test.go",
           "test": "TestReportServiceFailsClosedWhenExactReadDoesNotMatchFrozenSelection"
         }
       ]
@@ -7943,7 +7943,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_contract_test.go",
+          "file": "internal/handoffreport/service_contract_test.go",
           "test": "TestReportServiceEnforcesSelectionLimitsBeforeReadingHandoffs"
         }
       ]
@@ -7959,7 +7959,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_contract_test.go",
+          "file": "internal/handoffreport/service_contract_test.go",
           "test": "TestReportMarkdownCarriesExactSelectionCursorAndAllActivity"
         }
       ]
@@ -7975,7 +7975,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/service_contract_test.go",
+          "file": "internal/handoffreport/service_contract_test.go",
           "test": "TestReportMarkdownEscapesUserTextAndUsesSafeBacktickDelimiters"
         }
       ]
@@ -7991,7 +7991,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/report_validation_test.go",
+          "file": "internal/handoffreport/report_validation_test.go",
           "test": "TestCanonicalReportRejectsWrongProjectRevisionAndHandoffProjection"
         }
       ]
@@ -8007,7 +8007,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/report_validation_test.go",
+          "file": "internal/handoffreport/report_validation_test.go",
           "test": "TestCanonicalReportRejectsDuplicateScopesAndActivityIDs"
         }
       ]
@@ -8023,7 +8023,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/report_validation_test.go",
+          "file": "internal/handoffreport/report_validation_test.go",
           "test": "TestCanonicalReportRejectsInvalidAssignedActivityOwnership"
         }
       ]
@@ -8039,7 +8039,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/report_validation_test.go",
+          "file": "internal/handoffreport/report_validation_test.go",
           "test": "TestCanonicalReportRejectsInvalidUnassignedActivityAndSelection"
         }
       ]
@@ -8055,7 +8055,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "handoffreport/models_test.go",
+          "file": "internal/handoffreport/models_test.go",
           "test": "TestRepositoryRefNormalizesSafeRemoteAndRelativeSubpath"
         }
       ]
@@ -9306,7 +9306,7 @@
         },
         {
           "kind": "go",
-          "file": "runtime/readiness_test.go",
+          "file": "internal/runtime/readiness_test.go",
           "test": "TestDependencyProbeClassification"
         }
       ]
@@ -9322,7 +9322,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/readiness_test.go",
+          "file": "internal/runtime/readiness_test.go",
           "test": "TestCachedProbeCollapsesRefreshAndUsesTransientTTL"
         }
       ]
@@ -9673,7 +9673,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/lifecycle_test.go",
+          "file": "internal/runtime/lifecycle_test.go",
           "test": "TestScopeCacheObserverReportsDistinctActiveAndCachedScopes"
         },
         {
@@ -9811,7 +9811,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestScopedStagesAreBoundedAndLockStageEndsBeforeCriticalSection"
         },
         {
@@ -9832,7 +9832,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestRuntimeStageClassifiesFailureAndCancellation"
         }
       ]
@@ -9848,7 +9848,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestRuntimeStageClassifiesFailureAndCancellation"
         }
       ]
@@ -9864,7 +9864,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestRuntimeStageTracerFailureDoesNotChangeOperation"
         }
       ]
@@ -9880,7 +9880,7 @@
       "evidence": [
         {
           "kind": "go",
-          "file": "runtime/tracing_test.go",
+          "file": "internal/runtime/tracing_test.go",
           "test": "TestRuntimeStageTracerFailureDoesNotChangeOperation"
         },
         {

@@ -13,7 +13,7 @@ import (
 
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/skill"
-	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/internal/review"
 )
 
 const pageCSP = "default-src 'none'; style-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; frame-ancestors 'none'"

@@ -8,7 +8,7 @@
   `api/v1` must never be edited by hand.
 - Core packages do not read environment variables, open databases, start
   goroutines, or own process lifecycle.
-- `runtime` owns scope validation, operation lifecycle, per-scope write
+- `internal/runtime` owns scope validation, operation lifecycle, per-scope write
   serialization, scheduler coordination, and use-case orchestration.
 - Inference must run outside SQL transactions. Artifact or Candidate writes and
   their associated cursor CAS must commit atomically.
@@ -18,21 +18,26 @@
 ## Dependency direction
 
 ```text
-powercontext
-  -> source / artifact / trigger / inference
-  -> artifact families / review / contextpack / stats / handoffreport
-  -> runtime
+source / artifact / trigger / inference
+  -> artifact families
+  -> internal/review / internal/contextpack / internal/stats
+  -> internal/work / internal/handoffreport
+  -> internal/runtime
   -> internal/endpoint
   -> internal/httpapi / internal/mcpapi / internal/webui
   -> server / cmd
 ```
 
-- `internal/sqlstore` may import domain packages but must not import `runtime`,
-  `server`, or transport packages.
+- `internal/sqlstore` may import public and internal domain packages but must
+  not import `internal/runtime`, `server`, or transport packages.
 - Domain packages must not import SQL, HTTP, MCP, environment configuration, or
   provider-specific implementations.
 - Interfaces belong to their consumers unless they are deliberate public Core
   extension contracts.
+- A new top-level Go package must define a deliberate public extension or
+  product contract. Product-only domain and orchestration code belongs under
+  `internal`; directory creation is not a substitute for cohesive same-package
+  files.
 - Do not introduce `pkg`, `src`, `common`, `utils`, `helpers`, or global
   `models`, `services`, and `repositories` packages.
 

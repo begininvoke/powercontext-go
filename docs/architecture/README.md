@@ -19,9 +19,8 @@ powercontext-go/
 ├── build/                     native release-asset manifest
 ├── client/                    typed client for all OpenAPI operations
 ├── cmd/powercontext/          single executable entrypoint
-├── contextpack/               bounded context assembly
 ├── docs/                      architecture, ADRs, RFCs, release guidance
-├── handoffreport/             catalog, activity, selection, digest, rendering
+├── evaluation/                independent long-horizon evaluation harness
 ├── inference/                 provider-neutral generation and embeddings
 ├── integrations/
 │   ├── bub/                   retained Python host adapter
@@ -36,22 +35,30 @@ powercontext-go/
 ├── internal/
 │   ├── benchmark/             bounded benchmark adapters and fixtures
 │   ├── cli/                   Cobra command implementation
+│   ├── contextpack/           bounded context assembly
 │   ├── endpoint/              one application-operation boundary for HTTP/MCP
+│   ├── handoffreport/         catalog, activity, selection, digest, rendering
 │   ├── httpapi/               OpenAPI HTTP transport and middleware
 │   ├── jcs/                   RFC 8785 canonical JSON boundary
 │   ├── mcpapi/                fixed 20 + optional 4 MCP tool surface
 │   ├── modelprovider/         concrete remote/local provider adapters
 │   ├── observability/         privacy-safe logging, metrics, and tracing
+│   ├── review/                Candidate generation/revision/approval domain
+│   ├── runtime/               lifecycle, Scope gates, application orchestration
 │   ├── scheduler/             interval scheduler and bounded APScheduler Pickle
-│   ├── sqlstore/              SQLite/seekDB/OceanBase stores and projections
+│   ├── sqlstore/              relational stores, projections, and native DB adapters
+│   │   ├── oceanbase/         OceanBase FTS/vector indexes
+│   │   ├── schema/            embedded Python-compatible relational DDL
+│   │   ├── seekdb/            embedded seekDB native loader
+│   │   ├── sqlite/            SQLite profile marker
+│   │   └── sqlitevec/         embedded sqlite-vec extension
+│   ├── stats/                 statistics domain assembly
 │   ├── testkit/               internal deterministic test doubles
-│   └── webui/                 embedded Dashboard templates and assets
+│   ├── webui/                 embedded Dashboard templates and assets
+│   └── work/                  Work records and continuity projection
 ├── openapi/                   authoritative HTTP contract and generation hook
-├── review/                    Candidate generation/revision/approval domain
-├── runtime/                   lifecycle, Scope gates, application orchestration
 ├── server/                    configuration and process composition root
 ├── source/                    Source adapters, values, catalog, journal
-├── stats/                     statistics domain assembly
 ├── test/
 │   ├── conformance/           frozen Python Oracle and compatibility evidence
 │   ├── differential/          black-box Python/Go comparisons
@@ -68,27 +75,33 @@ catch-all infrastructure package.
 ## Dependency direction
 
 ```text
-powercontext
-  → source / artifact / trigger / inference
-  → artifact families / review / contextpack / stats / handoffreport
-  → runtime
+source / artifact / trigger / inference
+  → artifact families
+  → internal/review / internal/contextpack / internal/stats
+  → internal/work / internal/handoffreport
+  → internal/runtime
   → internal/endpoint
   → internal/httpapi / internal/mcpapi / internal/webui
   → server / cmd
 ```
 
-`client` depends on generated wire contracts, not domain internals. Host
+`source`, `artifact`, `trigger`, `inference`, their typed Artifact families,
+`client`, and `server` are the deliberate public Go surface. Product-only
+domains live under `internal` so their exported identifiers can remain useful
+inside the repository without creating accidental external compatibility
+promises. `client` depends on generated wire contracts, not domain internals.
+Host
 integrations depend on the published HTTP contract and never import Go domain
 or persistence code. `internal/sqlstore` may depend on domain packages but not
-on runtime, server, or transports.
+on `internal/runtime`, server, or transports.
 
 ## Ownership and lifecycle
 
-- `powercontext.PowerContext` is a lifecycle-free typed composition value.
 - Domain values validate at construction and copy mutable slices/maps at their
   boundaries.
-- `runtime.Runtime` admits operations, rejects new work during shutdown, drains
-  active work, serializes exact-Scope writes, and leaves reads concurrent.
+- `internal/runtime.Runtime` admits operations, rejects new work during
+  shutdown, drains active work, serializes exact-Scope writes, and leaves reads
+  concurrent.
 - `server.Application` is the process composition root. It opens concrete
   resources, builds use cases, exposes the shared endpoint, and closes owned
   resources in order.

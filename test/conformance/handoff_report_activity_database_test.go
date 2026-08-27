@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ob-labs/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/internal/handoffreport"
 	"github.com/ob-labs/powercontext-go/internal/sqlstore"
 )
 

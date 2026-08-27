@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ob-labs/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/internal/handoffreport"
 )
 
 // HandoffReportStore is a use-case shaped adapter for the optional schema.

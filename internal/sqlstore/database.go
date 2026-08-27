@@ -16,8 +16,8 @@ import (
 
 	mysql "github.com/go-sql-driver/mysql"
 	"github.com/mattn/go-sqlite3"
-	embeddedseekdb "github.com/ob-labs/powercontext-go/internal/seekdb"
-	"github.com/ob-labs/powercontext-go/internal/sqlitevec"
+	embeddedseekdb "github.com/ob-labs/powercontext-go/internal/sqlstore/seekdb"
+	"github.com/ob-labs/powercontext-go/internal/sqlstore/sqlitevec"
 )
 
 // DBTX is the smallest query surface shared by sql.DB and sql.Tx.

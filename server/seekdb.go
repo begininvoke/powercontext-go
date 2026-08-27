@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	embeddedseekdb "github.com/ob-labs/powercontext-go/internal/seekdb"
 	"github.com/ob-labs/powercontext-go/internal/sqlstore"
+	embeddedseekdb "github.com/ob-labs/powercontext-go/internal/sqlstore/seekdb"
 )
 
 // seekDBInstance preserves the embedded-runtime shutdown boundary: the SQL

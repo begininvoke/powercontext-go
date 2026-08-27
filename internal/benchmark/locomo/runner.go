@@ -19,7 +19,7 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact/memory"
 	"github.com/ob-labs/powercontext-go/inference"
 	benchmarkprompts "github.com/ob-labs/powercontext-go/internal/benchmark/locomo/prompts"
-	pcruntime "github.com/ob-labs/powercontext-go/runtime"
+	pcruntime "github.com/ob-labs/powercontext-go/internal/runtime"
 )
 
 const maxObservationBytes = 16 << 20

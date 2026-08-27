@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ob-labs/powercontext-go/handoffreport"
+	"github.com/ob-labs/powercontext-go/internal/handoffreport"
 )
 
 func (s *HandoffReportStore) GetWorkspaceBinding(ctx context.Context, workspaceID string) (handoffreport.WorkspaceBinding, error) {

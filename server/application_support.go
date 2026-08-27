@@ -14,8 +14,8 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact/skill"
 	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
 	servermetrics "github.com/ob-labs/powercontext-go/internal/observability/metrics"
+	pcruntime "github.com/ob-labs/powercontext-go/internal/runtime"
 	"github.com/ob-labs/powercontext-go/internal/scheduler"
-	pcruntime "github.com/ob-labs/powercontext-go/runtime"
 )
 
 func configuredMetrics(enabled bool) (*servermetrics.Server, error) {

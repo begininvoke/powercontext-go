@@ -22,9 +22,9 @@ import (
 	"github.com/ob-labs/powercontext-go/artifact/memory"
 	"github.com/ob-labs/powercontext-go/artifact/skill"
 	"github.com/ob-labs/powercontext-go/internal/endpoint"
+	"github.com/ob-labs/powercontext-go/internal/review"
+	"github.com/ob-labs/powercontext-go/internal/runtime"
 	"github.com/ob-labs/powercontext-go/internal/sqlstore"
-	"github.com/ob-labs/powercontext-go/review"
-	"github.com/ob-labs/powercontext-go/runtime"
 	"github.com/ob-labs/powercontext-go/server"
 	"github.com/ob-labs/powercontext-go/source"
 )

@@ -17,7 +17,7 @@ import (
 	"github.com/ob-labs/powercontext-go/inference"
 	"github.com/ob-labs/powercontext-go/internal/endpoint"
 	servermetrics "github.com/ob-labs/powercontext-go/internal/observability/metrics"
-	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/internal/runtime"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace/noop"
@@ -217,7 +217,7 @@ func TestApplicationReadinessMakesDatabaseFailureBlockingAndRedacted(t *testing.
 	if metrics.Code != http.StatusOK || !strings.Contains(metrics.Body.String(), "powercontext_server_runtime_ready 0") {
 		t.Fatalf("metrics = %d: %s", metrics.Code, metrics.Body.String())
 	}
-	if application.Metrics() == nil {
+	if application.metrics == nil {
 		t.Fatal("readiness test application has no metrics")
 	}
 }

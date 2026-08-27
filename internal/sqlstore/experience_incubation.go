@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/ob-labs/powercontext-go/artifact/experience"
-	"github.com/ob-labs/powercontext-go/review"
+	"github.com/ob-labs/powercontext-go/internal/review"
 	"github.com/ob-labs/powercontext-go/source"
 	"github.com/ob-labs/powercontext-go/trigger"
 )

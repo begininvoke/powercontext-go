@@ -27,11 +27,11 @@ type HTTPOptions struct {
 	HandoffReportRoutes bool
 	TracerProvider      trace.TracerProvider
 	MeterProvider       metric.MeterProvider
-	Metrics             *servermetrics.Server
 	Logger              *slog.Logger
 	AccessLog           bool
 	MCP                 MCPOptions
-	WebUI               *webui.Options
+	metrics             *servermetrics.Server
+	webUI               *webui.Options
 }
 
 // MCPOptions controls the optional MCP Streamable HTTP route. Path defaults to
@@ -69,8 +69,8 @@ func NewHTTPHandler(handler v1.Handler, options HTTPOptions) (http.Handler, erro
 			return httpapi.ApplicationError{StatusCode: mapped.StatusCode, Code: mapped.Code}
 		}))
 	}
-	if options.Metrics != nil {
-		middlewares = append(middlewares, options.Metrics.HTTPMiddleware)
+	if options.metrics != nil {
+		middlewares = append(middlewares, options.metrics.HTTPMiddleware)
 	}
 	serverOptions := []v1.ServerOption{
 		v1.WithTracerProvider(httpapi.TracerProvider(options.TracerProvider)),
@@ -99,21 +99,21 @@ func NewHTTPHandler(handler v1.Handler, options HTTPOptions) (http.Handler, erro
 	validatedOpenAPI := httpapi.ValidateJSONUnicode(generated)
 	var application http.Handler = validatedOpenAPI
 	var mux *http.ServeMux
-	if options.MCP.Enabled || options.Metrics != nil || options.WebUI != nil {
+	if options.MCP.Enabled || options.metrics != nil || options.webUI != nil {
 		mux = http.NewServeMux()
 		mux.Handle("/", validatedOpenAPI)
 		application = mux
 	}
-	if options.WebUI != nil {
-		if err := webui.Mount(mux, *options.WebUI); err != nil {
+	if options.webUI != nil {
+		if err := webui.Mount(mux, *options.webUI); err != nil {
 			serverlogging.LogSafely(context.Background(), applicationLogger, slog.LevelWarn,
 				"PowerContext Web UI failed to start",
 				slog.String("event", "web_ui.start_failed"), slog.String("unit", "web_ui"),
 			)
 		}
 	}
-	if options.Metrics != nil {
-		mux.Handle("/metrics", options.Metrics.Handler())
+	if options.metrics != nil {
+		mux.Handle("/metrics", options.metrics.Handler())
 	}
 	if options.MCP.Enabled {
 		receiving := []mcp.Middleware{requesttrace.MCPMiddleware(options.TracerProvider)}
@@ -123,7 +123,7 @@ func NewHTTPHandler(handler v1.Handler, options HTTPOptions) (http.Handler, erro
 		mcpServer, mcpErr := mcpapi.NewServer(handler, mcpapi.Options{
 			Version:              options.MCP.Version,
 			HandoffReportEnabled: options.HandoffReportRoutes,
-			ApplicationObserver:  options.Metrics,
+			ApplicationObserver:  options.metrics,
 			ApplicationLogger:    applicationLogger,
 			TracerProvider:       options.TracerProvider,
 			ReceivingMiddleware:  receiving,
@@ -131,8 +131,8 @@ func NewHTTPHandler(handler v1.Handler, options HTTPOptions) (http.Handler, erro
 		if mcpErr != nil {
 			return nil, mcpErr
 		}
-		if options.Metrics != nil {
-			mcpServer.AddReceivingMiddleware(options.Metrics.MCPMiddleware())
+		if options.metrics != nil {
+			mcpServer.AddReceivingMiddleware(options.metrics.MCPMiddleware())
 		}
 		mcpHandler := mcpapi.NewHTTPHandler(mcpServer, mcpapi.HTTPOptions{
 			Stateless: options.MCP.Stateless, JSONResponse: options.MCP.JSONResponse,

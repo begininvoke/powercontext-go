@@ -12,7 +12,7 @@ import (
 	v1 "github.com/ob-labs/powercontext-go/api/v1"
 	"github.com/ob-labs/powercontext-go/internal/endpoint"
 	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
-	"github.com/ob-labs/powercontext-go/runtime"
+	"github.com/ob-labs/powercontext-go/internal/runtime"
 )
 
 var baseToolNames = []string{
