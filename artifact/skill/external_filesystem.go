@@ -43,7 +43,7 @@ func packageFingerprint(packagePath string) (string, error) {
 			return nil
 		}
 		if entry.Type()&os.ModeSymlink != 0 {
-			return fmt.Errorf("Codex Skill packages containing symlinks are not supported")
+			return fmt.Errorf("Agent Skill packages containing symlinks are not supported")
 		}
 		if entry.IsDir() {
 			return nil
@@ -67,7 +67,7 @@ func packageFingerprint(packagePath string) (string, error) {
 	}
 	slices.SortFunc(files, func(left, right packageFile) int { return strings.Compare(left.relative, right.relative) })
 	if len(files) < 1 || len(files) > MaxExternalFiles {
-		return "", fmt.Errorf("Codex Skill package has an unsupported file count")
+		return "", fmt.Errorf("Agent Skill package has an unsupported file count")
 	}
 	digest := sha256.New()
 	total := 0
@@ -79,7 +79,7 @@ func packageFingerprint(packagePath string) (string, error) {
 		}
 		total += len(content)
 		if total > MaxExternalPackageBytes {
-			return "", fmt.Errorf("Codex Skill package exceeds the supported size")
+			return "", fmt.Errorf("Agent Skill package exceeds the supported size")
 		}
 		relative := []byte(file.relative)
 		binary.BigEndian.PutUint32(size[:4], uint32(len(relative)))

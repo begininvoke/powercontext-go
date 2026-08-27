@@ -23,6 +23,8 @@ func FuzzAgentSkillFrontmatterParser(f *testing.F) {
 	f.Add([]byte("---\nname: example\ndescription: Use for examples.\n---\n\nBody.\n"), "example", string(CodexAgent))
 	f.Add([]byte("---\ndescription: 'Claude example'\n---\n"), "package-name", string(ClaudeCodeAgent))
 	f.Add([]byte("---\nname: [not, a, scalar]\n---\n"), "example", string(CodexAgent))
+	f.Add([]byte("---\nname: \"\"\ndescription: Empty name.\n---\n"), "example", string(CodexAgent))
+	f.Add([]byte("---\nname: 'unterminated\ndescription: Invalid name.\n---\n"), "example", string(CodexAgent))
 	f.Add([]byte{0xff, 0xfe, 0xfd}, "example", string(CodexAgent))
 	f.Fuzz(func(t *testing.T, contents []byte, packageName, rawAgentKind string) {
 		if len(contents) > MaxExternalManifestBytes || len(packageName) > 512 || len(rawAgentKind) > 64 {
@@ -41,9 +43,9 @@ func FuzzAgentSkillFrontmatterParser(f *testing.F) {
 			t.Fatalf("parser produced invalid UTF-8 metadata name=%q description=%q", firstName, firstDescription)
 		}
 		if firstErr == nil && (firstName == "" || firstDescription == "") {
-			// Python's deliberately narrow scalar parser turns a lone single quote
-			// into an empty string. Keep that parser-level behavior compatible, but
-			// prove the public registration boundary still rejects the metadata.
+			// A fuzzed Claude Code package name may be empty even though a live
+			// filesystem package cannot have an empty base name. The public
+			// registration boundary must still reject all empty metadata.
 			_, err := NewRegistration(
 				"codex:project:fuzz/package", string(agentKind), string(agentKind), "fuzz-host", UserScope,
 				"/fuzz/package", "0000000000000000000000000000000000000000000000000000000000000000",

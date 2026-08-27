@@ -79,6 +79,9 @@ func (p *AgentSkillProvider) Scan(ctx context.Context) (ProviderScan, error) {
 			if err := ctx.Err(); err != nil {
 				return ProviderScan{}, err
 			}
+			if entry.Type()&os.ModeSymlink != 0 {
+				continue
+			}
 			info, err := entry.Info()
 			if err != nil || !info.IsDir() || info.Mode()&os.ModeSymlink != 0 {
 				continue

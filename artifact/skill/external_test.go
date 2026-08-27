@@ -117,6 +117,25 @@ func TestScanSkipsInvalidOrSymlinkedPackages(t *testing.T) {
 	}
 }
 
+func TestScanIgnoresSymlinkedPackageDirectories(t *testing.T) {
+	root := filepath.Join(t.TempDir(), ".agents", "skills")
+	if err := os.MkdirAll(root, 0o750); err != nil {
+		t.Fatal(err)
+	}
+	outside := writeSkill(t, t.TempDir(), "outside-root")
+	if err := os.Symlink(outside, filepath.Join(root, "linked-package")); err != nil {
+		t.Fatal(err)
+	}
+
+	scan, err := codexProvider(t, root).Scan(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(scan.Registrations()) != 0 || scan.Skipped() != 0 {
+		t.Fatalf("scan followed a symlinked package directory: %d registrations/%d skipped", len(scan.Registrations()), scan.Skipped())
+	}
+}
+
 func TestCodexProviderRequiresUniqueStableRootIDs(t *testing.T) {
 	path := t.TempDir()
 	first, err := skill.NewCodexRoot("repository", skill.ProjectScope, path)

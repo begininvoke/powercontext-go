@@ -94,14 +94,21 @@ func frontmatterScalar(value string) (string, error) {
 		if err := json.Unmarshal([]byte(value), &parsed); err != nil {
 			return "", fmt.Errorf("Agent Skill frontmatter contains an invalid scalar")
 		}
+		if parsed == "" {
+			return "", fmt.Errorf("Agent Skill frontmatter values must not be empty")
+		}
 		return parsed, nil
 	}
 	if value[0] == '\'' {
 		runes := []rune(value)
-		if len(runes) == 1 {
-			return "", nil
+		if len(runes) < 2 || runes[len(runes)-1] != '\'' {
+			return "", fmt.Errorf("Agent Skill frontmatter contains an invalid scalar")
 		}
-		return string(runes[1 : len(runes)-1]), nil
+		parsed := string(runes[1 : len(runes)-1])
+		if parsed == "" {
+			return "", fmt.Errorf("Agent Skill frontmatter values must not be empty")
+		}
+		return parsed, nil
 	}
 	return value, nil
 }
