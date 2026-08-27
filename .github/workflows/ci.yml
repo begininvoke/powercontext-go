@@ -26,14 +26,11 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
-      - name: Download locked modules
-        run: go mod download
+      - name: Lint GitHub Actions workflows
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
 
       - name: Verify generated contracts
         run: make check-generated
@@ -78,11 +75,8 @@ jobs:
       - name: Verify Oracle identity
         run: test "$(git -C _oracle rev-parse HEAD)" = 3a6cb0151670eaff7dc0293466edd673124e80da
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
@@ -160,11 +154,8 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Run real OceanBase schema and cursor tests
         env:
@@ -191,11 +182,8 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
       - name: Verify native target
         env:
@@ -227,26 +215,18 @@ jobs:
       - name: Check out
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Go
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
 
-      - name: Download and verify the native tokenizer library
-        env:
-          TARGET: ${{ matrix.target }}
-        run: |
-          url="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field url)"
-          expected="$(go run ./tools/release asset -component tokenizers -target "$TARGET" -field sha256)"
-          mkdir -p "$RUNNER_TEMP/tokenizers"
-          curl --fail --location --retry 3 --output "$RUNNER_TEMP/tokenizers.tar.gz" "$url"
-          go run ./tools/release verify -sha256 "$expected" "$RUNNER_TEMP/tokenizers.tar.gz"
-          tar -xzf "$RUNNER_TEMP/tokenizers.tar.gz" -C "$RUNNER_TEMP/tokenizers" libtokenizers.a
+      - name: Set up the verified native tokenizer
+        id: native
+        uses: ./.github/actions/setup-native-assets
+        with:
+          target: ${{ matrix.target }}
 
       - name: Test and build the Full binary
         env:
-          TOKENIZERS_LIB_DIR: ${{ runner.temp }}/tokenizers
+          TOKENIZERS_LIB_DIR: ${{ steps.native.outputs.tokenizers-lib-dir }}
         run: |
           make test-full
           make smoke-full VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
@@ -265,10 +245,7 @@ jobs:
           python-version: "3.12"
 
       - name: Set up Go for the DSH call-through test
-        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: go.mod
-          cache: true
+        uses: ./.github/actions/setup-go-env
 
       - name: Set up uv
         uses: astral-sh/setup-uv@ae62891fec2bb8e7d6c99fc78c9fec3a63790f8d # v10.0.0

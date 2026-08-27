@@ -2,6 +2,7 @@ GO ?= go
 GOFMT ?= gofmt
 GOCACHE ?=
 GOMODCACHE ?=
+LICENSE_EYE ?= $(GO) run github.com/apache/skywalking-eyes/cmd/license-eye@v0.8.0
 
 STANDARD_TAGS := sqlite_fts5
 FULL_TAGS := sqlite_fts5,local_embeddings,ORT
@@ -10,7 +11,7 @@ COMMIT ?= $(shell git rev-parse HEAD 2>/dev/null || printf unknown)
 BUILD_DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(BUILD_DATE)
 
-.PHONY: generate check-generated fmt fmt-check vet test test-sqlite test-race test-full test-oceanbase-live \
+.PHONY: generate check-generated license-check license-fix fmt fmt-check vet test test-sqlite test-race test-full test-oceanbase-live \
 	build build-full smoke smoke-full check package-standard package-full clean
 
 generate:
@@ -22,6 +23,13 @@ check-generated:
 	$(GO) run ./tools/mcp-schema-generate
 	$(GO) run ./tools/traceability-generate -check
 	git diff --exit-code -- openapi api/v1 client/invoker_gen.go internal/mcpapi/schemas_gen.go integrations/dsh/plugins/powercontext/src/operations.generated.ts
+
+license-check:
+	$(LICENSE_EYE) -c .licenserc.yaml header check
+
+license-fix:
+	$(LICENSE_EYE) -c .licenserc.yaml header fix
+	$(LICENSE_EYE) -c .licenserc.yaml header check
 
 fmt:
 	$(GOFMT) -w $$(find . -name '*.go' -not -path './vendor/*')

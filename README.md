@@ -74,11 +74,24 @@ Useful verification targets:
 
 ```sh
 make check-generated
+make license-check
 make test-race
 make test-full TOKENIZERS_LIB_DIR=/path/to/tokenizers/lib
 POWERCONTEXT_TEST_OCEANBASE_URL='mysql+aoceanbase://root%40tenant:password@127.0.0.1:2881/powercontext?charset=utf8mb4' \
   make test-oceanbase-live
 ```
+
+If a newly added source file is missing the standard Apache-2.0 header, repair
+all eligible files and immediately recheck them with one command:
+
+```sh
+make license-fix
+```
+
+The checked file types and deliberate generated/vendor exclusions are defined
+in [`.licenserc.yaml`](.licenserc.yaml). SkyWalking Eyes is version-pinned by
+the Make target and does not modify prompt text, fixtures, lock files, or
+generated Go contracts.
 
 The OceanBase target requires a dedicated disposable MySQL-mode database. It
 verifies tenant and charset negotiation, the complete core and optional Report
