@@ -1,5 +1,31 @@
 # PowerContext Go Engineering Rules
 
+## Research and evidence before execution
+
+- When a task depends on external or version-sensitive facts, perform a bounded
+  network search for the facts that can affect the decision, even when the
+  answer seems familiar. Do not rely only on model memory.
+- Start with primary, official sources: Go documentation and release notes,
+  upstream package documentation and repositories, GitHub Actions
+  documentation and action repositories, protocol specifications, and vendor
+  security advisories. Use secondary sources only to find or cross-check the
+  primary evidence.
+- Verify version-sensitive facts at the time of the task, including supported
+  Go versions, command and flag behavior, dependency APIs, action inputs,
+  operating-system support, and current issue, PR, or CI state. Search-result
+  snippets and remembered URLs are not verification.
+- Inspect the current repository, tests, generated contracts, configuration,
+  logs, and working-tree state as well. Official documentation describes the
+  upstream contract; the checked-out code and reproducible commands establish
+  how this repository currently behaves.
+- Keep the search proportional to the task and connect each source to a claim
+  or risk being checked. Do not collect unrelated links or use research as a
+  substitute for implementation and validation.
+- Never put secrets, credentials, private source, customer data, or sensitive
+  local paths into a search query. If network access or an authoritative source
+  is unavailable, state what could not be verified and do not present the
+  unverified point as current fact.
+
 ## Architectural commitments
 
 - Preserve observable compatibility with the authoritative OpenAPI contract,
@@ -54,3 +80,53 @@ source / artifact / trigger / inference
   database URLs, or unredacted local paths.
 - Keep unit tests beside packages. Put cross-backend, differential, and process
   tests under `test`.
+
+## Bug fixes and regression proof
+
+- Establish the failure before changing the implementation. Reduce it to the
+  smallest reproducible command, test, request, fixture, or log evidence that
+  still demonstrates the externally observable problem and its cause.
+- Prefer adding or selecting a regression test before the fix. Demonstrate
+  that the test fails against the faulty behavior, then apply the smallest
+  repair and demonstrate that the same test passes. Preserve the failure and
+  success output needed to explain why the change is effective.
+- Test through a public entry point when the defect crosses a package or
+  process boundary. Run a targeted unit or package test first, then the
+  relevant integration, process-smoke, differential, or end-to-end test when
+  configuration, persistence, generated contracts, transports, host adapters,
+  concurrency, or lifecycle behavior is involved.
+- Match validation to the affected risk. Use repository gates such as
+  `make check-generated`, `make test-race`, `make test-sqlite`, `make smoke`,
+  `make test-full`, or focused `go test` commands when they directly answer a
+  changed-path risk. Do not run expensive unrelated checks merely for ceremony.
+- Inspect command output, not only exit codes. Do not make a failing test pass
+  by weakening assertions, deleting coverage, increasing timeouts without
+  evidence, or changing the required behavior to match the bug.
+- If the original failure cannot be reproduced deterministically, document the
+  observed evidence, attempted reproductions, environmental limits, and the
+  alternative verification used. Do not claim the root cause or fix is proven
+  more strongly than the evidence supports.
+- A bug fix is not complete until the targeted regression proof passes after
+  the change and any required end-to-end or public entry point verification has
+  completed, or the remaining validation gap and risk are explicitly reported.
+
+## Learned bug-prevention rules
+
+- After every bug fix, add or strengthen one concise rule in this section that
+  would prevent the same class of defect or make it fail earlier. The rule is
+  part of the fix, not an optional follow-up.
+- Write the rule as a reusable trigger, required action, and verification
+  method. Prefer invariant-oriented guidance over incident history, filenames,
+  commit IDs, dates, or descriptions of one test failure.
+- Merge with an existing rule when the lesson is already covered. Keep the
+  stronger wording and remove duplication so this file remains a practical
+  engineering contract rather than an append-only incident log.
+- When a CI end-to-end test starts a compiled Go service under a readiness
+  deadline, build the binary once before the deadline and pass its absolute
+  path to every test worker. Verify the workflow with empty `GOMODCACHE` and
+  `GOCACHE` directories so dependency download and compilation cannot hide in
+  the service startup budget.
+- Compare regenerated SQLite fixtures through schema and row semantics, not
+  raw database bytes that contain the producing SQLite version and physical
+  page-layout metadata. Keep committed fixture hashes pinned separately, and
+  verify both semantic regeneration and cross-runtime read/write compatibility.
