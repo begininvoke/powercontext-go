@@ -1,0 +1,68 @@
+package skill
+
+import "fmt"
+
+type AgentSkillTarget struct {
+	targetID            string
+	agentKind           AgentKind
+	installationScope   InstallationScope
+	path                string
+	allowManagedPublish bool
+}
+
+func NewAgentSkillTarget(
+	targetID string,
+	agentKind AgentKind,
+	scope InstallationScope,
+	path string,
+	allowManagedPublish bool,
+) (AgentSkillTarget, error) {
+	if len(targetID) < 1 || len(targetID) > 64 || !rootIDPattern.MatchString(targetID) {
+		return AgentSkillTarget{}, fmt.Errorf("Agent Skill target ID is invalid")
+	}
+	if !validAgentKind(string(agentKind)) {
+		return AgentSkillTarget{}, fmt.Errorf("invalid Agent Skill kind %q", agentKind)
+	}
+	if scope != UserScope && scope != ProjectScope && scope != PluginScope {
+		return AgentSkillTarget{}, fmt.Errorf("invalid external Skill installation scope %q", scope)
+	}
+	resolved, err := resolveLoose(path)
+	if err != nil {
+		return AgentSkillTarget{}, err
+	}
+	return AgentSkillTarget{
+		targetID: targetID, agentKind: agentKind, installationScope: scope,
+		path: resolved, allowManagedPublish: allowManagedPublish,
+	}, nil
+}
+
+func (t AgentSkillTarget) ID() string                           { return t.targetID }
+func (t AgentSkillTarget) AgentKind() AgentKind                 { return t.agentKind }
+func (t AgentSkillTarget) InstallationScope() InstallationScope { return t.installationScope }
+func (t AgentSkillTarget) Path() string                         { return t.path }
+func (t AgentSkillTarget) AllowManagedPublish() bool            { return t.allowManagedPublish }
+
+type CodexRoot struct{ target AgentSkillTarget }
+
+func NewCodexRoot(rootID string, scope InstallationScope, path string) (CodexRoot, error) {
+	return NewCodexRootWithPublish(rootID, scope, path, false)
+}
+
+func NewCodexRootWithPublish(
+	rootID string,
+	scope InstallationScope,
+	path string,
+	allowManagedPublish bool,
+) (CodexRoot, error) {
+	target, err := NewAgentSkillTarget(rootID, CodexAgent, scope, path, allowManagedPublish)
+	if err != nil {
+		return CodexRoot{}, err
+	}
+	return CodexRoot{target: target}, nil
+}
+
+func (r CodexRoot) ID() string                           { return r.target.ID() }
+func (r CodexRoot) InstallationScope() InstallationScope { return r.target.InstallationScope() }
+func (r CodexRoot) Path() string                         { return r.target.Path() }
+func (r CodexRoot) AllowManagedPublish() bool            { return r.target.AllowManagedPublish() }
+func (r CodexRoot) AgentTarget() AgentSkillTarget        { return r.target }

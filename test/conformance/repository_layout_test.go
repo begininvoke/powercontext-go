@@ -4,18 +4,13 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"testing"
 )
 
 func TestRepositoryLayoutKeepsProductImplementationInternal(t *testing.T) {
 	t.Parallel()
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("cannot locate repository layout test")
-	}
-	root := filepath.Clean(filepath.Join(filepath.Dir(filename), "..", ".."))
+	root := repositoryRoot(t)
 
 	forbidden := []string{
 		"common", "contextpack", "handoffreport", "helpers", "pkg",
