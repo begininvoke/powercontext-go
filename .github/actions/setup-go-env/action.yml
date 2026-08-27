@@ -1,0 +1,28 @@
+name: Setup Go environment
+description: Set up the repository Go toolchain and verify the locked module graph
+
+inputs:
+  go-version-file:
+    description: Go module file that declares the required toolchain
+    required: false
+    default: go.mod
+  cache-dependency-path:
+    description: Module checksum files used as the setup-go cache key
+    required: false
+    default: go.sum
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Go
+      uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+      with:
+        go-version-file: ${{ inputs.go-version-file }}
+        cache: true
+        cache-dependency-path: ${{ inputs.cache-dependency-path }}
+
+    - name: Verify locked modules
+      shell: bash
+      run: |
+        go mod download
+        go mod verify

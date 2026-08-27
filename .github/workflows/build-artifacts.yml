@@ -1,0 +1,177 @@
+name: Build customer artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag, or commit SHA to package; blank uses the selected workflow ref
+        required: false
+        type: string
+      version:
+        description: Semantic version embedded in the bundle; blank creates an auditable development version
+        required: false
+        type: string
+      artifact_label:
+        description: Optional label used in the uploaded artifact name
+        required: false
+        type: string
+      edition:
+        description: PowerContext edition to package
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - standard
+          - full
+
+permissions:
+  contents: read
+
+concurrency:
+  group: customer-artifact-${{ inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+env:
+  GOTOOLCHAIN: local
+
+jobs:
+  build:
+    name: Linux amd64 / ${{ inputs.edition || 'both' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out requested source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+
+      - name: Set up the Go environment
+        uses: ./.github/actions/setup-go-env
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: "10.34.5"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: integrations/dsh/plugins/powercontext/pnpm-lock.yaml
+
+      - name: Resolve immutable artifact metadata
+        id: metadata
+        shell: bash
+        env:
+          ARTIFACT_LABEL: ${{ inputs.artifact_label }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+          SOURCE_REF: ${{ inputs.ref || github.ref_name }}
+        run: |
+          commit="$(git rev-parse HEAD)"
+          test "${#commit}" = 40
+          version="${REQUESTED_VERSION#powercontext-v}"
+          version="${version#v}"
+          if [ -z "$version" ]; then
+            version="0.0.0-dev.${GITHUB_RUN_NUMBER}.${commit:0:12}"
+          fi
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+            echo "version must use semantic versioning" >&2
+            exit 2
+          fi
+          test "${#version}" -le 80
+          epoch="$(git show -s --format=%ct "$commit")"
+          build_date="$(date -u -d "@$epoch" +%Y-%m-%dT%H:%M:%SZ)"
+          label="${ARTIFACT_LABEL:-${SOURCE_REF:-source}}"
+          slug="$(printf '%s' "$label" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^[-.]+//; s/[-.]+$//' | cut -c1-48)"
+          slug="${slug:-source}"
+          artifact_name="powercontext-${version}-${slug}-${commit:0:12}-linux-amd64-${{ inputs.edition }}"
+          {
+            echo "version=$version"
+            echo "commit=$commit"
+            echo "build_date=$build_date"
+            echo "artifact_name=$artifact_name"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build the DSH runtime adapter
+        working-directory: integrations/dsh/plugins/powercontext
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Acquire verified Full native assets
+        if: inputs.edition != 'standard'
+        id: native
+        uses: ./.github/actions/setup-native-assets
+        with:
+          target: linux-amd64
+          include-onnxruntime: "true"
+
+      - name: Install the pinned SBOM generator
+        run: |
+          version="$(go run ./tools/release asset -component syft -field version)"
+          mkdir -p "$RUNNER_TEMP/tools"
+          GOBIN="$RUNNER_TEMP/tools" go install "github.com/anchore/syft/cmd/syft@v$version"
+
+      - name: Package the standard edition
+        if: inputs.edition != 'full'
+        env:
+          BUILD_DATE: ${{ steps.metadata.outputs.build_date }}
+          COMMIT: ${{ steps.metadata.outputs.commit }}
+          SYFT: ${{ runner.temp }}/tools/syft
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: make package-standard
+
+      - name: Package the Full edition
+        if: inputs.edition != 'standard'
+        env:
+          BUILD_DATE: ${{ steps.metadata.outputs.build_date }}
+          COMMIT: ${{ steps.metadata.outputs.commit }}
+          ONNXRUNTIME_LIB_DIR: ${{ steps.native.outputs.onnxruntime-lib-dir }}
+          SYFT: ${{ runner.temp }}/tools/syft
+          TOKENIZERS_LIB_DIR: ${{ steps.native.outputs.tokenizers-lib-dir }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: make package-full
+
+      - name: Smoke test the standard process surface
+        if: inputs.edition != 'full'
+        env:
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: go run ./tools/process-smoke -binary bin/powercontext -version "$VERSION"
+
+      - name: Smoke test the Full process surface
+        if: inputs.edition != 'standard'
+        env:
+          POWERCONTEXT_ONNXRUNTIME_LIBRARY_DIR: ${{ steps.native.outputs.onnxruntime-lib-dir }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: go run ./tools/process-smoke -binary bin/powercontext-full -version "$VERSION"
+
+      - name: Build the candidate checksum manifest
+        run: |
+          go run ./tools/release checksum -output dist/SHA256SUMS \
+            dist/*.tar.gz dist/*.spdx.json
+
+      - name: Upload candidate artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Summarize the candidate bundle
+        env:
+          ARTIFACT_NAME: ${{ steps.metadata.outputs.artifact_name }}
+          SOURCE_SHA: ${{ steps.metadata.outputs.commit }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+        run: |
+          {
+            echo "## Candidate artifacts"
+            echo
+            echo "- Version: \`$VERSION\`"
+            echo "- Source SHA: \`$SOURCE_SHA\`"
+            echo "- Artifact: \`$ARTIFACT_NAME\`"
+            echo "- Retention: 30 days"
+          } >> "$GITHUB_STEP_SUMMARY"
