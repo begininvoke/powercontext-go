@@ -121,3 +121,12 @@ source / artifact / trigger / inference
 - Merge with an existing rule when the lesson is already covered. Keep the
   stronger wording and remove duplication so this file remains a practical
   engineering contract rather than an append-only incident log.
+- When a CI end-to-end test starts a compiled Go service under a readiness
+  deadline, build the binary once before the deadline and pass its absolute
+  path to every test worker. Verify the workflow with empty `GOMODCACHE` and
+  `GOCACHE` directories so dependency download and compilation cannot hide in
+  the service startup budget.
+- Compare regenerated SQLite fixtures through schema and row semantics, not
+  raw database bytes that contain the producing SQLite version and physical
+  page-layout metadata. Keep committed fixture hashes pinned separately, and
+  verify both semantic regeneration and cross-runtime read/write compatibility.

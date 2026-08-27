@@ -113,8 +113,12 @@ jobs:
             "$fixture_root/domain-contract.json"
           _oracle/.venv/bin/python test/conformance/python_handoff_report_v002_fixture.py \
             "$fixture_root/handoff-report-digests.json"
-          for name in authority.db authority-rows.json scheduler.db domain-contract.json handoff-report-digests.json; do
+          for name in authority-rows.json domain-contract.json handoff-report-digests.json; do
             cmp "$fixture_root/$name" "test/conformance/testdata/python-v0.0.2/$name"
+          done
+          for name in authority.db scheduler.db; do
+            _oracle/.venv/bin/python test/conformance/python_sqlite_semantic_fixture.py \
+              "test/conformance/testdata/python-v0.0.2/$name" "$fixture_root/$name"
           done
           go run ./tools/fixture-generate -python _oracle -check
           go run ./tools/traceability-generate -check
@@ -301,8 +305,13 @@ jobs:
             integrations/opencode/plugins/powercontext/pnpm-lock.yaml
             integrations/openclaw/plugins/memory-powercontext/pnpm-lock.yaml
 
+      - name: Build the DSH call-through server
+        run: make build VERSION=ci COMMIT=${{ github.sha }} BUILD_DATE=1970-01-01T00:00:00Z
+
       - name: Test and rebuild the DSH adapter
         working-directory: integrations/dsh/plugins/powercontext
+        env:
+          POWERCONTEXT_GO_BINARY: ${{ github.workspace }}/bin/powercontext
         run: |
           pnpm install --frozen-lockfile
           pnpm run gen:check
