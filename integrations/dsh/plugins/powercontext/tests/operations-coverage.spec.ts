@@ -51,7 +51,13 @@ describe('operations coverage', () => {
       location: 'body',
       scope: true,
     })
-    expect(OPERATIONS.get_handoff_report.scope).toBe(false)
+    expect(OPERATIONS.list_handoff_report_known_scopes).toEqual({
+      method: 'POST',
+      path: '/v1/handoff-reports/scopes/list-known',
+      location: 'body',
+      scope: false,
+    })
+    expect(OPERATIONS.get_handoff_report.scope).toBe(true)
     expect(OPERATIONS.get_capabilities.location).toBeNull()
   })
 

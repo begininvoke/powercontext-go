@@ -96,11 +96,12 @@ func NewHTTPHandler(handler v1.Handler, options HTTPOptions) (http.Handler, erro
 			return nil, err
 		}
 	}
-	var application http.Handler = generated
+	validatedOpenAPI := httpapi.ValidateJSONUnicode(generated)
+	var application http.Handler = validatedOpenAPI
 	var mux *http.ServeMux
 	if options.MCP.Enabled || options.Metrics != nil || options.WebUI != nil {
 		mux = http.NewServeMux()
-		mux.Handle("/", generated)
+		mux.Handle("/", validatedOpenAPI)
 		application = mux
 	}
 	if options.WebUI != nil {

@@ -361,6 +361,40 @@ func TestHTTPPrepareContextRejectsMemorySpecificTuningFields(t *testing.T) {
 	assertRequestID(t, response)
 }
 
+func TestHTTPPrepareContextRejectsInvalidUTF8WithoutEchoingInput(t *testing.T) {
+	t.Parallel()
+	handler, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := perform(
+		handler, http.MethodPost, "/v1/context/prepare",
+		`{"scope_id":"project:test","query":"\udcaa"}`,
+	)
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d: %s", response.Code, response.Body.String())
+	}
+	var envelope struct {
+		Error struct {
+			Code    string           `json:"code"`
+			Details map[string][]any `json:"details"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if envelope.Error.Code != "invalid_request" {
+		t.Fatalf("error = %#v", envelope.Error)
+	}
+	if !strings.Contains(response.Body.String(), `"loc":["body","query"]`) ||
+		!strings.Contains(response.Body.String(), `"type":"string_unicode"`) {
+		t.Fatalf("Unicode validation detail = %s", response.Body.String())
+	}
+	if strings.Contains(response.Body.String(), `"input"`) || strings.Contains(response.Body.String(), "project:test") {
+		t.Fatalf("invalid request echoed input: %s", response.Body.String())
+	}
+}
+
 func TestOptionalMCPRouteUsesConfiguredPath(t *testing.T) {
 	t.Parallel()
 	handler, err := NewHTTPHandler(endpoint.NewHandler(endpoint.HandlerOptions{}), HTTPOptions{

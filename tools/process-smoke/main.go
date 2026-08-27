@@ -36,17 +36,21 @@ const (
 )
 
 var baseToolNames = []string{
+	"acknowledge_handoff",
 	"activate_handoff",
 	"approve_artifact_candidate",
 	"capture_content_source",
 	"commit_handoff",
 	"continue_handoff",
+	"create_work_contract",
 	"finalize_handoff",
 	"get_artifact_candidate",
 	"get_memory_entry",
+	"handoff_current_work",
 	"list_artifact_candidates",
 	"list_memory_entries",
 	"reject_artifact_candidate",
+	"record_task_outcome",
 	"remember_memory",
 	"retire_memory_entry",
 	"revise_artifact_candidate",
@@ -73,7 +77,7 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf(
-		"Verified PowerContext %s CLI, HTTP, authenticated Dashboard, MCP 16+2 tools, SQLite restart persistence, and graceful shutdown.\n",
+		"Verified PowerContext %s CLI, HTTP, authenticated Dashboard, MCP 20/24-tool surfaces, SQLite restart persistence, and graceful shutdown.\n",
 		*version,
 	)
 }
@@ -105,7 +109,7 @@ func run(ctx context.Context, opts options) error {
 		if err := exerciseMemory(ctx, baseURL, "", true); err != nil {
 			return err
 		}
-		if err := exerciseMCP(ctx, baseURL, "", false); err != nil {
+		if err := exerciseMCP(ctx, baseURL, "", true); err != nil {
 			return err
 		}
 		response, err := request(ctx, http.MethodPost, baseURL+"/v1/handoff-reports/projects/list", "", `{}`)
@@ -113,8 +117,8 @@ func run(ctx context.Context, opts options) error {
 			return err
 		}
 		defer response.Body.Close()
-		if response.StatusCode != http.StatusNotFound {
-			return fmt.Errorf("disabled Handoff Report route returned HTTP %d", response.StatusCode)
+		if response.StatusCode != http.StatusOK {
+			return fmt.Errorf("default Handoff Report route returned HTTP %d", response.StatusCode)
 		}
 		return nil
 	}); err != nil {
@@ -147,6 +151,31 @@ func run(ctx context.Context, opts options) error {
 		return withLog(err, secondLog)
 	}
 	if err := verifyPrivateLog(secondLog); err != nil {
+		return err
+	}
+
+	disabledEnvironment := append(
+		slices.Clone(baseEnvironment),
+		"POWERCONTEXT_SERVER_HANDOFF_REPORT_ENABLED=false",
+	)
+	thirdLog := filepath.Join(root, "server-reports-disabled.log")
+	if err := runPhase(ctx, binary, root, thirdLog, disabledEnvironment, opts.timeout, func(baseURL string) error {
+		if err := exerciseMCP(ctx, baseURL, "", false); err != nil {
+			return err
+		}
+		response, err := request(ctx, http.MethodPost, baseURL+"/v1/handoff-reports/projects/list", "", `{}`)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+		if response.StatusCode != http.StatusNotFound {
+			return fmt.Errorf("disabled Handoff Report route returned HTTP %d", response.StatusCode)
+		}
+		return nil
+	}); err != nil {
+		return withLog(err, thirdLog)
+	}
+	if err := verifyPrivateLog(thirdLog); err != nil {
 		return err
 	}
 	return nil
@@ -403,7 +432,13 @@ func exerciseMCP(ctx context.Context, baseURL, token string, reports bool) error
 	}
 	expected := slices.Clone(baseToolNames)
 	if reports {
-		expected = append(expected, "get_handoff_report", "get_handoff_report_workspace")
+		expected = append(
+			expected,
+			"get_handoff_report",
+			"get_handoff_report_workspace",
+			"list_handoff_report_known_scopes",
+			"select_handoff_workstream",
+		)
 	}
 	slices.Sort(actual)
 	slices.Sort(expected)

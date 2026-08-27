@@ -91,6 +91,13 @@ func Open(ctx context.Context, config Config) (*Instance, error) {
 		_ = instance.Close(context.Background())
 		return nil, err
 	}
+	// The native open and connection-option calls are synchronous and cannot be
+	// interrupted safely. Re-check cancellation after the complete handshake so
+	// a cancellation racing either call never publishes a live native instance.
+	if err := context.Cause(ctx); err != nil {
+		_ = instance.Close(context.Background())
+		return nil, err
+	}
 	return instance, nil
 }
 

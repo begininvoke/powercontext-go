@@ -601,6 +601,7 @@ func stageRelease(repository, root string, options packageOptions, facts binaryF
 	for _, pair := range [][2]string{
 		{filepath.Join(repository, "LICENSE"), filepath.Join(root, "LICENSE")},
 		{filepath.Join(repository, "README.md"), filepath.Join(root, "README.md")},
+		{filepath.Join(repository, ".env.example"), filepath.Join(root, ".env.example")},
 		{filepath.Join(repository, "openapi", "powercontext.yaml"), filepath.Join(root, "openapi", "powercontext.yaml")},
 		{filepath.Join(repository, "docs", "release", "INSTALL.md"), filepath.Join(root, "docs", "INSTALL.md")},
 	} {
@@ -608,39 +609,8 @@ func stageRelease(repository, root string, options packageOptions, facts binaryF
 			return err
 		}
 	}
-	integrationFiles := [][2]string{
-		{"integrations/bub/README.md", "integrations/bub/README.md"},
-		{"integrations/bub/pyproject.toml", "integrations/bub/pyproject.toml"},
-		{"integrations/bub/uv.lock", "integrations/bub/uv.lock"},
-		{"integrations/codex/README.md", "integrations/codex/README.md"},
-		{"integrations/dsh/README.md", "integrations/dsh/README.md"},
-		{"integrations/dsh/plugins/powercontext/LICENSE", "integrations/dsh/plugins/powercontext/LICENSE"},
-		{"integrations/dsh/plugins/powercontext/README.md", "integrations/dsh/plugins/powercontext/README.md"},
-		{"integrations/dsh/plugins/powercontext/cordis.patch.yml", "integrations/dsh/plugins/powercontext/cordis.patch.yml"},
-		{"integrations/dsh/plugins/powercontext/package.json", "integrations/dsh/plugins/powercontext/package.json"},
-	}
-	for _, pair := range integrationFiles {
-		destination := filepath.Join(root, filepath.FromSlash(pair[1]))
-		if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
-			return err
-		}
-		if err := copyRegularFile(filepath.Join(repository, filepath.FromSlash(pair[0])), destination, 0o644); err != nil {
-			return err
-		}
-	}
-	integrationTrees := [][2]string{
-		{"integrations/bub/src", "integrations/bub/src"},
-		{"integrations/codex/.agents", "integrations/codex/.agents"},
-		{"integrations/codex/plugins", "integrations/codex/plugins"},
-		{"integrations/dsh/plugins/powercontext/lib", "integrations/dsh/plugins/powercontext/lib"},
-	}
-	for _, pair := range integrationTrees {
-		if err := copyTree(
-			filepath.Join(repository, filepath.FromSlash(pair[0])),
-			filepath.Join(root, filepath.FromSlash(pair[1])),
-		); err != nil {
-			return err
-		}
+	if err := stageIntegrations(repository, root); err != nil {
+		return err
 	}
 	if options.Edition == "full" {
 		if err := copyONNXRuntime(
@@ -652,6 +622,31 @@ func stageRelease(repository, root string, options packageOptions, facts binaryF
 		}
 	}
 	return nil
+}
+
+func stageIntegrations(repository, root string) error {
+	// Claude Code discovers a local marketplace from this repository-level
+	// manifest; copying only integrations/ leaves the plugin files present but
+	// makes `setup claude-code --source <archive>` unusable.
+	if err := copyTree(
+		filepath.Join(repository, ".claude-plugin"),
+		filepath.Join(root, ".claude-plugin"),
+	); err != nil {
+		return err
+	}
+	if err := copyTree(
+		filepath.Join(repository, "integrations"),
+		filepath.Join(root, "integrations"),
+	); err != nil {
+		return err
+	}
+	// dist is normally workspace output and is filtered by copyTree. OpenClaw's
+	// tracked bundle is its executable adapter, so stage that one runtime tree
+	// explicitly after copying the source tree.
+	return copyTree(
+		filepath.Join(repository, "integrations", "openclaw", "plugins", "memory-powercontext", "dist"),
+		filepath.Join(root, "integrations", "openclaw", "plugins", "memory-powercontext", "dist"),
+	)
 }
 
 func describeNativeAssets(

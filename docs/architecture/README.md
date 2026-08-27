@@ -8,6 +8,7 @@ boundaries, while files inside a package are grouped by one responsibility.
 
 ```text
 powercontext-go/
+├── .env.example              operator-ready frozen-default configuration
 ├── api/v1/                    generated OpenAPI wire types and contracts
 ├── artifact/                  immutable Artifact core and typed families
 │   ├── experience/            experience generation, prompts, validation
@@ -24,19 +25,25 @@ powercontext-go/
 ├── inference/                 provider-neutral generation and embeddings
 ├── integrations/
 │   ├── bub/                   retained Python host adapter
+│   ├── claude-code/           retained Python Claude Code plugin
 │   ├── codex/                 retained Python Codex plugin
-│   └── dsh/                   retained TypeScript DSH plugin
+│   ├── dsh/                   retained TypeScript DSH plugin
+│   ├── hermes/                retained Python Hermes provider
+│   ├── langgraph/             retained Python LangGraph package
+│   ├── openclaw/              retained TypeScript OpenClaw memory plugin
+│   ├── opencode/              retained TypeScript OpenCode plugin
+│   └── pi/                    retained TypeScript Pi extension
 ├── internal/
 │   ├── benchmark/             bounded benchmark adapters and fixtures
 │   ├── cli/                   Cobra command implementation
 │   ├── endpoint/              one application-operation boundary for HTTP/MCP
 │   ├── httpapi/               OpenAPI HTTP transport and middleware
 │   ├── jcs/                   RFC 8785 canonical JSON boundary
-│   ├── mcpapi/                fixed 16 + optional 2 MCP tool surface
+│   ├── mcpapi/                fixed 20 + optional 4 MCP tool surface
 │   ├── modelprovider/         concrete remote/local provider adapters
 │   ├── observability/         privacy-safe logging, metrics, and tracing
 │   ├── scheduler/             interval scheduler and bounded APScheduler Pickle
-│   ├── sqlstore/              SQLite/OceanBase stores, codecs, projections
+│   ├── sqlstore/              SQLite/seekDB/OceanBase stores and projections
 │   ├── testkit/               internal deterministic test doubles
 │   └── webui/                 embedded Dashboard templates and assets
 ├── openapi/                   authoritative HTTP contract and generation hook
@@ -100,9 +107,9 @@ CAS, associated cursor CAS, and projection updates commit together. Stores
 accept the narrow `DBTX` surface required by the use case; there is no generic
 repository abstraction.
 
-SQLite retains the Python `pc_*` schema and APScheduler sidecar format.
-OceanBase uses explicit capability probing and backend-specific FTS/vector
-implementations while preserving the same domain behavior.
+SQLite and embedded seekDB retain the Python `pc_*` schema and APScheduler
+sidecar format. OceanBase uses explicit capability probing and backend-specific
+FTS/vector implementations while preserving the same domain behavior.
 
 ## File organization
 

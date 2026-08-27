@@ -288,6 +288,36 @@ func TestLoggingPanicDoesNotChangeApplicationResponse(t *testing.T) {
 	assertRequestID(t, response)
 }
 
+func TestInMemoryMainDatabaseEmitsOneBoundedDataLossWarning(t *testing.T) {
+	t.Parallel()
+	var output bytes.Buffer
+	logger := newJSONTestLogger(t, &output)
+	config := ProcessConfig{Database: DatabaseConfig{
+		Kind: "sqlite", SQLite: SQLiteDatabaseConfig{URL: "sqlite+aiosqlite:///:memory:"},
+	}}
+	warnIfEphemeralMainDatabase(t.Context(), config, logger)
+	records := decodeLogRecords(t, output.String())
+	if len(records) != 1 {
+		t.Fatalf("records = %#v", records)
+	}
+	assertLogFields(t, records[0], map[string]any{
+		"level": "WARN", "logger": "powercontext.server.factory", "event": "database.ephemeral",
+		"outcome": "warning", "unit": "database",
+	})
+	message, _ := records[0]["message"].(string)
+	if !strings.Contains(message, "all main database data will be lost when the process stops") ||
+		strings.Contains(output.String(), ":memory:") {
+		t.Fatalf("warning is missing or leaks the DSN: %s", output.String())
+	}
+
+	output.Reset()
+	config.Database.SQLite.URL = "sqlite+aiosqlite:///powercontext.db"
+	warnIfEphemeralMainDatabase(t.Context(), config, logger)
+	if output.Len() != 0 {
+		t.Fatalf("persistent database warning = %s", output.String())
+	}
+}
+
 func newJSONTestLogger(t *testing.T, output *bytes.Buffer) *slog.Logger {
 	t.Helper()
 	logger, err := serverlogging.New(serverlogging.Config{Format: serverlogging.JSON, Level: slog.LevelDebug, Writer: output})

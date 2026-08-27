@@ -95,6 +95,81 @@ func TestServiceFreezesExactHeadsAndBuildsCanonicalReport(t *testing.T) {
 	}
 }
 
+func TestServiceProjectsRevisionHistoryOnlyThroughFrozenSelection(t *testing.T) {
+	t.Parallel()
+	first := reportHandoffRevision(t, 1, "Implement the report.", "Add the API.")
+	selected := reportHandoffRevision(t, 2, "Second objective", "Review revision two")
+	later := reportHandoffRevision(t, 3, "Concurrent third objective", "Do not include yet")
+	reader := &reportReader{
+		values:    map[string]*handoff.Handoff{"scope-a": &selected},
+		histories: map[string][]handoff.Handoff{"scope-a": {first, selected, later}},
+	}
+	service, err := handoffreport.NewService(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := service.Generate(context.Background(), handoffreport.GenerateInput{
+		Project: domainProject(t), Workstreams: []handoffreport.WorkstreamDescriptor{domainWorkstream(t, "scope-a")},
+		GeneratedAt: time.Date(2026, time.August, 5, 0, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	item := report.Workstreams()[0]
+	history := item.HandoffHistory()
+	if item.HandoffRevisionCount() != 2 || item.HandoffHistoryTruncated() || len(history) != 2 {
+		t.Fatalf("revision projection = count %d, truncated %t, history %#v",
+			item.HandoffRevisionCount(), item.HandoffHistoryTruncated(), history)
+	}
+	if history[0].Reference().Revision() != 1 || history[1].Reference().Revision() != 2 ||
+		history[1].ObjectiveExcerpt() != "Second objective" {
+		t.Fatalf("frozen history = %#v", history)
+	}
+	markdown, err := handoffreport.RenderMarkdown(report)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(markdown, "Concurrent third objective") {
+		t.Fatal("report included a revision committed after its frozen selection")
+	}
+}
+
+func TestServiceBoundsRevisionHistoryAndPreservesTotalCount(t *testing.T) {
+	t.Parallel()
+	revisions := make([]handoff.Handoff, 22)
+	for index := range revisions {
+		revision := int64(index + 1)
+		revisions[index] = reportHandoffRevision(t, revision, "Objective "+decimal(int(revision)), "Next")
+	}
+	selected := revisions[len(revisions)-1]
+	reader := &reportReader{
+		values:    map[string]*handoff.Handoff{"scope-a": &selected},
+		histories: map[string][]handoff.Handoff{"scope-a": revisions},
+	}
+	service, err := handoffreport.NewService(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	report, err := service.Generate(context.Background(), handoffreport.GenerateInput{
+		Project: domainProject(t), Workstreams: []handoffreport.WorkstreamDescriptor{domainWorkstream(t, "scope-a")},
+		GeneratedAt: time.Date(2026, time.August, 5, 0, 0, 0, 0, time.UTC),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	item := report.Workstreams()[0]
+	history := item.HandoffHistory()
+	if item.HandoffRevisionCount() != 22 || !item.HandoffHistoryTruncated() || len(history) != handoffreport.MaxReportHandoffHistory {
+		t.Fatalf("bounded projection = count %d, truncated %t, history length %d",
+			item.HandoffRevisionCount(), item.HandoffHistoryTruncated(), len(history))
+	}
+	for index, summary := range history {
+		if want := int64(index + 3); summary.Reference().Revision() != want {
+			t.Fatalf("history[%d] revision = %d, want %d", index, summary.Reference().Revision(), want)
+		}
+	}
+}
+
 func TestSelectionDigestIsLocaleIndependentAndCanonicalRejectsFloats(t *testing.T) {
 	t.Parallel()
 	canonicalA, err := handoffreport.CanonicalJSONBytes(map[string]any{"text": "Cafe\u0301"})
@@ -197,6 +272,7 @@ func TestOptimisticSelectionFailsAfterBoundedInstability(t *testing.T) {
 
 type reportReader struct {
 	values                  map[string]*handoff.Handoff
+	histories               map[string][]handoff.Handoff
 	latestReads, exactReads int
 	evidenceReads           int
 	evidenceUnavailable     bool
@@ -219,6 +295,9 @@ func (r *reportReader) Get(_ context.Context, scope string, ref artifact.Ref) (h
 	return *value, nil
 }
 func (r *reportReader) Revisions(_ context.Context, scope string) ([]handoff.Handoff, error) {
+	if values, ok := r.histories[scope]; ok {
+		return append([]handoff.Handoff(nil), values...), nil
+	}
 	value := r.values[scope]
 	if value == nil {
 		return nil, nil
@@ -280,12 +359,16 @@ func domainActivity(t *testing.T, id, scope string, occurred time.Time) handoffr
 	return value
 }
 func reportHandoff(t *testing.T, revision int64) handoff.Handoff {
+	return reportHandoffRevision(t, revision, "Implement the report.", "Add the API.")
+}
+
+func reportHandoffRevision(t *testing.T, revision int64, objective, nextAction string) handoff.Handoff {
 	t.Helper()
 	ref, _ := source.NewRef("content", "source-1")
 	citation, _ := handoff.NewSourceCitation(ref)
 	statement, _ := handoff.NewStatement("The model exists.", []handoff.Citation{citation})
-	next, _ := handoff.NewStatement("Add the API.", []handoff.Citation{citation})
-	content, err := handoff.NewContent("Implement the report.", []handoff.Statement{statement}, handoff.Continuable, &next, nil)
+	next, _ := handoff.NewStatement(nextAction, []handoff.Citation{citation})
+	content, err := handoff.NewContent(objective, []handoff.Statement{statement}, handoff.Continuable, &next, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

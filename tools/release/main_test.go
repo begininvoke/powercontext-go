@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -146,6 +147,45 @@ func TestCopyTreeRejectsAbsoluteSymlink(t *testing.T) {
 	err := copyTree(source, destination)
 	if err == nil || !strings.Contains(err.Error(), "is absolute") {
 		t.Fatalf("copyTree error = %v", err)
+	}
+}
+
+func TestStageIntegrationsIncludesEveryRuntimeAdapterAndExcludesWorkspaceState(t *testing.T) {
+	repository := filepath.Clean(filepath.Join("..", ".."))
+	root := t.TempDir()
+	if err := stageIntegrations(repository, root); err != nil {
+		t.Fatal(err)
+	}
+	if info, err := os.Stat(filepath.Join(root, ".claude-plugin", "marketplace.json")); err != nil || !info.Mode().IsRegular() {
+		t.Errorf("Claude Code marketplace manifest was not staged: %v", err)
+	}
+	for _, required := range []string{
+		"bub/src/powercontext_bub/client.py",
+		"claude-code/plugins/powercontext/.claude-plugin/plugin.json",
+		"codex/plugins/powercontext/.codex-plugin/plugin.json",
+		"dsh/plugins/powercontext/lib/index.js",
+		"hermes/plugins/powercontext/plugin.yaml",
+		"langgraph/src/powercontext_langgraph/client.py",
+		"openclaw/plugins/memory-powercontext/dist/index.js",
+		"opencode/plugins/powercontext/lib/index.js",
+		"pi/plugins/powercontext/extensions/powercontext.ts",
+	} {
+		path := filepath.Join(root, "integrations", filepath.FromSlash(required))
+		if info, err := os.Stat(path); err != nil || !info.Mode().IsRegular() {
+			t.Errorf("runtime adapter %q was not staged: %v", required, err)
+		}
+	}
+	err := filepath.WalkDir(filepath.Join(root, "integrations"), func(_ string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if slices.Contains([]string{".venv", "__pycache__", "node_modules", ".pytest_cache"}, entry.Name()) {
+			t.Errorf("workspace-only entry %q was staged", entry.Name())
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 

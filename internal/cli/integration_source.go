@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,20 +20,53 @@ func validateRemoteRef(ref string) error {
 
 func githubRepositoryCloneURL(source string) (string, error) {
 	value := strings.TrimSpace(source)
-	if strings.HasPrefix(value, "https://github.com/") || strings.HasPrefix(value, "git@github.com:") || strings.HasPrefix(value, "ssh://git@github.com/") {
-		if strings.Contains(value, "@github.com") && !strings.HasPrefix(value, "git@github.com:") && !strings.HasPrefix(value, "ssh://git@github.com/") {
-			return "", errors.New("GitHub source must not contain credentials")
+	if strings.HasPrefix(value, "git@github.com:") {
+		path, err := githubRepositoryPath(strings.TrimPrefix(value, "git@github.com:"))
+		if err != nil {
+			return "", err
 		}
-		if !strings.HasSuffix(value, ".git") {
-			value += ".git"
-		}
-		return value, nil
+		return "git@github.com:" + path, nil
 	}
-	parts := strings.Split(value, "/")
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" || strings.ContainsAny(value, " \\?#@") {
+	if strings.HasPrefix(value, "git@") {
 		return "", errors.New("invalid GitHub source")
 	}
-	return "https://github.com/" + value + ".git", nil
+	parsed, err := url.Parse(value)
+	if err != nil {
+		return "", errors.New("invalid GitHub source")
+	}
+	if parsed.Scheme != "" {
+		if parsed.Scheme != "https" || parsed.Host != "github.com" || parsed.User != nil ||
+			parsed.RawQuery != "" || parsed.Fragment != "" {
+			return "", errors.New("invalid GitHub source")
+		}
+		path, pathErr := githubRepositoryPath(parsed.EscapedPath())
+		if pathErr != nil {
+			return "", pathErr
+		}
+		return "https://github.com/" + path, nil
+	}
+	if parsed.RawQuery != "" || parsed.Fragment != "" || parsed.User != nil {
+		return "", errors.New("invalid GitHub source")
+	}
+	path, err := githubRepositoryPath(value)
+	if err != nil {
+		return "", err
+	}
+	return "https://github.com/" + path, nil
+}
+
+func githubRepositoryPath(value string) (string, error) {
+	path, err := url.PathUnescape(strings.Trim(strings.TrimSpace(value), "/"))
+	if err != nil {
+		return "", errors.New("invalid GitHub source")
+	}
+	path = strings.TrimSuffix(path, ".git")
+	parts := strings.Split(path, "/")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" ||
+		strings.ContainsAny(path, "?#@\\") || strings.IndexFunc(path, func(r rune) bool { return r == '\x00' || r == ' ' || r == '\t' || r == '\r' || r == '\n' }) >= 0 {
+		return "", errors.New("invalid GitHub source")
+	}
+	return path + ".git", nil
 }
 
 func refreshIntegrationCheckout(

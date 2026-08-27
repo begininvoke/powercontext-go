@@ -18,6 +18,8 @@ import (
 	"github.com/ob-labs/powercontext-go/internal/endpoint"
 	servermetrics "github.com/ob-labs/powercontext-go/internal/observability/metrics"
 	"github.com/ob-labs/powercontext-go/runtime"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace/noop"
 )
 
@@ -128,6 +130,69 @@ func TestGenerationReadinessUsesRawMinimalProviderRequest(t *testing.T) {
 	}
 	if _, tracedSchema := requestBody["response_format"]; tracedSchema {
 		t.Fatalf("readiness request unexpectedly used structured output: %#v", requestBody)
+	}
+}
+
+func TestConfiguredEmbeddingReadinessIsUntracedButRuntimeEmbeddingIsTraced(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "test-key")
+	t.Setenv("OPENAI_BASE_URL", "https://provider.test/v1")
+	config, err := DefaultConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.Inference.EmbeddingModel = "openai:text-embedding-test"
+	config.Inference.EmbeddingProfileID = "test-v1"
+	config.Inference.EmbeddingDimension = 3
+	config.Inference.EmbeddingNormalization = "none"
+
+	client := &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body: io.NopCloser(strings.NewReader(
+				`{"object":"list","data":[{"object":"embedding","index":0,"embedding":[1,0,0]}],"model":"text-embedding-test","usage":{"prompt_tokens":1,"total_tokens":1}}`,
+			)),
+			Request: request,
+		}, nil
+	})}
+	recorder := tracetest.NewSpanRecorder()
+	provider := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(recorder),
+	)
+	t.Cleanup(func() { _ = provider.Shutdown(context.Background()) })
+	assembled, err := assembleDependencies(config, Dependencies{HTTPClient: client}, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := assembled.embeddingReadiness(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if spans := recorder.Ended(); len(spans) != 0 {
+		t.Fatalf("readiness exported orphan inference spans: %#v", spans)
+	}
+
+	ctx, operation := provider.Tracer("test").Start(t.Context(), "powercontext search_memory")
+	if _, err := assembled.embeddingModel.Embed(ctx, []string{"private runtime query"}); err != nil {
+		t.Fatal(err)
+	}
+	operation.End()
+	spans := recorder.Ended()
+	if len(spans) != 2 {
+		t.Fatalf("runtime spans = %d, want operation and embedding", len(spans))
+	}
+	var operationSpan, embeddingSpan sdktrace.ReadOnlySpan
+	for _, span := range spans {
+		switch span.Name() {
+		case "powercontext search_memory":
+			operationSpan = span
+		case "powercontext inference.embed":
+			embeddingSpan = span
+		}
+	}
+	if operationSpan == nil || embeddingSpan == nil ||
+		embeddingSpan.Parent().SpanID() != operationSpan.SpanContext().SpanID() {
+		t.Fatalf("runtime embedding span was not nested under the application operation: %#v", spans)
 	}
 }
 

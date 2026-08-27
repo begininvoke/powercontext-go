@@ -53,6 +53,7 @@ jobs:
           go test -run '^$' -fuzz '^FuzzRestrictedPickleJobDecoder$' -fuzztime=3s ./internal/scheduler
           go test -run '^$' -fuzz '^FuzzAgentSkillFrontmatterParser$' -fuzztime=3s ./artifact/skill
           go test -run '^$' -fuzz '^FuzzTruncateUTF8PreservesRuneBoundariesAndBudget$' -fuzztime=3s ./contextpack
+          go test -run '^$' -fuzz '^FuzzValidJSONUnicodeNeverPanics$' -fuzztime=3s ./internal/httpapi
 
       - name: Verify module files are tidy
         run: |

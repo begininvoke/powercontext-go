@@ -3,13 +3,87 @@ package sqlstore
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"testing"
+	"time"
 
 	mysql "github.com/go-sql-driver/mysql"
 	"github.com/mattn/go-sqlite3"
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/experience"
 )
+
+func TestArtifactInitialCreateIsAtomicAcrossConnections(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	path := filepath.Join(t.TempDir(), "artifact-race.db")
+	first, err := OpenSQLite(ctx, DefaultSQLiteConfig(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := OpenSQLite(ctx, DefaultSQLiteConfig(path))
+	if err != nil {
+		_ = first.Close(context.Background())
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = first.Close(context.Background())
+		_ = second.Close(context.Background())
+	})
+
+	repository, err := NewArtifactRepository(SQLiteDialect, ExperienceArtifactCodec())
+	if err != nil {
+		t.Fatal(err)
+	}
+	content, err := experience.NewContent("s", "a", "o", "l")
+	if err != nil {
+		t.Fatal(err)
+	}
+	draft, err := experience.NewDraft(content, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	type outcome struct {
+		created artifact.Snapshot
+		err     error
+	}
+	start := make(chan struct{})
+	results := make(chan outcome, 2)
+	for _, database := range []*Database{first, second} {
+		go func() {
+			<-start
+			var created artifact.Snapshot
+			err := database.Transaction(ctx, func(tx DBTX) error {
+				var createErr error
+				created, createErr = repository.Create(ctx, tx, "scope", "experience-1", draft)
+				return createErr
+			})
+			results <- outcome{created: created, err: err}
+		}()
+	}
+	close(start)
+
+	created, conflicts := 0, 0
+	for range 2 {
+		result := <-results
+		if result.err == nil {
+			created++
+			if result.created == nil || result.created.Ref().Revision() != 1 {
+				t.Fatalf("created Artifact = %#v", result.created)
+			}
+			continue
+		}
+		var conflict *artifact.RevisionConflictError
+		if !errors.As(result.err, &conflict) || conflict.Requested.Revision() != 1 || conflict.Current.Revision() != 1 {
+			t.Fatalf("losing create error = %v", result.err)
+		}
+		conflicts++
+	}
+	if created != 1 || conflicts != 1 {
+		t.Fatalf("created = %d, conflicts = %d", created, conflicts)
+	}
+}
 
 func TestArtifactCreateIntegrityNormalizesOnlyCommittedLifecycle(t *testing.T) {
 	ctx := context.Background()

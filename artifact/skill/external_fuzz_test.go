@@ -23,9 +23,21 @@ func FuzzAgentSkillFrontmatterParser(f *testing.F) {
 		if (firstErr == nil) != (secondErr == nil) || firstName != secondName || firstDescription != secondDescription {
 			t.Fatal("frontmatter parsing is not deterministic")
 		}
-		if firstErr == nil && (!utf8.ValidString(firstName) || !utf8.ValidString(firstDescription) ||
-			firstName == "" || firstDescription == "") {
-			t.Fatalf("parser accepted invalid metadata name=%q description=%q", firstName, firstDescription)
+		if firstErr == nil && (!utf8.ValidString(firstName) || !utf8.ValidString(firstDescription)) {
+			t.Fatalf("parser produced invalid UTF-8 metadata name=%q description=%q", firstName, firstDescription)
+		}
+		if firstErr == nil && (firstName == "" || firstDescription == "") {
+			// Python's deliberately narrow scalar parser turns a lone single quote
+			// into an empty string. Keep that parser-level behavior compatible, but
+			// prove the public registration boundary still rejects the metadata.
+			_, err := NewRegistration(
+				"codex:project:fuzz/package", string(agentKind), string(agentKind), "fuzz-host", UserScope,
+				"/fuzz/package", "0000000000000000000000000000000000000000000000000000000000000000",
+				firstName, firstDescription,
+			)
+			if err == nil {
+				t.Fatalf("registration accepted empty metadata name=%q description=%q", firstName, firstDescription)
+			}
 		}
 	})
 }

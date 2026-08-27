@@ -9,10 +9,55 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"unicode/utf8"
 
 	v1 "github.com/ob-labs/powercontext-go/api/v1"
 	"go.opentelemetry.io/otel/trace"
 )
+
+func TestValidJSONUnicodeDistinguishesSurrogateEscapes(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name      string
+		payload   []byte
+		wantField string
+		wantValid bool
+	}{
+		{name: "ordinary", payload: []byte(`{"query":"replacement �"}`), wantValid: true},
+		{name: "valid pair", payload: []byte(`{"query":"\ud83d\ude00"}`), wantValid: true},
+		{name: "low surrogate", payload: []byte(`{"query":"\udcaa"}`), wantField: "query"},
+		{name: "high without pair", payload: []byte(`{"query":"\ud800x"}`), wantField: "query"},
+		{name: "high with non-low", payload: []byte(`{"query":"\ud800\u0041"}`), wantField: "query"},
+		{name: "invalid raw utf8", payload: []byte{'{', '"', 'x', '"', ':', '"', 0xed, 0xb2, 0xaa, '"', '}'}},
+		{name: "other invalid json stays downstream", payload: []byte(`{"query":`), wantValid: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			field, valid := validJSONUnicode(test.payload)
+			if field != test.wantField || valid != test.wantValid {
+				t.Fatalf("validJSONUnicode = (%q, %t), want (%q, %t)", field, valid, test.wantField, test.wantValid)
+			}
+		})
+	}
+}
+
+func FuzzValidJSONUnicodeNeverPanics(f *testing.F) {
+	for _, seed := range [][]byte{
+		[]byte(`{"query":"plain"}`),
+		[]byte(`{"query":"\ud83d\ude00"}`),
+		[]byte(`{"query":"\udcaa"}`),
+		{0xff, '"', '\\', 'u'},
+	} {
+		f.Add(seed)
+	}
+	f.Fuzz(func(t *testing.T, payload []byte) {
+		_, valid := validJSONUnicode(payload)
+		if !utf8.Valid(payload) && valid {
+			t.Fatal("invalid UTF-8 was accepted")
+		}
+	})
+}
 
 var requestIDPattern = regexp.MustCompile(`^[0-9a-f]{16}$`)
 

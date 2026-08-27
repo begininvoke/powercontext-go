@@ -63,6 +63,8 @@ uses `POWERCONTEXT_CLIENT_SERVER_URL`, `POWERCONTEXT_CLIENT_API_TOKEN`, and
 `POWERCONTEXT_CLIENT_TIMEOUT`. The full local-embedding build additionally
 requires the native tokenizer and ONNX Runtime assets described in
 [`docs/release/INSTALL.md`](docs/release/INSTALL.md).
+The same installation guide documents the optional native seekDB profile;
+SQLite remains the zero-dependency default.
 
 Useful verification targets:
 

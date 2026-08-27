@@ -650,17 +650,11 @@ func resolvePath(path string) (string, error) {
 }
 
 func githubCloneURL(source string) (string, error) {
-	value := strings.TrimSpace(source)
-	if strings.HasPrefix(value, "https://github.com/") || strings.HasPrefix(value, "http://github.com/") || strings.HasPrefix(value, "git@github.com:") {
-		if !strings.HasSuffix(value, ".git") {
-			value += ".git"
-		}
-		return value, nil
-	}
-	if strings.Contains(value, "://") || strings.HasPrefix(value, "git@") || !strings.Contains(value, "/") {
+	value, err := githubRepositoryCloneURL(source)
+	if err != nil {
 		return "", errors.New("invalid DeepSeek Harness source")
 	}
-	return "https://github.com/" + value + ".git", nil
+	return value, nil
 }
 
 func runJSONCommand(

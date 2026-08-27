@@ -12,6 +12,9 @@ RUN apt-get update \
 
 FROM ${GO_IMAGE}:${GO_VERSION}-bookworm AS go-build
 WORKDIR /src
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends libsqlite3-dev \
+    && rm -rf /var/lib/apt/lists/*
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY . .

@@ -74,6 +74,47 @@ func TestSourceRepositoryPythonPayloadAndIdempotence(t *testing.T) {
 	}
 }
 
+func TestSourceRepositoryKeepsCaseAndAccentVariantIdentitiesDistinct(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	database := openTestDatabase(t)
+	repository, err := sqlstore.NewSourceRepository(sqlstore.SQLiteDialect, sqlstore.ContentSourceCodec())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var second sqlstore.StoredSource
+	if err := database.Transaction(ctx, func(tx sqlstore.DBTX) error {
+		if _, addErr := repository.Add(ctx, tx, "PC-Alpha", contentSource(t, "Turn-1", "upper", nil)); addErr != nil {
+			return addErr
+		}
+		var addErr error
+		second, addErr = repository.Add(ctx, tx, "PC-Alpha", contentSource(t, "turn-1", "lower", nil))
+		return addErr
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if second.JournalPosition != 2 {
+		t.Fatalf("case-variant Source position = %d, want 2", second.JournalPosition)
+	}
+	if err := database.Transaction(ctx, func(tx sqlstore.DBTX) error {
+		if _, addErr := repository.Add(ctx, tx, "project-café", contentSource(t, "turn", "accent", nil)); addErr != nil {
+			return addErr
+		}
+		for _, scope := range []string{"pc-alpha", "project-cafe"} {
+			items, listErr := repository.List(ctx, tx, scope, 0, nil)
+			if listErr != nil {
+				return listErr
+			}
+			if len(items) != 0 {
+				return fmt.Errorf("identity-variant scope %q leaked %d Sources", scope, len(items))
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSourceRepositorySerializesConcurrentJournalPositions(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

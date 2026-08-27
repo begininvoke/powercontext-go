@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -9,15 +10,164 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"mime"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	serverlogging "github.com/ob-labs/powercontext-go/internal/observability/logging"
 	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
 	"go.opentelemetry.io/otel/propagation"
 )
+
+// ValidateJSONUnicode rejects malformed UTF-8 and unpaired JSON surrogate
+// escapes before Go's JSON decoder replaces them with U+FFFD. Pydantic rejects
+// the same input at the Python transport boundary; preserving that distinction
+// also prevents malformed private input from reaching application handlers.
+func ValidateJSONUnicode(next http.Handler) http.Handler {
+	if next == nil {
+		return nil
+	}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+		if err != nil || mediaType != "application/json" || r.Body == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		payload, readErr := io.ReadAll(r.Body)
+		_ = r.Body.Close()
+		if readErr != nil {
+			writeInvalidUnicode(w, "")
+			return
+		}
+		r.Body = io.NopCloser(bytes.NewReader(payload))
+		if field, valid := validJSONUnicode(payload); !valid {
+			writeInvalidUnicode(w, field)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func writeInvalidUnicode(w http.ResponseWriter, field string) {
+	location := []any{"body"}
+	if field != "" {
+		location = append(location, field)
+	}
+	writeError(w, http.StatusUnprocessableEntity, Error{
+		Code:    "invalid_request",
+		Message: "The request violates the API contract.",
+		Details: map[string]any{"errors": []any{map[string]any{
+			"type": "string_unicode",
+			"loc":  location,
+			"msg":  "Input should be a valid string, unable to parse raw data as a unicode string",
+		}}},
+	})
+}
+
+// validJSONUnicode performs only the Unicode portion of JSON lexical
+// validation. All other syntax and schema validation remains owned by ogen.
+// The returned field is the nearest JSON object key and is used only for the
+// bounded validation location; raw values are never retained or rendered.
+func validJSONUnicode(payload []byte) (field string, valid bool) {
+	if !utf8.Valid(payload) {
+		return "", false
+	}
+	lastKey := ""
+	for index := 0; index < len(payload); {
+		if payload[index] != '"' {
+			index++
+			continue
+		}
+		end, unicodeValid := scanJSONString(payload, index)
+		next := end
+		for next < len(payload) && (payload[next] == ' ' || payload[next] == '\t' || payload[next] == '\r' || payload[next] == '\n') {
+			next++
+		}
+		isKey := next < len(payload) && payload[next] == ':'
+		if isKey && unicodeValid && end <= len(payload) {
+			if decoded, err := strconv.Unquote(string(payload[index:end])); err == nil {
+				lastKey = decoded
+			}
+		}
+		if !unicodeValid {
+			if isKey {
+				return "", false
+			}
+			return lastKey, false
+		}
+		if end <= index {
+			index++
+		} else {
+			index = end
+		}
+	}
+	return "", true
+}
+
+func scanJSONString(payload []byte, start int) (int, bool) {
+	for index := start + 1; index < len(payload); index++ {
+		switch payload[index] {
+		case '"':
+			return index + 1, true
+		case '\\':
+			if index+1 >= len(payload) {
+				return len(payload), true
+			}
+			if payload[index+1] != 'u' {
+				index++
+				continue
+			}
+			code, ok := jsonHexCodeUnit(payload, index+2)
+			if !ok {
+				return len(payload), true
+			}
+			index += 5
+			switch {
+			case code >= 0xd800 && code <= 0xdbff:
+				pair := index + 1
+				if pair+6 > len(payload) || payload[pair] != '\\' || payload[pair+1] != 'u' {
+					return index + 1, false
+				}
+				low, lowOK := jsonHexCodeUnit(payload, pair+2)
+				if !lowOK {
+					return len(payload), true
+				}
+				if low < 0xdc00 || low > 0xdfff {
+					return pair + 6, false
+				}
+				index = pair + 5
+			case code >= 0xdc00 && code <= 0xdfff:
+				return index + 1, false
+			}
+		}
+	}
+	return len(payload), true
+}
+
+func jsonHexCodeUnit(payload []byte, start int) (uint16, bool) {
+	if start+4 > len(payload) {
+		return 0, false
+	}
+	var value uint16
+	for _, character := range payload[start : start+4] {
+		value <<= 4
+		switch {
+		case character >= '0' && character <= '9':
+			value += uint16(character - '0')
+		case character >= 'a' && character <= 'f':
+			value += uint16(character-'a') + 10
+		case character >= 'A' && character <= 'F':
+			value += uint16(character-'A') + 10
+		default:
+			return 0, false
+		}
+	}
+	return value, true
+}
 
 var publicPaths = map[string]struct{}{
 	"/":                {},

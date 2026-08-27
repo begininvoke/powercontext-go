@@ -3,8 +3,10 @@ package e2e_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -47,6 +49,58 @@ func TestLiveOceanBaseProfileSmoke(t *testing.T) {
 		return err
 	}); err != nil {
 		t.Fatalf("OceanBase Source cursor CAS failed: %T", err)
+	}
+
+	sourceRepository, err := sqlstore.NewSourceRepository(sqlstore.MySQLDialect, sqlstore.ContentSourceCodec())
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := func(id, text string) (source.ContentSource, error) {
+		capture, buildErr := source.NewContentCapture(id, text, nil)
+		if buildErr != nil {
+			return source.ContentSource{}, buildErr
+		}
+		return (source.ContentAdapter{}).Resolve(ctx, capture)
+	}
+	if err := database.Transaction(ctx, func(tx sqlstore.DBTX) error {
+		upperScope := "PC-" + suffix + "-Alpha"
+		upper, buildErr := content("Turn-1", "uppercase turn")
+		if buildErr != nil {
+			return buildErr
+		}
+		if _, addErr := sourceRepository.Add(ctx, tx, upperScope, upper); addErr != nil {
+			return addErr
+		}
+		lower, buildErr := content("turn-1", "lowercase turn")
+		if buildErr != nil {
+			return buildErr
+		}
+		second, addErr := sourceRepository.Add(ctx, tx, upperScope, lower)
+		if addErr != nil {
+			return addErr
+		}
+		if second.JournalPosition != 2 {
+			return fmt.Errorf("case-variant Source position = %d, want 2", second.JournalPosition)
+		}
+		accent, buildErr := content("turn", "accent scope")
+		if buildErr != nil {
+			return buildErr
+		}
+		if _, addErr = sourceRepository.Add(ctx, tx, suffix+"-café", accent); addErr != nil {
+			return addErr
+		}
+		for _, otherScope := range []string{strings.ToLower(upperScope), suffix + "-cafe"} {
+			items, listErr := sourceRepository.List(ctx, tx, otherScope, 0, nil)
+			if listErr != nil {
+				return listErr
+			}
+			if len(items) != 0 {
+				return fmt.Errorf("identity-variant scope %q leaked %d Sources", otherScope, len(items))
+			}
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("OceanBase binary identity collation failed: %T: %v", err, err)
 	}
 
 	reports, err := sqlstore.NewHandoffReportStore(database, sqlstore.MySQLDialect)

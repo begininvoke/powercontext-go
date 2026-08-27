@@ -120,6 +120,74 @@ func TestMountSupportsReportOnlyWebUI(t *testing.T) {
 	}
 }
 
+func TestDisabledDashboardLeavesProductPagesAbsentAndHealthAvailable(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	if err := Mount(mux, Options{}); err == nil {
+		t.Fatal("disabled web UI unexpectedly mounted")
+	}
+	mux.HandleFunc("GET /health/live", func(writer http.ResponseWriter, _ *http.Request) {
+		writer.WriteHeader(http.StatusOK)
+	})
+	for _, path := range []string{"/", "/skills", "/reviews"} {
+		if response := request(mux, http.MethodGet, path); response.Code != http.StatusNotFound {
+			t.Fatalf("GET %s = %d, want 404", path, response.Code)
+		}
+	}
+	if response := request(mux, http.MethodGet, "/health/live"); response.Code != http.StatusOK {
+		t.Fatalf("health = %d", response.Code)
+	}
+}
+
+func TestHandoffReportPageContainsDataFreePreviewTemplate(t *testing.T) {
+	t.Parallel()
+	mux := http.NewServeMux()
+	if err := Mount(mux, Options{HandoffReportEnabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	response := request(mux, http.MethodGet, "/handoff-reports")
+	if response.Code != http.StatusOK {
+		t.Fatalf("page = %d %s", response.Code, response.Body.String())
+	}
+	page := response.Body.String()
+	_, afterPreview, found := strings.Cut(page, `id="handoff-report-preview"`)
+	if !found {
+		t.Fatal("preview shell is absent")
+	}
+	preview, _, found := strings.Cut(afterPreview, `id="handoff-report"`)
+	if !found {
+		t.Fatal("live report shell is absent after preview")
+	}
+	for _, fragment := range []string{
+		`aria-describedby="preview-notice"`, `hidden`, `id="preview-retry"`,
+		`role="status" aria-live="polite"`, `data-preview-placeholder`,
+	} {
+		if !strings.Contains(preview, fragment) {
+			t.Errorf("preview does not contain %q", fragment)
+		}
+	}
+	for _, forbidden := range []string{">0<", "<input", "<select", `id="download-report"`} {
+		if strings.Contains(preview, forbidden) {
+			t.Errorf("preview contains live or interactive value %q", forbidden)
+		}
+	}
+	for remainder := preview; ; {
+		_, after, ok := strings.Cut(remainder, "data-preview-placeholder")
+		if !ok {
+			break
+		}
+		closeTag := strings.IndexByte(after, '>')
+		if closeTag < 0 {
+			t.Fatalf("preview placeholder tag is incomplete: %q", after)
+		}
+		openTag := strings.IndexByte(after[closeTag+1:], '<')
+		if openTag < 0 || after[closeTag+1:closeTag+1+openTag] != "—" {
+			t.Fatalf("preview placeholder is not the data-free em dash: %q", after)
+		}
+		remainder = after[closeTag+1+openTag:]
+	}
+}
+
 func request(handler http.Handler, method, target string) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, httptest.NewRequest(method, target, nil))

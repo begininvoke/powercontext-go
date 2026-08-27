@@ -52,3 +52,18 @@ func TestFrozenOpenAPIAndGeneratedHandlerStayInSync(t *testing.T) {
 		t.Fatalf("generated Handler methods = %d, OpenAPI operations = %d", got, len(operationIDs))
 	}
 }
+
+func TestBundledDSHOpenAPIMatchesAuthority(t *testing.T) {
+	t.Parallel()
+	authority, err := os.ReadFile("powercontext.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundled, err := os.ReadFile("../integrations/dsh/plugins/powercontext/openapi/powercontext.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(bundled, authority) {
+		t.Fatal("DSH bundled OpenAPI drifted from openapi/powercontext.yaml")
+	}
+}

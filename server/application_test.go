@@ -1128,7 +1128,7 @@ func (m failingReadinessEmbedding) Embed(context.Context, []string) (inference.E
 
 type readinessEmbeddingProfile struct{}
 
-func (readinessEmbeddingProfile) ID() string                { return "readiness" }
-func (readinessEmbeddingProfile) ModelName() string         { return "readiness" }
-func (readinessEmbeddingProfile) DimensionCount() int       { return 1 }
-func (readinessEmbeddingProfile) NormalizationMode() string { return "none" }
+func (readinessEmbeddingProfile) ID() string                { return "readiness-test" }
+func (readinessEmbeddingProfile) ModelName() string         { return "test:embedding" }
+func (readinessEmbeddingProfile) DimensionCount() int       { return 3 }
+func (readinessEmbeddingProfile) NormalizationMode() string { return "unit" }

@@ -101,6 +101,39 @@ func TestLoadConfigMatchesFrozenServerEnvironment(t *testing.T) {
 	}
 }
 
+func TestEnvExampleLoadsServerSettings(t *testing.T) {
+	payload, err := os.ReadFile(filepath.Join("..", ".env.example"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, line := range strings.Split(string(payload), "\n") {
+		assignment := strings.TrimSpace(line)
+		if assignment == "" || strings.HasPrefix(assignment, "#") {
+			continue
+		}
+		name, value, found := strings.Cut(assignment, "=")
+		if !found || name == "" {
+			t.Fatalf("invalid example assignment %q", line)
+		}
+		t.Setenv(name, value)
+	}
+
+	config, err := LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dsn, err := SQLiteDSN(config.Database.SQLite.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Database.Kind != "sqlite" || dsn != filepath.Join(".powercontext", "powercontext.db") {
+		t.Fatalf("example database = %#v, DSN %q", config.Database, dsn)
+	}
+	if config.Inference.EmbeddingDimension != 2560 || config.Inference.EmbeddingBatchSize != 10 {
+		t.Fatalf("example inference = %#v", config.Inference)
+	}
+}
+
 func TestDefaultConfigUsesPersistentUserStorage(t *testing.T) {
 	home := filepath.Join(t.TempDir(), "powercontext-data")
 	t.Setenv(PowerContextHomeEnv, home)
@@ -321,6 +354,28 @@ func TestLoadConfigNormalizesLoggingSettings(t *testing.T) {
 	}
 }
 
+func TestLoadConfigNormalizesDashboardScopesLikeFrozenPydanticModel(t *testing.T) {
+	t.Setenv(PowerContextHomeEnv, t.TempDir())
+	t.Setenv("POWERCONTEXT_SERVER_DASHBOARD_SCOPES", `[
+		{"scope_id":" scope-a ","display_name":" Primary "},
+		{"scope_id":"scope-b","display_name":"Secondary"}
+	]`)
+
+	config, err := LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []DashboardScope{{ScopeID: "scope-a", DisplayName: "Primary"}, {ScopeID: "scope-b", DisplayName: "Secondary"}}
+	if !reflect.DeepEqual(config.Dashboard.Scopes, want) {
+		t.Fatalf("Dashboard scopes = %#v, want %#v", config.Dashboard.Scopes, want)
+	}
+
+	t.Setenv("POWERCONTEXT_SERVER_DASHBOARD_SCOPES", `[{"scope_id":"`+strings.Repeat("x", 256)+`","display_name":"name"}]`)
+	if _, err := LoadConfig(); err == nil {
+		t.Fatal("Dashboard accepted an input longer than the frozen pre-normalization limit")
+	}
+}
+
 func TestProcessConfigEnforcesTrustAndInferenceBoundariesWithoutSecrets(t *testing.T) {
 	t.Parallel()
 	config, err := DefaultConfig()
@@ -357,7 +412,7 @@ func TestScheduledExperienceIncubationRequiresGenerationModel(t *testing.T) {
 	}
 }
 
-func TestSQLiteDSNRequiresFrozenDialectAndAbsolutePath(t *testing.T) {
+func TestSQLiteDSNPreservesFrozenAbsoluteAndRelativePaths(t *testing.T) {
 	t.Parallel()
 	want := filepath.Join(t.TempDir(), "powercontext.db")
 	got, err := SQLiteDSN(sqliteURL(want))
@@ -367,7 +422,14 @@ func TestSQLiteDSNRequiresFrozenDialectAndAbsolutePath(t *testing.T) {
 	if got != want {
 		t.Fatalf("DSN = %q, want %q", got, want)
 	}
-	for _, invalid := range []string{"sqlite:///tmp/a.db", "sqlite+aiosqlite:///relative.db", ""} {
+	relative, err := SQLiteDSN("sqlite+aiosqlite:///.powercontext/powercontext.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wantRelative := filepath.Join(".powercontext", "powercontext.db"); relative != wantRelative {
+		t.Fatalf("relative DSN = %q, want %q", relative, wantRelative)
+	}
+	for _, invalid := range []string{"sqlite:///tmp/a.db", "sqlite+aiosqlite:///", ""} {
 		if _, err := SQLiteDSN(invalid); err == nil {
 			t.Fatalf("accepted invalid SQLite URL %q", invalid)
 		}

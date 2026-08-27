@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"time"
 
 	requesttrace "github.com/ob-labs/powercontext-go/internal/observability/tracing"
 	"go.opentelemetry.io/otel/trace"
@@ -66,5 +67,35 @@ func TestLoggerRejectsUnknownFormat(t *testing.T) {
 	t.Parallel()
 	if _, err := New(Config{Format: "yaml"}); err == nil {
 		t.Fatal("unknown logging format was accepted")
+	}
+}
+
+func TestConsoleAndJSONLoggersUseStableComponentDisplayName(t *testing.T) {
+	t.Parallel()
+	for _, format := range []Format{Console, JSON} {
+		t.Run(string(format), func(t *testing.T) {
+			var output bytes.Buffer
+			logger, err := New(Config{
+				Format: format, Level: slog.LevelInfo, Writer: &output,
+				Clock: func() time.Time { return time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC) },
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			Named(logger, "powercontext.server.factory").Info("PowerContext Server is ready")
+			if !strings.Contains(output.String(), "powercontext.server.factory") ||
+				!strings.Contains(output.String(), "PowerContext Server is ready") {
+				t.Fatalf("log output = %s", output.String())
+			}
+			if format == JSON {
+				var payload map[string]any
+				if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
+					t.Fatal(err)
+				}
+				if payload["logger"] != "powercontext.server.factory" || payload["level"] != "INFO" {
+					t.Fatalf("JSON log = %#v", payload)
+				}
+			}
+		})
 	}
 }

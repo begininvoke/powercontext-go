@@ -250,6 +250,13 @@ func TestMemorySearchModeRemainsOnSearchRequest(t *testing.T) {
 	}
 }
 
+func TestMemorySearchDeclaresRevisionConflictResponse(t *testing.T) {
+	t.Parallel()
+	contract, _ := loadPythonContract(t)
+	response := mustObjectAt(t, operationAt(t, contract, "/v1/memory/search", http.MethodPost), "responses", "409")
+	assertStringValue(t, response, "$ref", "#/components/responses/Conflict")
+}
+
 func TestCandidateTransportRejectsCombinedEvidenceOverLimit(t *testing.T) {
 	t.Parallel()
 	sources := make([]v1.SourceReference, 20)
@@ -281,6 +288,24 @@ func TestHandoffOperationsExposeCompleteExplicitLifecycle(t *testing.T) {
 		{"/v1/handoff/continue", "ContinueHandoffRequest", "HandoffResolution"},
 	} {
 		assertOperationExchange(t, operationAt(t, contract, exchange.path, http.MethodPost), exchange.request, "200", exchange.response)
+	}
+}
+
+func TestWorkOperationsExposeHighLevelContinuityLoop(t *testing.T) {
+	t.Parallel()
+	contract, _ := loadPythonContract(t)
+	for _, exchange := range []struct {
+		path, request, status, response string
+	}{
+		{"/v1/work/contracts/create", "CreateWorkContractRequest", "202", "WorkSourceReceipt"},
+		{"/v1/work/handoffs/prepare-current", "HandoffCurrentWorkRequest", "200", "PreparedWorkHandoff"},
+		{"/v1/work/handoffs/acknowledge", "AcknowledgeHandoffRequest", "200", "HandoffAcknowledgement"},
+		{"/v1/work/outcomes/record", "RecordTaskOutcomeRequest", "202", "WorkSourceReceipt"},
+	} {
+		assertOperationExchange(
+			t, operationAt(t, contract, exchange.path, http.MethodPost),
+			exchange.request, exchange.status, exchange.response,
+		)
 	}
 }
 

@@ -23,8 +23,11 @@ import (
 )
 
 const (
-	ServerName           = "PowerContext Server"
-	defaultServerVersion = "0.0.1"
+	ServerName = "PowerContext Server"
+	// frozenPythonServerVersion is the serverInfo.version emitted by FastMCP
+	// 3.4.4 in the Python v0.0.2 Oracle. It is MCP wire compatibility metadata,
+	// not the PowerContext Go binary version. Callers may override it explicitly.
+	frozenPythonServerVersion = "3.4.4"
 )
 
 var errUnexpectedEndpointResponse = errors.New("unexpected endpoint response")
@@ -65,7 +68,7 @@ func NewServer(handler v1.Handler, options Options) (*mcp.Server, error) {
 	}
 	version := options.Version
 	if version == "" {
-		version = defaultServerVersion
+		version = frozenPythonServerVersion
 	}
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    ServerName,
@@ -472,25 +475,31 @@ func ensureRequestID(ctx context.Context) context.Context {
 
 func annotations(name string) *mcp.ToolAnnotations {
 	closedWorld := false
-	value := &mcp.ToolAnnotations{OpenWorldHint: &closedWorld}
 	switch name {
-	case "get_artifact_candidate", "get_handoff_report", "get_handoff_report_workspace",
+	case "continue_handoff", "get_artifact_candidate", "get_handoff_report", "get_handoff_report_workspace",
 		"get_memory_entry", "list_artifact_candidates", "list_handoff_report_known_scopes", "list_memory_entries",
 		"search_memory", "select_handoff_workstream":
+		value := &mcp.ToolAnnotations{OpenWorldHint: &closedWorld}
 		value.ReadOnlyHint = true
 		nondestructive := false
 		value.DestructiveHint = &nondestructive
 		if name == "select_handoff_workstream" {
 			value.IdempotentHint = true
 		}
+		return value
 	case "handoff_current_work":
+		value := &mcp.ToolAnnotations{OpenWorldHint: &closedWorld}
 		nondestructive := false
 		value.DestructiveHint = &nondestructive
 		value.IdempotentHint = false
-	case "capture_content_source", "commit_handoff":
-		additive := false
-		value.DestructiveHint = &additive
+		return value
+	case "commit_handoff":
+		value := &mcp.ToolAnnotations{OpenWorldHint: &closedWorld}
+		nondestructive := false
+		value.DestructiveHint = &nondestructive
 		value.IdempotentHint = true
+		return value
+	default:
+		return nil
 	}
-	return value
 }

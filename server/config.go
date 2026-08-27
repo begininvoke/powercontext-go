@@ -334,6 +334,15 @@ func buildProcessConfig(value environmentConfig) (ProcessConfig, error) {
 		if err := decodeJSONArray(value.DashboardScopes, &scopes); err != nil {
 			return ProcessConfig{}, fmt.Errorf("server: dashboard.scopes must be a JSON array: %w", err)
 		}
+		for index := range scopes {
+			// Pydantic applies the declared length bounds to the input and then
+			// strips these two fields in its after-validator.
+			if len([]rune(scopes[index].ScopeID)) > 255 || len([]rune(scopes[index].DisplayName)) > 80 {
+				return ProcessConfig{}, errors.New("server: Dashboard scope values are invalid")
+			}
+			scopes[index].ScopeID = strings.TrimSpace(scopes[index].ScopeID)
+			scopes[index].DisplayName = strings.TrimSpace(scopes[index].DisplayName)
+		}
 	}
 	externalHostID := value.ExternalSkillHostID
 	var targets []ExternalSkillTarget
@@ -682,7 +691,9 @@ func sqliteURL(path string) string {
 }
 
 // SQLiteDSN converts the frozen SQLAlchemy URL spelling without accepting a
-// different database scheme by accident.
+// different database scheme by accident. Three-slash URLs intentionally keep
+// a relative database path: the frozen .env.example relies on resolving that
+// path from the Server working directory, just as SQLAlchemy does.
 func SQLiteDSN(value string) (string, error) {
 	const prefix = "sqlite+aiosqlite:///"
 	if !strings.HasPrefix(value, prefix) {
@@ -694,9 +705,6 @@ func SQLiteDSN(value string) (string, error) {
 	}
 	if database == ":memory:" {
 		return database, nil
-	}
-	if !strings.HasPrefix(database, "/") {
-		return "", errors.New("server: SQLite database path must be absolute")
 	}
 	return filepath.FromSlash(database), nil
 }

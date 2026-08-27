@@ -1,8 +1,9 @@
 # Install a PowerContext binary release
 
 Every archive is self-describing and contains the CLI/Server binary, the
-authoritative OpenAPI document, host adapters, embedded sqlite-vec, dependency licenses,
-build metadata, an SPDX JSON SBOM, and an internal `SHA256SUMS` file.
+authoritative OpenAPI document, `.env.example`, all nine host adapters, embedded
+sqlite-vec, dependency licenses, build metadata, an SPDX JSON SBOM, and an
+internal `SHA256SUMS` file.
 
 Verify the downloaded archive and its detached SBOM against the release-level
 `SHA256SUMS`, extract it, then verify the files inside the archive:
@@ -22,6 +23,26 @@ host SQLite package is required. The Full archive also contains ONNX Runtime und
 `lib/onnxruntime/`; set `POWERCONTEXT_ONNXRUNTIME_LIBRARY_DIR` to that
 directory before selecting a `sentence-transformers:*` embedding model.
 
-The binary does not require a Python runtime. Codex and Bub retain their thin
-Python host adapters, and DSH retains its TypeScript adapter; all of them call
-the Go Server over HTTP.
+SQLite is the self-contained default. Embedded seekDB is optional on Linux and
+macOS and requires a native `libseekdb` package from the official
+[`oceanbase/seekdb-bindings`](https://github.com/oceanbase/seekdb-bindings)
+release. Keep the `seekdb` executable beside `libseekdb.so` (or
+`libseekdb.dylib`). Either place that library beside the PowerContext binary or
+set its explicit path, then select the profile:
+
+```sh
+export POWERCONTEXT_SERVER_DATABASE_KIND=seekdb
+export POWERCONTEXT_SERVER_DATABASE_LIBRARY_PATH=/opt/seekdb/lib/libseekdb.so
+# Optional; defaults to $POWERCONTEXT_HOME/seekdb.
+export POWERCONTEXT_SERVER_DATABASE_PATH=/var/lib/powercontext/seekdb
+./bin/powercontext server run
+```
+
+The server fails closed if the native library is missing, incompatible, or
+does not return a valid local connection profile; it never silently falls back
+to a different database.
+
+The binary itself does not require a Python runtime. Codex, Claude Code, Bub,
+Hermes, and LangGraph retain host-native Python adapters; DSH, OpenClaw,
+OpenCode, and Pi retain TypeScript adapters. Each adapter is isolated from the
+Go implementation and calls the Go Server over HTTP or MCP.

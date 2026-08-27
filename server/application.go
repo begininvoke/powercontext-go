@@ -98,6 +98,7 @@ func OpenApplication(ctx context.Context, config ProcessConfig, dependencies Dep
 	if err != nil {
 		return nil, fmt.Errorf("server: open database: %w", err)
 	}
+	warnIfEphemeralMainDatabase(ctx, config, dependencies.Logger)
 	tracingProvider := dependencies.TracerProvider
 	var tracingResource *servertracing.Server
 	if tracingProvider == nil {

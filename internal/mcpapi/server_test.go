@@ -38,6 +38,53 @@ var baseToolNames = []string{
 	"search_memory",
 }
 
+func TestDefaultServerInfoMatchesFrozenPython(t *testing.T) {
+	t.Parallel()
+	server, err := NewServer(endpoint.NewHandler(endpoint.HandlerOptions{}), Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := connectInMemory(t, server)
+	info := client.InitializeResult().ServerInfo
+	if info == nil || info.Name != ServerName || info.Version != frozenPythonServerVersion {
+		t.Fatalf("serverInfo = %#v, want name %q version %q", info, ServerName, frozenPythonServerVersion)
+	}
+}
+
+func TestHandoffToolAnnotationsMatchFrozenHostApprovalSemantics(t *testing.T) {
+	t.Parallel()
+	server, err := NewServer(endpoint.NewHandler(endpoint.HandlerOptions{}), Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := connectInMemory(t, server).ListTools(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tools := make(map[string]*mcp.Tool, len(result.Tools))
+	for _, tool := range result.Tools {
+		tools[tool.Name] = tool
+	}
+	prepare, commit, resolve := tools["handoff_current_work"], tools["commit_handoff"], tools["continue_handoff"]
+	if prepare.Annotations == nil || prepare.Annotations.ReadOnlyHint || prepare.Annotations.DestructiveHint == nil ||
+		*prepare.Annotations.DestructiveHint || prepare.Annotations.IdempotentHint ||
+		prepare.Annotations.OpenWorldHint == nil || *prepare.Annotations.OpenWorldHint {
+		t.Fatalf("handoff_current_work annotations = %#v", prepare.Annotations)
+	}
+	if commit.Annotations == nil || commit.Annotations.ReadOnlyHint || commit.Annotations.DestructiveHint == nil ||
+		*commit.Annotations.DestructiveHint || !commit.Annotations.IdempotentHint ||
+		commit.Annotations.OpenWorldHint == nil || *commit.Annotations.OpenWorldHint {
+		t.Fatalf("commit_handoff annotations = %#v", commit.Annotations)
+	}
+	if resolve.Annotations == nil || !resolve.Annotations.ReadOnlyHint || resolve.Annotations.DestructiveHint == nil ||
+		*resolve.Annotations.DestructiveHint || resolve.Annotations.OpenWorldHint == nil || *resolve.Annotations.OpenWorldHint {
+		t.Fatalf("continue_handoff annotations = %#v", resolve.Annotations)
+	}
+	if tools["capture_content_source"].Annotations != nil {
+		t.Fatalf("unannotated tool received Go-only defaults: %#v", tools["capture_content_source"].Annotations)
+	}
+}
+
 func TestServerExposesFrozenToolSet(t *testing.T) {
 	t.Parallel()
 

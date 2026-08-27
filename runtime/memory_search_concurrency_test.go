@@ -8,6 +8,7 @@ import (
 
 	"github.com/ob-labs/powercontext-go/artifact"
 	"github.com/ob-labs/powercontext-go/artifact/memory"
+	"github.com/ob-labs/powercontext-go/inference"
 )
 
 type advancingSearchBackend struct {
@@ -15,6 +16,7 @@ type advancingSearchBackend struct {
 	current     int
 	failures    int
 	searchCalls int
+	channels    memory.SearchChannels
 }
 
 func (*advancingSearchBackend) Capabilities() memory.Capabilities {
@@ -63,7 +65,7 @@ func (b *advancingSearchBackend) Search(context.Context, memory.SearchRequest) (
 		b.current++
 		return memory.SearchChannels{}, &memory.InvalidCitationError{Code: "memory-mismatch"}
 	}
-	return memory.SearchChannels{}, nil
+	return b.channels.Clone(), nil
 }
 
 func (*advancingSearchBackend) Expand(context.Context, []memory.Hit) ([]memory.EntryVersion, error) {
@@ -96,7 +98,63 @@ func TestMemorySearchReturnsConflictAfterThreeAdvancedHeads(t *testing.T) {
 	}
 }
 
+type searchRerankGenerator func(
+	context.Context,
+	memory.RerankInput,
+) (inference.GenerationResult[memory.RerankOutput], error)
+
+func (f searchRerankGenerator) Generate(
+	ctx context.Context,
+	input memory.RerankInput,
+) (inference.GenerationResult[memory.RerankOutput], error) {
+	return f(ctx, input)
+}
+
+func TestMemorySearchKeepsCompletedRevisionWhenHeadAdvancesDuringReranking(t *testing.T) {
+	revisions := searchMemoryRevisions(t, 2)
+	hit, err := memory.NewChannelHit(
+		revisions[0].Ref(), "entry-1", "version-1", "Stable searchable fact.", nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	backend := &advancingSearchBackend{
+		revisions: revisions,
+		channels:  memory.SearchChannels{FTS: []memory.ChannelHit{hit}},
+	}
+	reranker, err := memory.NewLLMReranker(searchRerankGenerator(func(
+		context.Context,
+		memory.RerankInput,
+	) (inference.GenerationResult[memory.RerankOutput], error) {
+		backend.current = 1
+		return inference.GenerationResult[memory.RerankOutput]{
+			Output: memory.NewRerankOutput([]int{1}),
+			Usage:  inference.Usage{Requests: 1},
+		}, nil
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	application := newSearchConcurrencyApplicationWithOptions(t, backend, memory.ServiceOptions{Reranker: reranker})
+	page, err := application.Search(t.Context(), "scope", "stable searchable", 1, memory.SearchFTS)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if backend.current != 1 || page.MemoryRef == nil || *page.MemoryRef != revisions[0].Ref() ||
+		len(page.Hits) != 1 || page.Hits[0].MemoryRef != revisions[0].Ref() || page.Rerank == nil {
+		t.Fatalf("completed search snapshot = current %d, page %#v", backend.current, page)
+	}
+}
+
 func newSearchConcurrencyApplication(t *testing.T, backend memory.Backend) *MemoryApplication {
+	return newSearchConcurrencyApplicationWithOptions(t, backend, memory.ServiceOptions{})
+}
+
+func newSearchConcurrencyApplicationWithOptions(
+	t *testing.T,
+	backend memory.Backend,
+	options memory.ServiceOptions,
+) *MemoryApplication {
 	t.Helper()
 	lifecycle := New()
 	t.Cleanup(func() {
@@ -104,7 +162,7 @@ func newSearchConcurrencyApplication(t *testing.T, backend memory.Backend) *Memo
 			t.Errorf("close Runtime: %v", err)
 		}
 	})
-	service, err := memory.NewService(backend, memory.ServiceOptions{})
+	service, err := memory.NewService(backend, options)
 	if err != nil {
 		t.Fatal(err)
 	}

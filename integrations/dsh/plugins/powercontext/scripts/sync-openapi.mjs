@@ -25,11 +25,12 @@ function existingFile(path) {
   return path && existsSync(path) ? resolve(path) : undefined
 }
 
-function walkForOpenApi(startDir) {
+function walkForOpenApi(startDir, excludedPath) {
   let dir = resolve(startDir)
   for (let i = 0; i < 8; i += 1) {
     const candidate = join(dir, 'openapi', 'powercontext.yaml')
-    if (existsSync(candidate)) return resolve(candidate)
+    const resolvedCandidate = resolve(candidate)
+    if (existsSync(candidate) && resolvedCandidate !== excludedPath) return resolvedCandidate
     const parent = resolve(dir, '..')
     if (parent === dir) break
     dir = parent
@@ -40,7 +41,11 @@ function walkForOpenApi(startDir) {
 export function resolvePowerContextRoot() {
   const fromEnv = process.env.POWERCONTEXT_ROOT?.trim()
   if (fromEnv && existsSync(fromEnv)) return resolve(fromEnv)
-  const yamlPath = walkForOpenApi(root)
+  // In a source checkout, prefer the repository's authoritative OpenAPI over
+  // this package's committed offline copy. Otherwise a stale embedded copy can
+  // make generation and its drift tests agree with each other while both have
+  // silently diverged from the Server contract.
+  const yamlPath = walkForOpenApi(root, resolve(dest))
   if (!yamlPath) return undefined
   return resolve(dirname(yamlPath), '..')
 }
@@ -53,7 +58,7 @@ export function resolveOpenApiPath() {
     ? existingFile(join(checkout, 'openapi', 'powercontext.yaml'))
     : undefined
   if (fromRoot) return fromRoot
-  const walked = walkForOpenApi(root)
+  const walked = walkForOpenApi(root, resolve(dest))
   if (walked) return walked
   if (existsSync(dest)) return dest
   throw new Error(

@@ -54,17 +54,11 @@ func (r *ArtifactRepository) Create(
 	if err != nil {
 		return nil, err
 	}
-	revision, found, err := r.findHead(ctx, db, scopeID, ref.Family(), ref.ID(), false)
-	if err != nil {
-		return nil, err
-	}
-	if found {
-		currentRef, refErr := artifact.NewRef(ref.Family(), ref.ID(), revision)
-		if refErr != nil {
-			return nil, refErr
-		}
-		return nil, &artifact.RevisionConflictError{Requested: ref, Current: currentRef}
-	}
+	// The immutable revision key is the create CAS. Do not read the head first:
+	// on SQLite a read-before-write transaction can lose a concurrent create
+	// with SQLITE_BUSY_SNAPSHOT instead of the stable RevisionConflictError.
+	// A direct insert waits for the competing writer and then either succeeds or
+	// observes its committed unique key on every supported backend.
 	created, err := r.insertRevision(ctx, db, scopeID, codec, ref, draft.ContentValue(), draft.Lineage())
 	if err != nil {
 		return nil, r.normalizeCreateIntegrity(ctx, db, scopeID, ref, err)
@@ -77,9 +71,8 @@ func (r *ArtifactRepository) Create(
 	return created, nil
 }
 
-// normalizeCreateIntegrity closes the race between the optimistic head read
-// and the two inserts. Like the Python repository, only a now-committed head
-// turns a constraint failure into a Revision conflict; unrelated foreign-key,
+// normalizeCreateIntegrity turns a competing create into a stable Revision
+// conflict. Only a now-committed head has that meaning; unrelated foreign-key,
 // check, or lineage violations retain their original database error.
 func (r *ArtifactRepository) normalizeCreateIntegrity(
 	ctx context.Context,

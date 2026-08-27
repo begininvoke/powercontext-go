@@ -25,6 +25,25 @@ func configuredMetrics(enabled bool) (*servermetrics.Server, error) {
 	return servermetrics.New()
 }
 
+func warnIfEphemeralMainDatabase(ctx context.Context, config ProcessConfig, logger *slog.Logger) {
+	if logger == nil || config.Database.Kind != "sqlite" {
+		return
+	}
+	dsn, err := SQLiteDSN(config.Database.SQLite.URL)
+	if err != nil || (dsn != ":memory:" && !strings.Contains(dsn, "mode=memory")) {
+		return
+	}
+	serverlogging.LogSafely(
+		ctx,
+		namedLogger(logger, "powercontext.server.factory"),
+		slog.LevelWarn,
+		"PowerContext is using an in-memory main database; all main database data will be lost when the process stops",
+		slog.String("event", "database.ephemeral"),
+		slog.String("outcome", "warning"),
+		slog.String("unit", "database"),
+	)
+}
+
 func scopedIDFactory(kind string) (string, error) {
 	if kind == memory.Family {
 		return pcruntime.DefaultMemoryArtifactID, nil
